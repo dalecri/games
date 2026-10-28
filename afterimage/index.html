@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D0B14">
+<meta name="description" content="A memory game: a route flashes for a second, leaves a fading afterimage, and you trace it from memory.">
+<title>Afterimage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,500;50..150,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --void:#0D0B14; --void-2:#15121F; --dot:#2E2940; --dim:#8D86A6; --text:#EDE9F7;
+  --flash:#FFB347; --core:#FFF3DC; --after:#4FE3C1; --miss:#FF4F6A;
+  --display:"Anybody", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html,body{height:100%}
+body{background:var(--void); color:var(--text); font-family:var(--mono); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:800; font-stretch:130%; font-size:clamp(20px,6vw,28px); line-height:1; letter-spacing:.04em; color:var(--core);
+  text-shadow:0 0 18px rgba(255,179,71,.55), 5px 3px 0 rgba(79,227,193,.28)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-size:20px; font-weight:600; font-variant-numeric:tabular-nums}
+.stage{flex:1; min-height:0; position:relative; touch-action:none}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.status{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; font-size:12px}
+.status #say{font-family:var(--display); font-weight:800; font-stretch:115%; font-size:17px; letter-spacing:.03em}
+.status small{color:var(--dim); font-variant-numeric:tabular-nums}
+.bar{height:4px; background:var(--dot); border-radius:99px; overflow:hidden; grid-column:1/-1}
+.bar i{display:block; height:100%; width:0; background:var(--after)}
+
+[hidden]{display:none!important}
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding-block:8px; background:rgba(13,11,20,.72)}
+.card{background:var(--void-2); border:1px solid #3A3450; border-radius:8px; padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:12px;
+  box-shadow:0 0 0 1px rgba(255,179,71,.08), 0 0 40px rgba(255,179,71,.12)}
+.card h2{font-family:var(--display); font-weight:800; font-stretch:125%; font-size:28px; margin:0; line-height:1; color:var(--core); text-wrap:balance}
+.card p{margin:0; font-size:12px; line-height:1.55; color:var(--dim)}
+.card p b{color:var(--text); font-weight:600}
+.big{font-family:var(--display); font-weight:800; font-stretch:150%; font-size:64px; line-height:.9; color:var(--core); text-shadow:0 0 24px rgba(255,179,71,.5), 6px 4px 0 rgba(79,227,193,.25)}
+.big small{display:block; font-family:var(--mono); font-weight:400; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); text-shadow:none; margin-top:6px}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:5px 12px; margin:0; font-size:13px}
+.card dt{color:var(--dim)}
+.card dd{margin:0; font-weight:600; text-align:right; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.btn{font-family:var(--mono); font-weight:600; font-size:14px; border:0; border-radius:5px; padding:12px; background:var(--flash); color:#1A1206; cursor:pointer; box-shadow:0 3px 0 #9C6420}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #9C6420}
+.btn.alt{background:transparent; color:var(--text); border:1px solid #4A4363; box-shadow:none}
+.btn.teal{background:var(--after); color:#062A22; box-shadow:0 3px 0 #1E8C74}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--after); outline-offset:2px}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-4px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:12px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:var(--dot); border-radius:99px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--flash)}
+.missions li.done{color:var(--after)} .missions li.done .mb i{background:var(--after)}
+.thumb{width:min(100%,180px); aspect-ratio:1; margin-inline:auto; display:block; border-radius:6px; background:var(--void)}
+.toast{position:absolute; top:48px; left:50%; transform:translateX(-50%); z-index:9; background:var(--core); color:#1A1206; padding:7px 14px; border-radius:99px; font-size:12px; white-space:nowrap; pointer-events:none; font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">AFTERIMAGE</div>
+    <div class="hud">
+      <div><small>Turns</small><b id="hTurns">2</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Memory grid. Trace the route you saw."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Afterimage</h2>
+        <p>A route <b>flashes for about a second</b>, then the lights go out. Trace it from memory, starting at the ring.</p>
+        <p>The flash leaves a faint <b>afterimage</b> that fades fast. Trace before it's gone for a <b>lightning bonus</b>. Every clear adds one turn. One wrong step ends the run. Every 5th route is traced <b>in reverse</b>.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Play</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Lights out</h2>
+        <div class="big"><span id="eTurns">0</span><small id="eTurnsLabel">turns remembered</small></div>
+        <p id="eMsg"></p>
+        <canvas class="thumb" id="thumb" width="360" height="360" aria-label="The route and your trace"></canvas>
+        <dl>
+          <dt>Score</dt><dd id="eScore">0</dd>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Lightning traces</dt><dd id="eFast">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn teal" id="lookBtn" type="button">Second look · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Play again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <span id="say">Watch</span>
+    <small id="sub">grid 5×5</small>
+    <div class="bar"><i id="tbar"></i></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+let W=0, H=0, side=0, ox=0, oy=0, dpr=1;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  t8:    {t:'Clear a 8-turn route', g:8, run:G=>G.cleared+1},
+  t12:   {t:'Clear a 12-turn route', g:12, run:G=>G.cleared+1},
+  t16:   {t:'Clear a 16-turn route', g:16, run:G=>G.cleared+1},
+  fast3: {t:'3 lightning traces in one run', g:3, run:G=>G.fast},
+  fast6: {t:'6 lightning traces in one run', g:6, run:G=>G.fast},
+  rev2:  {t:'Clear 2 reverse routes in one run', g:2, run:G=>G.rev},
+  sc1k:  {t:'Score 1,000 in one run', g:1000, run:G=>G.score},
+  tot40: {t:'Clear 40 routes (total)', g:40, total:'clears'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('afterimage-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, bestScore:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('afterimage-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    P.mprog[id] = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const d = document.createElement('div'); d.className='toast'; d.textContent=t; $('#app').appendChild(d);
+  d.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>d.remove(); }
+const todayKey = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const ri = n => Math.floor(rand()*n);
+
+/* ---------- levels ---------- */
+const turnsOf = L => L + 1;
+const gridOf = L => L <= 3 ? 5 : L <= 8 ? 6 : 7;
+const isReverse = L => L % 5 === 0;
+const afterMs = L => Math.max(650, 2400 - L*95);
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+function genRoute(L){
+  const n = gridOf(L), segs = turnsOf(L) + 1, maxLen = n <= 5 ? 2 : 3;
+  for (let attempt=0; attempt<400; attempt++){
+    const start = [ri(n), ri(n)], cells = [start], seen = new Set([start+'']);
+    let dir = null, ok = true;
+    for (let s=0; s<segs && ok; s++){
+      const opts = dir === null ? DIRS.slice() : DIRS.filter(d => d[0] !== dir[0] && d[1] !== dir[1] ? true : (d[0] === 0) !== (dir[0] === 0));
+      const cand = (dir === null ? opts : opts.filter(d => (d[0] === 0) !== (dir[0] === 0)));
+      let placed = false;
+      for (const d of cand.sort(() => rand() - .5)){
+        const lens = [...Array(maxLen)].map((_,i)=>i+1).sort(() => rand() - .5);
+        for (const len of lens){
+          const [hx,hy] = cells[cells.length-1]; const add = []; let good = true;
+          for (let k=1;k<=len;k++){ const x = hx+d[0]*k, y = hy+d[1]*k; if (x<0||y<0||x>=n||y>=n||seen.has(x+','+y)){ good=false; break; } add.push([x,y]); }
+          if (good){ add.forEach(c => { cells.push(c); seen.add(c+''); }); dir = d; placed = true; break; }
+        }
+        if (placed) break;
+      }
+      if (!placed) ok = false;
+    }
+    if (ok) return { n, cells };
+  }
+  return null;
+}
+
+/* ---------- state ---------- */
+let G;
+function freshRun(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { L:1, rs:seed|0, daily:!!daily, key, score:0, cleared:0, fast:0, rev:0, looked:false, doneM:[], phase:'idle', route:null, seq:[], trace:[], t0:0, wrong:null, lastPts:'' };
+}
+function buildLevel(){
+  let r = genRoute(G.L);
+  while (!r){ G.L = Math.max(1, G.L-1); r = genRoute(G.L); }
+  G.route = r; G.seq = isReverse(G.L) ? r.cells.slice().reverse() : r.cells.slice();
+}
+function showRoute(){
+  G.trace = []; G.wrong = null; G.phase = 'show'; G.t0 = performance.now();
+  G.drawMs = Math.min(1150, 220 + G.route.cells.length*55); G.holdMs = G.L >= 10 ? 350 : 520;
+  say(isReverse(G.L) ? 'Watch · this one goes in reverse' : 'Watch', 'grid '+G.route.n+'×'+G.route.n+' · '+turnsOf(G.L)+' turns');
+}
+function startRecall(){
+  G.phase = 'recall'; G.t0 = performance.now(); G.trace = [G.seq[0]];
+  G.limit = 2600 + 420*G.seq.length;
+  say(isReverse(G.L) ? 'Reverse: start at the ring' : 'Trace it', isReverse(G.L) ? 'trace back to where it began' : 'start at the ring');
+}
+function say(a, b){ $('#say').textContent = a; $('#sub').textContent = b; }
+
+/* ---------- input ---------- */
+function cellAt(px, py){
+  if (!G.route) return null; const n = G.route.n, cs = side/n;
+  const x = Math.floor((px-ox)/cs), y = Math.floor((py-oy)/cs);
+  return (x<0||y<0||x>=n||y>=n) ? null : [x,y];
+}
+let dragging = false;
+function onPoint(e){
+  if (G.phase !== 'recall') return;
+  const r = cv.getBoundingClientRect(), c = cellAt(e.clientX - r.left, e.clientY - r.top);
+  if (!c) return;
+  const head = G.trace[G.trace.length-1];
+  if (c[0] === head[0] && c[1] === head[1]) return;
+  const dx = c[0]-head[0], dy = c[1]-head[1];
+  if (dx !== 0 && dy !== 0) return;              // diagonal: wait for finger to line up
+  const dist = Math.abs(dx+dy); if (dist > 3) return;
+  const sx = Math.sign(dx), sy = Math.sign(dy);
+  for (let k=0;k<dist;k++){ const h = G.trace[G.trace.length-1]; if (!step([h[0]+sx, h[1]+sy])) return; }
+}
+function step(c){
+  const i = G.trace.length, want = G.seq[i];
+  if (c[0] === want[0] && c[1] === want[1]){
+    G.trace.push(c); buzz(5);
+    if (G.trace.length === G.seq.length) clearLevel();
+    return G.phase === 'recall';
+  }
+  fail(c, 'Wrong turn'); return false;
+}
+cv.addEventListener('pointerdown', e => { dragging = true; cv.setPointerCapture(e.pointerId); onPoint(e); });
+cv.addEventListener('pointermove', e => { if (dragging) onPoint(e); });
+cv.addEventListener('pointerup', () => dragging = false);
+cv.addEventListener('pointercancel', () => dragging = false);
+addEventListener('keydown', e => {
+  const m = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+  if (!m) return; e.preventDefault();
+  if (G && G.phase === 'recall'){ const h = G.trace[G.trace.length-1]; step([h[0]+m[0], h[1]+m[1]]); }
+});
+
+/* ---------- outcomes ---------- */
+function clearLevel(){
+  const el = performance.now() - G.t0, fast = el < afterMs(G.L);
+  const turns = turnsOf(G.L), pts = turns*10 + (fast ? turns*5 : 0) + (isReverse(G.L) ? 25 : 0);
+  G.score += pts; G.cleared = G.L; if (fast) G.fast++; if (isReverse(G.L)) G.rev++;
+  G.lastPts = '+'+pts + (fast ? ' · lightning' : '') + (isReverse(G.L) ? ' · reverse' : '');
+  G.phase = 'clear'; G.t0 = performance.now();
+  say(fast ? 'Lightning' : 'Clean', G.lastPts);
+  checkMissions({ clears:1 });
+  buzz([10,30,10]);
+  setTimeout(() => { G.L++; buildLevel(); showRoute(); }, reduced ? 400 : 850);
+}
+function fail(c, why){
+  G.phase = 'fail'; G.wrong = c; G.why = why; G.t0 = performance.now();
+  say(why, 'the lit path is what it was');
+  buzz([40,60,60]);
+  setTimeout(endRun, 1300);
+}
+function endRun(){
+  const turnsDone = G.cleared ? turnsOf(G.cleared) : 0;
+  const prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, turnsDone); else P.best = Math.max(P.best, turnsDone);
+  P.bestScore = Math.max(P.bestScore, G.score);
+  checkMissions({});
+  $('#eTitle').textContent = turnsDone > prev && turnsDone > 0 ? 'New best!' : 'Lights out';
+  $('#eTurns').textContent = turnsDone;
+  $('#eTurnsLabel').textContent = (turnsDone === 1 ? 'turn' : 'turns') + ' remembered' + (G.daily ? ' · daily' : '');
+  const gap = prev - turnsDone;
+  $('#eMsg').textContent = G.why + ' on the ' + turnsOf(G.L) + '-turn route.' + (gap > 0 && gap <= 2 ? ' ' + gap + ' short of your best.' : '');
+  $('#eScore').textContent = G.score.toLocaleString(); $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best) + ' turns';
+  $('#eFast').textContent = G.fast; $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const lb = $('#lookBtn'); lb.hidden = G.looked; lb.disabled = P.stars < 1;
+  lb.textContent = P.stars < 1 ? 'Second look · need 1★' : 'Second look at this route · 1★ (you have ' + P.stars + ')';
+  drawThumb();
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function secondLook(){
+  if (P.stars < 1 || G.looked) return;
+  P.stars--; G.looked = true; save();
+  // undo this run's best credit; it gets recorded again when the run truly ends
+  $('#end').hidden = true; showRoute();
+}
+
+/* ---------- drawing ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; side=Math.max(120,Math.min(W,H)); ox=(W-side)/2; oy=(H-side)/2; }
+function pathLine(c, cells, n, s, x0, y0, upto){
+  const cs = s/n, cx = k => x0 + (cells[k][0]+.5)*cs, cy = k => y0 + (cells[k][1]+.5)*cs;
+  const m = Math.max(0, Math.min(cells.length-1, upto));
+  c.beginPath(); c.moveTo(cx(0), cy(0));
+  const whole = Math.floor(m);
+  for (let k=1;k<=whole;k++) c.lineTo(cx(k), cy(k));
+  const fr = m - whole;
+  if (fr > 0 && whole+1 < cells.length) c.lineTo(cx(whole)+(cx(whole+1)-cx(whole))*fr, cy(whole)+(cy(whole+1)-cy(whole))*fr);
+  c.stroke();
+}
+function grid(c, n, s, x0, y0, lit){
+  const cs = s/n;
+  for (let y=0;y<n;y++) for (let x=0;x<n;x++){
+    c.beginPath(); c.arc(x0+(x+.5)*cs, y0+(y+.5)*cs, Math.max(2, cs*.06), 0, 6.283);
+    c.fillStyle = lit ? '#3D3654' : '#2E2940'; c.fill();
+  }
+}
+function ring(c, cell, n, s, x0, y0, col, t){
+  const cs = s/n, x = x0+(cell[0]+.5)*cs, y = y0+(cell[1]+.5)*cs;
+  c.beginPath(); c.arc(x, y, cs*(.3 + (t ? Math.sin(t/180)*.03 : 0)), 0, 6.283);
+  c.strokeStyle = col; c.lineWidth = Math.max(2, cs*.06); c.stroke();
+}
+function glowStroke(c, color, width, blur){ c.strokeStyle = color; c.lineWidth = width; c.lineCap = c.lineJoin = 'round'; c.shadowColor = color; c.shadowBlur = blur; }
+function render(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#0D0B14'; ctx.fillRect(0,0,W,H);
+  if (!G || !G.route){ requestAnimationFrame(render); return; }
+  const n = G.route.n, cs = side/n, t = now - G.t0, cells = G.route.cells;
+  grid(ctx, n, side, ox, oy, G.phase === 'show');
+  const w = Math.max(6, cs*.22);
+
+  if (G.phase === 'show'){
+    const prog = Math.min(1, t / G.drawMs) * (cells.length-1);
+    const fadeOut = t > G.drawMs + G.holdMs ? Math.max(0, 1 - (t - G.drawMs - G.holdMs)/140) : 1;
+    ctx.globalAlpha = fadeOut;
+    glowStroke(ctx, '#FFB347', w*1.6, cs*.6); pathLine(ctx, cells, n, side, ox, oy, prog);
+    glowStroke(ctx, '#FFF3DC', w*.55, 0); pathLine(ctx, cells, n, side, ox, oy, prog);
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ring(ctx, isReverse(G.L) ? cells[cells.length-1] : cells[0], n, side, ox, oy, '#FFF3DC');
+    if (t < 120 && !reduced){ ctx.fillStyle = `rgba(255,243,220,${.18*(1-t/120)})`; ctx.fillRect(ox, oy, side, side); }
+    const total = G.drawMs + G.holdMs + 140;
+    $('#tbar').style.width = Math.min(100, t/total*100) + '%'; $('#tbar').style.background = '#FFB347';
+    if (t >= total) startRecall();
+  } else if (G.phase === 'recall' || G.phase === 'clear' || G.phase === 'fail'){
+    // afterimage: the complementary ghost of the flash, fading
+    if (G.phase === 'recall'){
+      const a = Math.max(0, 1 - t/afterMs(G.L));
+      if (a > 0){ ctx.globalAlpha = a*.32; glowStroke(ctx, '#4FE3C1', w*1.3, cs*.4); pathLine(ctx, cells, n, side, ox, oy, cells.length-1); ctx.shadowBlur = 0; ctx.globalAlpha = 1; }
+      ring(ctx, G.seq[0], n, side, ox, oy, '#4FE3C1', now);
+      const left = Math.max(0, 1 - t/G.limit);
+      $('#tbar').style.width = left*100 + '%'; $('#tbar').style.background = left < .25 ? '#FF4F6A' : '#4FE3C1';
+      if (t > G.limit){ fail(null, 'Out of time'); }
+    }
+    if (G.phase === 'fail'){
+      ctx.globalAlpha = .9; glowStroke(ctx, '#FFB347', w*1.2, cs*.35); pathLine(ctx, G.seq, n, side, ox, oy, G.seq.length-1); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    }
+    if (G.phase === 'clear'){
+      const a = Math.max(0, 1 - t/800);
+      glowStroke(ctx, `rgba(79,227,193,${.4+.6*a})`, w*1.5, cs*.6); pathLine(ctx, G.seq, n, side, ox, oy, G.seq.length-1); ctx.shadowBlur = 0;
+      ctx.fillStyle = '#EDE9F7'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font = `800 ${Math.round(side*.07)}px Anybody, sans-serif`; ctx.globalAlpha = Math.min(1, a*2);
+      ctx.fillText(G.lastPts.split(' · ')[0], ox+side/2, oy+side/2 - t*.03); ctx.globalAlpha = 1;
+    }
+    // your trace
+    if (G.trace.length){
+      glowStroke(ctx, '#FFF3DC', w*.8, cs*.25); pathLine(ctx, G.trace, n, side, ox, oy, G.trace.length-1); ctx.shadowBlur = 0;
+      const h = G.trace[G.trace.length-1];
+      ctx.beginPath(); ctx.arc(ox+(h[0]+.5)*cs, oy+(h[1]+.5)*cs, w*.9, 0, 6.283); ctx.fillStyle = '#FFF3DC'; ctx.fill();
+    }
+    if (G.wrong){
+      const x = ox+(G.wrong[0]+.5)*cs, y = oy+(G.wrong[1]+.5)*cs, r = cs*.22;
+      ctx.strokeStyle = '#FF4F6A'; ctx.lineWidth = Math.max(3, cs*.07); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(x-r,y-r); ctx.lineTo(x+r,y+r); ctx.moveTo(x+r,y-r); ctx.lineTo(x-r,y+r); ctx.stroke();
+    }
+  }
+  $('#hTurns').textContent = turnsOf(G.L);
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = G.daily ? (P.daily[G.key]||0) : P.best;
+  requestAnimationFrame(render);
+}
+function drawThumb(){
+  const c = $('#thumb').getContext('2d'), s = 360, n = G.route.n, cs = s/n, w = cs*.2;
+  c.setTransform(1,0,0,1,0,0); c.fillStyle = '#0D0B14'; c.fillRect(0,0,s,s);
+  grid(c, n, s, 0, 0, false);
+  glowStroke(c, '#FFB347', w*1.2, cs*.35); pathLine(c, G.seq, n, s, 0, 0, G.seq.length-1); c.shadowBlur = 0;
+  if (G.trace.length > 1){ glowStroke(c, '#4FE3C1', w*.6, 0); pathLine(c, G.trace, n, s, 0, 0, G.trace.length-1); }
+  ring(c, G.seq[0], n, s, 0, 0, '#FFF3DC');
+  if (G.wrong){ const x = (G.wrong[0]+.5)*cs, y = (G.wrong[1]+.5)*cs, r = cs*.2; c.strokeStyle='#FF4F6A'; c.lineWidth=6; c.lineCap='round'; c.beginPath(); c.moveTo(x-r,y-r); c.lineTo(x+r,y+r); c.moveTo(x+r,y-r); c.lineTo(x-r,y+r); c.stroke(); }
+}
+
+/* ---------- flow ---------- */
+function ready(){
+  missionList($('#rMissions'));
+  const k = todayKey();
+  $('#dailyInfo').textContent = 'Daily: the same routes for everyone today. Your best today: ' + (P.daily[k]||0) + ' turns. ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+}
+function play(daily){ $('#ready').hidden = true; $('#end').hidden = true; freshRun(daily); buildLevel(); showRoute(); }
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#lookBtn').addEventListener('click', secondLook);
+addEventListener('resize', resize);
+
+function start(){
+  resize();
+  freshRun(false); buildLevel(); G.phase = 'demo'; G.trace = G.seq.slice(0, 3);
+  say('Ready', 'watch, then trace');
+  ready();
+  requestAnimationFrame(render);
+}
+start();
+})();
+</script>
+</body>
+</html>

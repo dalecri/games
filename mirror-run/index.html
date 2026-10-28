@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C1224">
+<meta name="description" content="A one-thumb split-screen runner. Steer a day runner and its mirrored night twin through different walls at once.">
+<title>Mirror Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,900&family=Martian+Mono:wght@400;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --day:#CFE6F2; --day-line:#BBD8E7; --night:#14213D; --night-line:#1E2D52;
+  --bg:#0C1224; --text:#E9F1F6; --dim:#8797B3; --amber:#F5A524; --hit:#FF5A5F; --card:#16213C;
+  --display:"Archivo", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --mono:"Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html,body{height:100%}
+body{background:var(--bg); color:var(--text); font-family:var(--mono); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:900; font-stretch:78%; font-size:24px; letter-spacing:.04em; line-height:1; padding:6px 10px; border-radius:4px;
+  background:linear-gradient(90deg, var(--day) 50%, var(--night) 50%); box-shadow:inset 0 0 0 1px #2B3B63}
+.brand span{background:linear-gradient(90deg, var(--night) 50%, var(--day) 50%); -webkit-background-clip:text; background-clip:text; color:transparent}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-size:17px; font-weight:600; font-variant-numeric:tabular-nums}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; border-radius:6px; overflow:hidden; box-shadow:0 0 0 1px #2B3B63}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.foot{font-size:10px; color:var(--dim); text-align:center; line-height:1.5}
+.foot b{color:var(--text); font-weight:600}
+
+[hidden]{display:none!important}
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(12,18,36,.62)}
+.card{background:var(--card); border:1px solid #2F4170; border-radius:8px; padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:12px}
+.card h2{font-family:var(--display); font-weight:900; font-stretch:80%; font-size:32px; margin:0; line-height:1; letter-spacing:.02em; text-wrap:balance}
+.card p{margin:0; font-size:11.5px; line-height:1.6; color:var(--dim)}
+.card p b{color:var(--text); font-weight:600}
+.big{font-family:var(--display); font-weight:900; font-stretch:70%; font-size:66px; line-height:.9; display:flex; align-items:baseline; gap:6px}
+.big small{font-family:var(--mono); font-size:11px; font-weight:400; color:var(--dim); letter-spacing:.1em}
+.demo{display:grid; grid-template-columns:1fr 6px 1fr; height:64px; border-radius:4px; overflow:hidden}
+.demo div{position:relative}
+.demo .l{background:var(--day)} .demo .r{background:var(--night)} .demo .m{background:linear-gradient(#DDE6EE,#8FA1B8,#DDE6EE)}
+.demo i{position:absolute; top:22px; width:18px; height:18px; border-radius:50%}
+.demo .l i{left:60%; background:var(--night); animation:sway 2.4s ease-in-out infinite}
+.demo .r i{right:60%; background:var(--day); animation:swayr 2.4s ease-in-out infinite}
+@keyframes sway{50%{left:20%}} @keyframes swayr{50%{right:20%}}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:5px 12px; margin:0; font-size:12px}
+.card dt{color:var(--dim)} .card dd{margin:0; font-weight:600; text-align:right; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.btn{font-family:var(--mono); font-weight:600; font-size:13px; border:0; border-radius:5px; padding:12px 10px; background:var(--day); color:var(--night); cursor:pointer; box-shadow:0 3px 0 #7F9DB0}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #7F9DB0}
+.btn.alt{background:transparent; color:var(--text); border:1px solid #3A4E80; box-shadow:none}
+.btn.amber{background:var(--amber); color:#241600; box-shadow:0 3px 0 #9C6710}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+.sec{font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-4px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:11.5px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:#2A3960; border-radius:99px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--day)}
+.missions li.done{color:var(--amber)} .missions li.done .mb i{background:var(--amber)}
+.toast{position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:9; background:var(--amber); color:#241600; padding:7px 14px; border-radius:99px; font-size:11px; font-weight:600; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand"><span>MIRROR RUN</span></div>
+    <div class="hud">
+      <div><small>Metres</small><b id="hDist">0</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Two runners, one on each side of a mirror. Drag left or right to steer both."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Mirror Run</h2>
+        <div class="demo" aria-hidden="true"><div class="l"><i></i></div><div class="m"></div><div class="r"><i></i></div></div>
+        <p>One thumb steers <b>both runners</b>. Drag anywhere: the day runner follows your finger and the night runner moves as its <b>reflection</b>.</p>
+        <p>Each side gets different walls. Find the one spot that gets <b>both</b> through. When an amber line crosses, the mirror flips to <b>parallel</b> and both move the same way. Then it flips back.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Run</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Shattered</h2>
+        <div class="big"><span id="eDist">0</span><small>metres</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Score</dt><dd id="eScore">0</dd>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Walls · close calls</dt><dd id="eWalls">0</dd>
+          <dt>Mirror flips survived</dt><dd id="eFlips">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn amber" id="reviveBtn" type="button">New mirror · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Run again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Drag anywhere to steer · <b>reflection</b> until an amber line says <b>parallel</b></div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0, H=0, dpr=1, half=0; const DIV = 6;
+const RY = .82, R = .075, BH = .036;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  m300:  {t:'Run 300 m', g:300, run:G=>Math.floor(G.dist)},
+  m700:  {t:'Run 700 m', g:700, run:G=>Math.floor(G.dist)},
+  m1200: {t:'Run 1,200 m', g:1200, run:G=>Math.floor(G.dist)},
+  flip2: {t:'Survive 2 mirror flips in one run', g:2, run:G=>G.flips},
+  flip5: {t:'Survive 5 mirror flips in one run', g:5, run:G=>G.flips},
+  close5:{t:'5 close calls in one run', g:5, run:G=>G.close},
+  spark20:{t:'Grab 20 sparks in one run', g:20, run:G=>G.sparks},
+  walls200:{t:'Clear 200 walls (total)', g:200, total:'walls'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('mirror-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('mirror-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  let changed = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; changed = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  if (changed) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const d = document.createElement('div'); d.className='toast'; d.textContent=t; $('#app').appendChild(d);
+  d.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>d.remove(); }
+const todayKey = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+
+/* ---------- state ---------- */
+let G;
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', u:.3, shownV:.7, t:0, speed:.5, dist:0, score:0, walls:0, close:0, sparks:0, flips:0,
+        waves:[], lines:[], parts:[], floats:[], mode:'mirror', genMode:'mirror', gap:.3, count:0, rs:seed|0, daily:!!daily, key,
+        revived:false, invuln:0, doneM:[], deadAt:null, deadT:0, flash:0 };
+}
+const vOf = (u, mode) => mode === 'mirror' ? 1-u : u;
+function safeWidth(){ return Math.max(.19, .36 - G.count*.0028); }
+function spacing(){ return Math.max(.3, .46 - G.count*.0018); }
+function blocksFor(win){
+  // intervals on a 0..1 side that leave the window [win0,win1] open
+  const [w0, w1] = win, out = [];
+  if (rand() < .55){
+    const g0 = Math.max(0, w0 - rr(0, .12)), g1 = Math.min(1, w1 + rr(0, .12));
+    if (g0 > .02) out.push([0, g0]);
+    if (g1 < .98) out.push([g1, 1]);
+    if (!out.length) out.push(w0 > 1-w1 ? [0, w0*.7] : [1-(1-w1)*.7, 1]);
+  } else {
+    const n = rand() < .5 ? 1 : 2;
+    const regions = [[0, w0], [w1, 1]].filter(r => r[1]-r[0] > .12);
+    for (let i=0;i<n && regions.length;i++){
+      const r = regions.splice(Math.floor(rand()*regions.length),1)[0];
+      const len = Math.min(r[1]-r[0], rr(.14, .42)), a = r[0] + rand()*(r[1]-r[0]-len);
+      out.push([a, a+len]);
+    }
+    if (!out.length) out.push(w0 > .5 ? [0, w0] : [w1, 1]);
+  }
+  return out;
+}
+function spawnWave(){
+  const s = safeWidth();
+  const uStar = rr(R + s/2 - .04, 1 - R - s/2 + .04);
+  const lw = [uStar - s/2, uStar + s/2];
+  const vs = vOf(uStar, G.genMode), rw = [vs - s/2, vs + s/2];
+  const w = { y:-.06, L:blocksFor(lw), R:blocksFor(rw), mode:G.genMode, passed:false };
+  if (rand() < .35) w.spark = { u:uStar, y:-.06 - spacing()*.5, got:false };
+  G.waves.push(w); G.count++;
+}
+function spawn(){
+  const due = G.count >= 12 && (G.count - 12) % 10 === 0 && !G.justSwitched;
+  if (due){
+    G.genMode = G.genMode === 'mirror' ? 'parallel' : 'mirror';
+    G.lines.push({ y:-.04, mode:G.genMode, passed:false, announced:false });
+    G.justSwitched = true;
+  } else { spawnWave(); G.justSwitched = false; }
+}
+
+/* ---------- input ---------- */
+let down = null, pdx = 0; const keys = {};
+cv.addEventListener('pointerdown', e => { down = { id:e.pointerId, x:e.clientX }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!down || down.id !== e.pointerId) return; pdx += e.clientX - down.x; down.x = e.clientX; });
+const up = e => { if (down && down.id === e.pointerId) down = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { if (e.key.startsWith('Arrow')){ keys[e.key] = true; e.preventDefault(); } });
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* ---------- sim ---------- */
+function update(dt){
+  if (G.phase === 'dead'){ G.deadT += dt; if (G.deadT > .9 && !G.ended){ G.ended = true; endRun(); } return; }
+  if (G.phase !== 'play') return;
+  // steer
+  let du = pdx / (half*1.05); pdx = 0;
+  if (keys.ArrowLeft) du -= 1.5*dt; if (keys.ArrowRight) du += 1.5*dt;
+  G.u = Math.min(1-R, Math.max(R, G.u + du));
+  const v = vOf(G.u, G.mode);
+  G.shownV += (v - G.shownV) * Math.min(1, dt*22);
+
+  G.t += dt;
+  G.speed = Math.min(1.25, .5 + G.t*.011);
+  const dy = G.speed*dt;
+  G.dist += dy*14;
+  G.invuln = Math.max(0, G.invuln - dt);
+  G.gap += dy;
+  if (G.gap >= spacing()){ G.gap -= spacing(); spawn(); }
+
+  const ry = R*half/H;
+  for (const L of G.lines){
+    L.y += dy;
+    if (!L.announced && L.y > .05){ L.announced = true; floatText(L.mode === 'parallel' ? 'parallel ahead' : 'mirror ahead', .5, .3, true); }
+    if (!L.passed && L.y >= RY){ L.passed = true; G.mode = L.mode; G.flash = 1; buzz([15,20,15]); if (G.t > 1) G.flips++; }
+  }
+  G.lines = G.lines.filter(l => l.y < 1.1);
+
+  for (const w of G.waves){
+    w.y += dy;
+    if (w.spark){ w.spark.y += dy;
+      if (!w.spark.got && Math.abs(w.spark.y - RY) < ry*1.2 && Math.abs(w.spark.u - G.u) < R*1.3){
+        w.spark.got = true; G.sparks++; G.score += 15; burst(G.u, RY, '#F5A524'); floatText('+15', G.u*.5, RY-.06); buzz(6);
+      }
+    }
+    const overlap = w.y + BH/2 > RY - ry && w.y - BH/2 < RY + ry;
+    if (overlap && G.invuln <= 0){
+      const hitL = w.L.find(b => G.u > b[0]-R*.82 && G.u < b[1]+R*.82);
+      const hitR = w.R.find(b => v > b[0]-R*.82 && v < b[1]+R*.82);
+      if (hitL || hitR){ die(hitL ? 'L' : 'R'); return; }
+    }
+    if (!w.passed && w.y - BH/2 > RY + ry){
+      w.passed = true; G.walls++;
+      const clear = side => Math.min(...side.blocks.map(b => side.p < b[0] ? b[0]-side.p : side.p > b[1] ? side.p-b[1] : 0)) - R;
+      const c = Math.min(clear({blocks:w.L, p:G.u}), clear({blocks:w.R, p:v}));
+      const pts = 10 + Math.floor(G.speed*6);
+      G.score += pts;
+      if (c < .035){ G.close++; G.score += 20; floatText('close +20', .5, RY - .08); }
+      checkMissions({ walls:1 });
+    }
+  }
+  G.waves = G.waves.filter(w => w.y < 1.15);
+  if (Math.floor(G.dist) % 25 === 0) checkMissions({});
+}
+function die(side){
+  G.phase = 'dead'; G.deadT = 0; G.deadAt = side; G.ended = false; buzz([50,60,80]);
+  const u = side === 'L' ? G.u : G.shownV;
+  burst(u, RY, side === 'L' ? '#14213D' : '#CFE6F2', side);
+}
+function burst(u, y, col, side){ for (let i=0;i<14;i++){ const a = Math.random()*6.28, s = .15 + Math.random()*.35; G.parts.push({ side: side || 'L', u, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1, col }); } }
+function floatText(t, xFrac, y, wide){ G.floats.push({ t, x:xFrac, y, life:1, wide }); }
+
+/* ---------- render ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; half=(W-DIV)/2; }
+const LX = u => u*half, RX = v => half + DIV + v*half;
+function drawRunner(x, y, fill, rim, bob){
+  const r = R*half;
+  ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.ellipse(x, y + r*1.05, r*.85, r*.28, 0, 0, 6.283); ctx.fill();
+  ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, y - bob, r, 0, 6.283); ctx.fill();
+  ctx.strokeStyle = rim; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(x - r*.32, y - bob - r*.2, r*.16, 0, 6.283); ctx.arc(x + r*.32, y - bob - r*.2, r*.16, 0, 6.283); ctx.fill();
+}
+function render(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const scroll = (G.dist/14) % .1;
+  // halves
+  ctx.fillStyle = '#CFE6F2'; ctx.fillRect(0,0,half,H);
+  ctx.fillStyle = '#14213D'; ctx.fillRect(half+DIV,0,half,H);
+  for (let k=-1;k<11;k++){
+    const y = (k*.1 + scroll) * H;
+    ctx.fillStyle = '#BBD8E7'; ctx.fillRect(0, y, half, 2);
+    ctx.fillStyle = '#1E2D52'; ctx.fillRect(half+DIV, y, half, 2);
+  }
+  // divider
+  const par = G.mode === 'parallel';
+  const g = ctx.createLinearGradient(0,0,0,H);
+  if (par){ g.addColorStop(0,'#FFD27A'); g.addColorStop(.5,'#F5A524'); g.addColorStop(1,'#FFD27A'); }
+  else { g.addColorStop(0,'#E5EDF3'); g.addColorStop(.5,'#8FA1B8'); g.addColorStop(1,'#E5EDF3'); }
+  ctx.fillStyle = g; ctx.fillRect(half, 0, DIV, H);
+  if (G.flash > 0){ ctx.fillStyle = `rgba(245,165,36,${G.flash*.25})`; ctx.fillRect(0,0,W,H); G.flash = Math.max(0, G.flash - .04); }
+
+  // mode lines
+  for (const L of G.lines){
+    const y = L.y*H;
+    ctx.fillStyle = 'rgba(245,165,36,.9)'; ctx.fillRect(0, y-3, W, 6);
+    ctx.fillStyle = '#241600'; ctx.font = `900 ${Math.round(H*.022)}px Archivo, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillStyle = '#F5A524'; ctx.fillText(L.mode === 'parallel' ? 'PARALLEL ⇉' : 'MIRROR ⇄', W/2, y - 6);
+  }
+  // walls
+  const bh = BH*H;
+  for (const w of G.waves){
+    const y = w.y*H - bh/2;
+    ctx.fillStyle = '#14213D';
+    w.L.forEach(b => { ctx.beginPath(); ctx.roundRect(LX(b[0]), y, (b[1]-b[0])*half, bh, 3); ctx.fill(); });
+    ctx.fillStyle = '#CFE6F2';
+    w.R.forEach(b => { ctx.beginPath(); ctx.roundRect(RX(b[0]), y, (b[1]-b[0])*half, bh, 3); ctx.fill(); });
+    if (w.spark && !w.spark.got){
+      const sy = w.spark.y*H, r = R*half*.5, t = performance.now()/200;
+      [[LX(w.spark.u)], [RX(vOf(w.spark.u, w.mode))]].forEach(([x]) => {
+        ctx.save(); ctx.translate(x, sy); ctx.rotate(t*.3); ctx.fillStyle = '#F5A524';
+        ctx.beginPath(); for (let i=0;i<8;i++){ const a = i*Math.PI/4, rad = i%2 ? r*.35 : r; ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad); } ctx.closePath(); ctx.fill(); ctx.restore();
+      });
+    }
+  }
+  // runners
+  const bob = G.phase === 'play' && !reduced ? Math.abs(Math.sin(G.t*14))*R*half*.18 : 0;
+  const blink = G.invuln > 0 && Math.floor(G.invuln*10) % 2 === 0;
+  if (!blink){
+    if (!(G.phase === 'dead' && G.deadAt === 'L')) drawRunner(LX(G.u), RY*H, '#14213D', '#CFE6F2', bob);
+    if (!(G.phase === 'dead' && G.deadAt === 'R')) drawRunner(RX(G.shownV), RY*H, '#CFE6F2', '#14213D', bob);
+  }
+  // crack on death
+  if (G.phase === 'dead'){
+    const k = Math.min(1, G.deadT*3), cx = half + DIV/2, cy = RY*H;
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5;
+    for (let i=0;i<7;i++){ const a = i/7*6.283 + .3; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a)*W*.6*k, cy + Math.sin(a)*H*.4*k); ctx.stroke(); }
+  }
+  // particles
+  G.parts = G.parts.filter(p => p.life > 0);
+  G.parts.forEach(p => { p.u += p.vx*.016; p.y += p.vy*.016; p.life -= .03; ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.col;
+    const x = p.side === 'L' ? LX(p.u) : RX(p.u); ctx.fillRect(x-3, p.y*H-3, 6, 6); });
+  ctx.globalAlpha = 1;
+  // floats
+  for (let i=G.floats.length-1;i>=0;i--){
+    const f = G.floats[i]; f.life -= .018; f.y -= .0012;
+    if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2);
+    ctx.font = `900 ${Math.round(H*(f.wide ? .04 : .03))}px Archivo, sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = '#0C1224'; ctx.strokeText(f.t, f.x*W, f.y*H);
+    ctx.fillStyle = '#F5A524'; ctx.fillText(f.t, f.x*W, f.y*H);
+  }
+  ctx.globalAlpha = 1;
+  if (G.phase === 'play' && G.t < 2.2){
+    ctx.fillStyle = 'rgba(12,18,36,.75)'; ctx.font = `600 ${Math.round(H*.02)}px "Martian Mono", monospace`; ctx.textAlign='center';
+    ctx.fillText('drag to steer both', W/2, H*.94);
+  }
+  $('#hDist').textContent = Math.floor(G.dist).toLocaleString();
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+}
+
+/* ---------- flow ---------- */
+function endRun(){
+  const d = Math.floor(G.dist), prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, d); else P.best = Math.max(P.best, d);
+  checkMissions({}); save();
+  $('#eTitle').textContent = d > prev && d > 0 ? 'New best!' : 'Shattered';
+  $('#eDist').textContent = d.toLocaleString();
+  const who = G.deadAt === 'L' ? 'The day runner' : 'The night runner';
+  const gap = prev - d;
+  $('#eMsg').textContent = who + ' hit a wall' + (G.mode === 'parallel' ? ' in parallel mode.' : '.') + (gap > 0 && gap <= Math.max(40, prev*.12) ? ' Only ' + gap + ' m short of your best.' : '');
+  $('#eScore').textContent = G.score.toLocaleString();
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString() + ' m';
+  $('#eWalls').textContent = G.walls + ' · ' + G.close;
+  $('#eFlips').textContent = G.flips;
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const rb = $('#reviveBtn'); rb.hidden = G.revived; rb.disabled = P.stars < 1;
+  rb.textContent = P.stars < 1 ? 'New mirror · need 1★' : 'New mirror, keep running · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function revive(){
+  if (P.stars < 1 || G.revived) return;
+  P.stars--; save(); G.revived = true;
+  G.waves = G.waves.filter(w => w.y < RY - .45); G.phase = 'play'; G.invuln = 1.6; G.deadAt = null; G.parts = [];
+  $('#end').hidden = true;
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily: the same walls for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' m · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false);
+}
+function play(daily){ $('#ready').hidden = true; $('#end').hidden = true; fresh(daily); G.phase = 'play'; }
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#reviveBtn').addEventListener('click', revive);
+addEventListener('resize', resize);
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  update(dt); render();
+  requestAnimationFrame(frame);
+}
+resize(); ready();
+// sample walls behind the menu so the first view shows the game
+for (let i=0;i<4;i++){ spawnWave(); G.waves[i].y = .12 + i*.18; }
+G.shownV = vOf(G.u, 'mirror');
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

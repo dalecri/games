@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F2A1C">
+<meta name="description" content="A pixel-art turn-based puzzle: drag fences across a pasture to claim slime-free land before the slime takes over.">
+<title>Fence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --forest:#1F2A1C; --forest-2:#283625; --line:#3B4D36; --text:#F1EAD4; --dim:#A9B39A;
+  --grass:#7FB85E; --wheat:#E9C46A; --fence:#8A5A2F; --post:#4A2E17; --slime:#9B3FD0; --slime-hi:#C77BF0; --danger:#E4572E;
+  --display:"Pixelify Sans", "Courier New", monospace;
+  --mono:"DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html,body{height:100%}
+body{background:var(--forest); color:var(--text); font-family:var(--mono); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:700; font-size:32px; line-height:1; letter-spacing:.06em; color:var(--wheat); text-shadow:3px 3px 0 var(--post)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-family:var(--display); font-size:20px; font-weight:500; font-variant-numeric:tabular-nums}
+.meter{display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; font-size:11px; color:var(--dim)}
+.meter .track{height:8px; background:var(--forest-2); position:relative; box-shadow:inset 0 0 0 1px var(--line)}
+.meter .track i{position:absolute; left:0; top:0; bottom:0; background:var(--slime)}
+.meter .track em{position:absolute; left:55%; top:-3px; bottom:-3px; width:2px; background:var(--danger)}
+.meter .track s{position:absolute; left:0; top:0; bottom:0; background:var(--wheat); opacity:.9}
+.stage{flex:1; min-height:0; position:relative; touch-action:none}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; image-rendering:pixelated}
+.controls{display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center}
+.posts{display:flex; gap:4px; align-items:flex-end; min-height:26px; flex-wrap:wrap}
+.posts i{width:8px; height:22px; background:var(--fence); box-shadow:inset -2px 0 0 var(--post), 0 2px 0 var(--post)}
+.posts i.used{background:transparent; box-shadow:inset 0 0 0 1px var(--line)}
+.posts span{font-size:11px; color:var(--dim); margin-left:6px; align-self:center}
+.btn{font-family:var(--display); font-weight:700; font-size:16px; border:0; border-radius:0; padding:10px 16px; background:var(--wheat); color:var(--post); cursor:pointer; box-shadow:0 4px 0 #A67C2E}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 #A67C2E}
+.btn.alt{background:var(--forest-2); color:var(--text); box-shadow:0 4px 0 #111810}
+.btn.purple{background:var(--slime-hi); color:#2A0C3D; box-shadow:0 4px 0 #6A2A91}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+
+[hidden]{display:none!important}
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(20,28,18,.72)}
+.card{background:var(--forest-2); border:2px solid var(--post); padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:12px; box-shadow:6px 6px 0 #111810}
+.card h2{font-family:var(--display); font-weight:700; font-size:30px; margin:0; line-height:1; color:var(--wheat)}
+.card p{margin:0; font-size:12px; line-height:1.6; color:var(--dim)}
+.card p b{color:var(--text); font-weight:500}
+.big{font-family:var(--display); font-weight:700; font-size:56px; line-height:.9; color:var(--text)}
+.big small{display:block; font-family:var(--mono); font-size:11px; color:var(--dim); letter-spacing:.1em; margin-top:4px; font-weight:400}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:5px 12px; margin:0; font-size:12px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-4px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:12px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:4px; background:var(--forest); overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--wheat)}
+.missions li.done{color:var(--grass)} .missions li.done .mb i{background:var(--grass)}
+.legend{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; font-size:11px; color:var(--dim); align-items:center}
+.legend i{width:14px; height:14px; display:block}
+.toast{position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:9; background:var(--wheat); color:var(--post); padding:7px 14px; font-size:12px; white-space:nowrap; pointer-events:none; font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">FENCE</div>
+    <div class="hud">
+      <div><small>Field</small><b id="hField">1</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="meter"><span>Slime</span><div class="track"><s id="mClaim"></s><i id="mSlime"></i><em title="Overrun at 55%"></em></div><span id="mPct">0%</span></div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Pasture grid. Drag along grid lines to build fence."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Fence</h2>
+        <p>Slime is creeping across your pasture. <b>Drag along the grid lines</b> to build fence, then tap <b>Build</b>. The slime grows into the tiles marked with dots.</p>
+        <div class="legend">
+          <i style="background:var(--slime)"></i><span>slime</span>
+          <i style="box-shadow:inset 0 0 0 2px var(--slime-hi); background:repeating-linear-gradient(45deg, transparent 0 3px, rgba(199,123,240,.35) 3px 5px)"></i><span>grows there next turn unless you fence it off</span>
+          <i style="background:repeating-linear-gradient(0deg, #E9C46A 0 3px, #D4A94A 3px 5px)"></i><span>claimed land, yours for good</span>
+        </div>
+        <p>Seal off any patch with <b>no slime inside</b> and you claim it. Bigger patches score <b>way</b> more, but take longer to close. Unused fence carries over, up to 8. Trap all the slime to clear the field. If slime covers <b>55%</b>, the pasture is lost.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Start</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Overrun</h2>
+        <div class="big"><span id="eScore">0</span><small>points</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Fields cleared</dt><dd id="eFields">0</dd>
+          <dt>Biggest single claim</dt><dd id="eBiggest">0</dd>
+          <dt>Tiles claimed</dt><dd id="eTiles">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn purple" id="rainBtn" type="button">Rainstorm · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Play again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="posts" id="posts" aria-label="Fence left this turn"></div>
+    <button class="btn alt" id="undoBtn" type="button">Undo</button>
+    <button class="btn" id="buildBtn" type="button">Build ▸</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const COLS = 8, ROWS = 11, N = COLS*ROWS, OVERRUN = .55, CARRY = 8;
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0, H=0, dpr=1, cs=40, ox=0, oy=0;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  claim15:{t:'Claim 15 tiles in one patch', g:15, run:G=>G.biggest},
+  claim30:{t:'Claim 30 tiles in one patch', g:30, run:G=>G.biggest},
+  field2: {t:'Clear 2 fields in one run', g:2, run:G=>G.fields},
+  field4: {t:'Clear 4 fields in one run', g:4, run:G=>G.fields},
+  trap8:  {t:'Clear a field with slime in 8 tiles or fewer', g:1, run:G=>G.tightTrap},
+  score1500:{t:'Score 1,500 in one run', g:1500, run:G=>G.score},
+  save8:  {t:'Bank a full 8 fence', g:1, run:G=>G.banked8},
+  tiles250:{t:'Claim 250 tiles (total)', g:250, total:'tiles'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('fence-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('fence-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    P.mprog[id] = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const d = document.createElement('div'); d.className='toast'; d.textContent=t; $('#app').appendChild(d);
+  d.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>d.remove(); }
+const todayKey = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+
+/* ---------- grid helpers ---------- */
+const idx = (x,y) => y*COLS + x;
+const cx = i => i % COLS, cy = i => Math.floor(i / COLS);
+// edge between two orthogonally adjacent cells
+function edgeBetween(a, b){
+  const ax = cx(a), ay = cy(a), bx = cx(b), by = cy(b);
+  if (ay === by) return 'v,' + Math.max(ax,bx) + ',' + ay;
+  return 'h,' + ax + ',' + Math.max(ay,by);
+}
+function neighbors(i){
+  const x = cx(i), y = cy(i), out = [];
+  if (x > 0) out.push(i-1); if (x < COLS-1) out.push(i+1); if (y > 0) out.push(i-COLS); if (y < ROWS-1) out.push(i+COLS);
+  return out;
+}
+const isFence = k => G.fences.has(k) || G.pending.includes(k);
+const open = (a, b) => !isFence(edgeBetween(a, b));
+
+/* ---------- state ---------- */
+let G;
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', rs:seed|0, daily:!!daily, key, level:1, score:0, fields:0, biggest:0, tiles:0, tightTrap:0, banked8:0,
+        doneM:[], rained:false, floats:[], flashes:[] };
+  newField();
+}
+function newField(){
+  G.cell = new Array(N).fill(0);     // 0 grass, 1 slime, 2 claimed
+  G.fences = new Set(); G.pending = []; G.turn = 0; G.history = [];
+  G.budget = 4 + Math.min(2, Math.floor((G.level-1)/2));
+  const seeds = G.level >= 5 ? 3 : G.level >= 3 ? 2 : 1;
+  for (let s=0; s<seeds; s++){
+    for (let a=0; a<50; a++){
+      const x = 1 + Math.floor(rand()*(COLS-2)), y = 1 + Math.floor(rand()*(ROWS-2)), i = idx(x,y);
+      if (G.cell[i] === 0 && !neighbors(i).some(n => G.cell[n] === 1)){ G.cell[i] = 1; break; }
+    }
+  }
+  pickTargets();
+}
+function growthK(){ return Math.min(7, 1 + G.level + Math.floor(G.turn/4)); }
+function frontier(){
+  const f = [];
+  for (let i=0;i<N;i++){ if (G.cell[i] !== 0) continue; if (neighbors(i).some(n => G.cell[n] === 1 && open(i, n))) f.push(i); }
+  return f;
+}
+function pickTargets(){
+  const f = frontier();
+  for (let i=f.length-1;i>0;i--){ const j = Math.floor(rand()*(i+1)); [f[i],f[j]] = [f[j],f[i]]; }
+  G.targets = f.slice(0, growthK());
+}
+// regions of grass+slime cells joined by open edges
+function regions(){
+  const seen = new Array(N).fill(false), out = [];
+  for (let s=0;s<N;s++){
+    if (seen[s] || G.cell[s] === 2) continue;
+    const stack = [s], cells = []; let slime = 0; seen[s] = true;
+    while (stack.length){
+      const i = stack.pop(); cells.push(i); if (G.cell[i] === 1) slime++;
+      for (const n of neighbors(i)) if (!seen[n] && G.cell[n] !== 2 && open(i,n)){ seen[n] = true; stack.push(n); }
+    }
+    out.push({ cells, slime });
+  }
+  return out;
+}
+const claimPts = a => Math.round(a * (1 + a/8) * (1 + (G.level-1)*.25));
+
+/* ---------- turn ---------- */
+function build(){
+  if (G.phase !== 'play') return;
+  G.pending.forEach(k => G.fences.add(k)); const spent = G.pending.length; G.pending = [];
+  // claims
+  let claimedNow = 0;
+  regions().forEach(r => {
+    if (r.slime > 0) return;
+    r.cells.forEach(i => G.cell[i] = 2);
+    const pts = claimPts(r.cells.length);
+    G.score += pts; G.tiles += r.cells.length; claimedNow += r.cells.length;
+    G.biggest = Math.max(G.biggest, r.cells.length);
+    const mx = r.cells.reduce((a,i)=>a+cx(i),0)/r.cells.length, my = r.cells.reduce((a,i)=>a+cy(i),0)/r.cells.length;
+    G.floats.push({ t:'+'+pts, x:mx+.5, y:my+.5, life:1 });
+    G.flashes.push({ cells:r.cells, life:1 });
+  });
+  if (claimedNow) buzz([15,30,15]);
+  // growth
+  const grew = [];
+  G.targets.forEach(i => { if (G.cell[i] === 0 && neighbors(i).some(n => G.cell[n] === 1 && open(i,n))){ G.cell[i] = 1; grew.push(i); } });
+  G.history.push(grew);
+  G.turn++;
+  checkMissions({ tiles:claimedNow });
+  const slime = G.cell.filter(c => c === 1).length;
+  if (slime / N > OVERRUN){ G.phase = 'dead'; buzz([50,60,80]); setTimeout(endRun, 700); return; }
+  pickTargets();
+  if (!G.targets.length){ fieldClear(slime); return; }
+  G.budget = Math.min(CARRY, G.budget - spent + (4 + Math.min(2, Math.floor((G.level-1)/2))));
+  if (G.budget >= CARRY){ G.banked8 = 1; checkMissions({}); }
+}
+function fieldClear(slime){
+  G.phase = 'between';
+  const claimed = G.cell.filter(c => c === 2).length;
+  const bonus = Math.round(claimed * 5 * G.level);
+  G.score += bonus; G.fields++;
+  if (slime <= 8) G.tightTrap = 1;
+  checkMissions({});
+  G.banner = { t:'Field ' + G.level + ' clear', s:'slime trapped · +' + bonus + ' bonus', life:1 };
+  buzz([20,40,20,40]);
+  setTimeout(() => { G.level++; newField(); G.phase = 'play'; G.banner = { t:'Field ' + G.level, s: G.level >= 3 ? 'more slime, faster growth' : 'faster growth', life:1 }; }, reduced ? 900 : 1700);
+}
+function rain(){
+  if (P.stars < 1 || G.rained) return;
+  P.stars--; save(); G.rained = true;
+  for (let k=0;k<3 && G.history.length;k++) G.history.pop().forEach(i => { if (G.cell[i] === 1) G.cell[i] = 0; });
+  // make sure at least a quarter of the slime is gone
+  let slime = [...G.cell.keys()].filter(i => G.cell[i] === 1);
+  while (slime.length / N > OVERRUN - .12 && slime.length > 1){
+    const edge = slime.filter(i => neighbors(i).some(n => G.cell[n] === 0));
+    const pick = (edge.length ? edge : slime)[Math.floor(rand()*(edge.length || slime.length))];
+    G.cell[pick] = 0; slime = slime.filter(i => i !== pick);
+  }
+  G.phase = 'play'; pickTargets();
+  $('#end').hidden = true;
+  G.banner = { t:'Rainstorm', s:'the slime washed back', life:1 };
+}
+
+/* ---------- input: drag along grid lines ---------- */
+let drag = null;
+function vertexAt(px, py, loose){
+  const vx = Math.round((px-ox)/cs), vy = Math.round((py-oy)/cs);
+  if (vx < 0 || vy < 0 || vx > COLS || vy > ROWS) return null;
+  const d = Math.hypot(px - (ox+vx*cs), py - (oy+vy*cs));
+  return d < cs*(loose ? .5 : .42) ? [vx, vy] : null;
+}
+function edgeKey(a, b){
+  if (a[1] === b[1]) return (a[1] === 0 || a[1] === ROWS) ? null : 'h,' + Math.min(a[0],b[0]) + ',' + a[1];
+  return (a[0] === 0 || a[0] === COLS) ? null : 'v,' + a[0] + ',' + Math.min(a[1],b[1]);
+}
+function tryEdge(a, b){
+  const k = edgeKey(a, b); if (!k) return;
+  if (G.fences.has(k)) return;
+  const pi = G.pending.indexOf(k);
+  if (pi >= 0) return;
+  if (G.pending.length >= G.budget){ G.shake = 1; return; }
+  G.pending.push(k); buzz(4);
+}
+function pos(e){ const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+cv.addEventListener('pointerdown', e => {
+  if (G.phase !== 'play') return;
+  cv.setPointerCapture(e.pointerId);
+  const [px, py] = pos(e);
+  drag = { id:e.pointerId, v:vertexAt(px, py, true), moved:false, sx:px, sy:py };
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const [px, py] = pos(e); G.hover = [px, py];
+  if (Math.hypot(px-drag.sx, py-drag.sy) > 6) drag.moved = true;
+  const v = vertexAt(px, py);
+  if (!v) return;
+  if (!drag.v){ drag.v = v; return; }
+  const dx = v[0]-drag.v[0], dy = v[1]-drag.v[1];
+  if (dx === 0 && dy === 0) return;
+  if (dx !== 0 && dy !== 0){ if (Math.abs(dx)+Math.abs(dy) > 2) drag.v = v; return; }
+  const steps = Math.abs(dx+dy), sx = Math.sign(dx), sy = Math.sign(dy);
+  for (let k=0;k<steps;k++){ const a = drag.v, b = [a[0]+sx, a[1]+sy]; tryEdge(a, b); drag.v = b; }
+});
+function endDrag(e){
+  if (!drag || drag.id !== e.pointerId) return;
+  if (!drag.moved){ // tap: remove a pending fence near the tap
+    const [px, py] = pos(e); let best = null, bd = cs*.35;
+    G.pending.forEach(k => { const m = edgeMid(k), d = Math.hypot(px-m[0], py-m[1]); if (d < bd){ bd = d; best = k; } });
+    if (best) G.pending.splice(G.pending.indexOf(best), 1);
+  }
+  drag = null; G.hover = null;
+}
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+function edgeEnds(k){ const [t,a,b] = k.split(','); const x = +a, y = +b; return t === 'h' ? [[x,y],[x+1,y]] : [[x,y],[x,y+1]]; }
+function edgeMid(k){ const [p,q] = edgeEnds(k); return [ox + (p[0]+q[0])/2*cs, oy + (p[1]+q[1])/2*cs]; }
+$('#undoBtn').addEventListener('click', () => { G.pending.pop(); });
+$('#buildBtn').addEventListener('click', build);
+addEventListener('keydown', e => { if (e.key === 'Enter' && G.phase === 'play' && $('#ready').hidden && $('#end').hidden) build(); if ((e.key === 'z' || e.key === 'Backspace') && G.phase === 'play') G.pending.pop(); });
+
+/* ---------- render ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr;
+  cs = Math.floor(Math.min((W-8)/COLS, (H-8)/ROWS)); ox = Math.round((W - cs*COLS)/2); oy = Math.round((H - cs*ROWS)/2); }
+function render(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#1F2A1C'; ctx.fillRect(0,0,W,H);
+  if (!G){ requestAnimationFrame(render); return; }
+  const t = now/1000;
+  // preview: patches that would be claimed by pending fence
+  const wouldClaim = new Set();
+  if (G.phase === 'play' && G.pending.length) regions().forEach(r => { if (!r.slime) r.cells.forEach(i => wouldClaim.add(i)); });
+  const tset = new Set(G.phase === 'play' ? G.targets : []);
+  const p = Math.max(2, Math.round(cs/10));
+  for (let i=0;i<N;i++){
+    const x = ox + cx(i)*cs, y = oy + cy(i)*cs, c = G.cell[i];
+    if (c === 2){
+      ctx.fillStyle = '#E9C46A'; ctx.fillRect(x,y,cs,cs);
+      ctx.fillStyle = '#D4A94A'; for (let k=p; k<cs; k+=p*3) ctx.fillRect(x, y+k, cs, p);
+      ctx.fillStyle = '#B98B34'; for (let k=p*2; k<cs; k+=p*6) ctx.fillRect(x + (k % (p*4)), y + k - p, p, p);
+    } else if (c === 1){
+      ctx.fillStyle = '#9B3FD0'; ctx.fillRect(x,y,cs,cs);
+      const wob = reduced ? 0 : Math.round(Math.sin(t*3 + i)*p*.6);
+      ctx.fillStyle = '#C77BF0'; ctx.fillRect(x + p*2, y + p*2 + wob, p*2, p*2); ctx.fillRect(x + cs - p*4, y + cs - p*5 - wob, p, p);
+      ctx.fillStyle = '#6A2A91'; ctx.fillRect(x, y + cs - p, cs, p);
+    } else {
+      ctx.fillStyle = ((cx(i)+cy(i)) % 2) ? '#7FB85E' : '#76AE55'; ctx.fillRect(x,y,cs,cs);
+      ctx.fillStyle = '#5E9A43'; ctx.fillRect(x + p*2, y + p*3, p, p*2); ctx.fillRect(x + cs - p*3, y + cs - p*4, p, p*2);
+      if (wouldClaim.has(i)){ ctx.fillStyle = `rgba(233,196,106,${.35 + Math.sin(t*6)*.12})`; ctx.fillRect(x,y,cs,cs); }
+      if (tset.has(i)){
+        const a = .55 + Math.sin(t*5 + i)*.25;
+        ctx.fillStyle = `rgba(155,63,208,${a*.5})`;
+        for (let yy=0; yy<cs; yy+=p*3) for (let xx=(yy/(p*3))%2*p*1.5; xx<cs; xx+=p*3) ctx.fillRect(x+xx, y+yy, p, p);
+        ctx.strokeStyle = `rgba(199,123,240,${a})`; ctx.lineWidth = p; ctx.strokeRect(x+p/2, y+p/2, cs-p, cs-p);
+      }
+    }
+  }
+  // claim flashes
+  G.flashes = G.flashes.filter(f => (f.life -= .025) > 0);
+  G.flashes.forEach(f => { ctx.fillStyle = `rgba(255,248,220,${f.life*.6})`; f.cells.forEach(i => ctx.fillRect(ox+cx(i)*cs, oy+cy(i)*cs, cs, cs)); });
+  // vertices
+  ctx.fillStyle = 'rgba(31,42,28,.35)';
+  for (let y=0;y<=ROWS;y++) for (let x=0;x<=COLS;x++) ctx.fillRect(ox+x*cs-1, oy+y*cs-1, 2, 2);
+  // border fence
+  ctx.strokeStyle = '#4A2E17'; ctx.lineWidth = p*2; ctx.strokeRect(ox, oy, cs*COLS, cs*ROWS);
+  // fences
+  const drawFence = (k, pending) => {
+    const [a, b] = edgeEnds(k), x1 = ox+a[0]*cs, y1 = oy+a[1]*cs, x2 = ox+b[0]*cs, y2 = oy+b[1]*cs;
+    ctx.fillStyle = pending ? '#C08A52' : '#8A5A2F';
+    const th = p*1.6;
+    if (a[1] === b[1]){ ctx.fillRect(x1, y1 - th*.9, cs, th*.7); ctx.fillRect(x1, y1 + th*.2, cs, th*.7); }
+    else { ctx.fillRect(x1 - th*.9, y1, th*.7, cs); ctx.fillRect(x1 + th*.2, y1, th*.7, cs); }
+    ctx.fillStyle = pending ? '#8A5A2F' : '#4A2E17';
+    [[x1,y1],[x2,y2]].forEach(([px,py]) => ctx.fillRect(px - p*1.2, py - p*1.2, p*2.4, p*2.4));
+  };
+  G.fences.forEach(k => drawFence(k, false));
+  G.pending.forEach(k => drawFence(k, true));
+  // drag cursor
+  if (drag && drag.v){ ctx.strokeStyle = '#F1EAD4'; ctx.lineWidth = 2; ctx.strokeRect(ox+drag.v[0]*cs - p*2, oy+drag.v[1]*cs - p*2, p*4, p*4); }
+  // floats
+  G.floats = G.floats.filter(f => (f.life -= .012) > 0);
+  G.floats.forEach(f => {
+    ctx.globalAlpha = Math.min(1, f.life*2); ctx.font = `700 ${Math.round(cs*.62)}px "Pixelify Sans", monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const X = ox + f.x*cs, Y = oy + f.y*cs - (1-f.life)*cs*1.2;
+    ctx.fillStyle = '#4A2E17'; ctx.fillText(f.t, X+2, Y+2); ctx.fillStyle = '#FFF8DC'; ctx.fillText(f.t, X, Y);
+  });
+  ctx.globalAlpha = 1;
+  if (G.banner){
+    const b = G.banner; b.life -= .008; if (b.life <= 0) G.banner = null;
+    else {
+      ctx.globalAlpha = Math.min(1, b.life*3);
+      const bw = Math.min(W-24, cs*7), bh = cs*1.9, bx = (W-bw)/2, by = oy + cs*ROWS*.38;
+      ctx.fillStyle = '#4A2E17'; ctx.fillRect(bx+5, by+5, bw, bh);
+      ctx.fillStyle = '#E9C46A'; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = '#4A2E17'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font = `700 ${Math.round(cs*.7)}px "Pixelify Sans", monospace`; ctx.fillText(b.t, W/2, by + bh*.38);
+      ctx.font = `500 ${Math.round(cs*.3)}px "DM Mono", monospace`; ctx.fillText(b.s, W/2, by + bh*.74);
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (G.phase === 'dead'){ ctx.fillStyle = 'rgba(155,63,208,.25)'; ctx.fillRect(ox, oy, cs*COLS, cs*ROWS); }
+  hud();
+  requestAnimationFrame(render);
+}
+function hud(){
+  $('#hField').textContent = G.level;
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+  const slime = G.cell.filter(c => c === 1).length, claim = G.cell.filter(c => c === 2).length;
+  $('#mSlime').style.width = (slime/N*100) + '%';
+  $('#mClaim').style.left = (100 - claim/N*100) + '%'; $('#mClaim').style.width = (claim/N*100) + '%';
+  $('#mPct').textContent = Math.round(slime/N*100) + '%';
+  const posts = $('#posts'), used = G.pending.length;
+  const key = G.budget + ':' + used;
+  if (posts.dataset.k !== key){
+    posts.dataset.k = key;
+    posts.innerHTML = Array.from({length:G.budget}, (_,i) => '<i class="' + (i >= G.budget-used ? 'used' : '') + '"></i>').join('') + '<span>' + (G.budget-used) + ' left</span>';
+  }
+  const playing = G.phase === 'play';
+  $('#buildBtn').disabled = !playing; $('#undoBtn').disabled = !playing || !used;
+}
+
+/* ---------- flow ---------- */
+function endRun(){
+  const prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, G.score); else P.best = Math.max(P.best, G.score);
+  checkMissions({}); save();
+  $('#eTitle').textContent = G.score > prev && G.score > 0 ? 'New best!' : 'Overrun';
+  $('#eScore').textContent = G.score.toLocaleString();
+  const gap = prev - G.score;
+  $('#eMsg').textContent = 'The slime took over field ' + G.level + '.' + (gap > 0 && gap <= Math.max(150, prev*.12) ? ' Only ' + gap + ' points off your best.' : '');
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#eFields').textContent = G.fields; $('#eBiggest').textContent = G.biggest + ' tiles'; $('#eTiles').textContent = G.tiles;
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const rb = $('#rainBtn'); rb.hidden = G.rained; rb.disabled = P.stars < 1;
+  rb.textContent = P.stars < 1 ? 'Rainstorm · need 1★' : 'Rainstorm, wash the slime back · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily: the same pastures for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false);
+  // a few example fences behind the menu so the first view shows the game
+  ['v,3,4','v,3,5','h,3,6','h,4,6'].forEach(k => G.fences.add(k));
+}
+function play(daily){ $('#ready').hidden = true; $('#end').hidden = true; fresh(daily); G.phase = 'play'; G.banner = { t:'Field 1', s:'fence off a patch with no slime', life:1 }; }
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#rainBtn').addEventListener('click', rain);
+addEventListener('resize', resize);
+resize(); ready();
+requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>

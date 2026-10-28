@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07060A">
+<meta name="description" content="A pixel-art cave climber. You are a shrinking candle flame: refuel on candles, dodge drips, wind and rock.">
+<title>Last Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --void:#07060A; --rock:#1A1620; --rock-2:#2A2330; --text:#F3E6C8; --dim:#8C7F74;
+  --wax:#E8DCC2; --flame:#FFD166; --ember:#F7931E; --deep:#C4441C; --water:#7FB6D9;
+  --display:"Silkscreen", "Courier New", monospace;
+  --body:"VT323", "Courier New", monospace;
+}
+html,body{height:100%}
+body{background:var(--void); color:var(--text); font-family:var(--body); font-size:18px; overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:700; font-size:22px; line-height:1; letter-spacing:.04em; color:var(--flame); text-shadow:0 0 12px rgba(247,147,30,.6), 2px 2px 0 var(--deep)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-family:var(--display); font-size:8px; letter-spacing:.1em; color:var(--dim)}
+.hud b{font-size:24px; font-weight:400; line-height:1; font-variant-numeric:tabular-nums}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; background:var(--void); box-shadow:0 0 0 2px var(--rock-2)}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; image-rendering:pixelated}
+.wax{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; font-family:var(--display); font-size:9px; color:var(--dim)}
+.wax .t{height:10px; background:var(--rock); box-shadow:inset 0 0 0 1px var(--rock-2); position:relative}
+.wax .t i{position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg, var(--deep), var(--ember) 40%, var(--flame)); transition:width .1s linear}
+.wax .t.low i{animation:blink .4s steps(2) infinite}
+@keyframes blink{50%{opacity:.4}}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(7,6,10,.7)}
+.card{background:#110E15; border:2px solid var(--rock-2); padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:10px; box-shadow:0 0 50px rgba(247,147,30,.12)}
+.card h2{font-family:var(--display); font-weight:700; font-size:24px; margin:0; line-height:1.1; color:var(--flame)}
+.card p{margin:0; font-size:18px; line-height:1.2; color:#BFB2A3}
+.card p b{color:var(--text); font-weight:400}
+.big{font-family:var(--display); font-weight:700; font-size:48px; line-height:1; color:var(--text); text-shadow:0 0 18px rgba(255,209,102,.4)}
+.big small{display:block; font-family:var(--display); font-size:9px; font-weight:400; color:var(--dim); letter-spacing:.1em; margin-top:6px; text-shadow:none}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:2px 12px; margin:0; font-size:19px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.btn{font-family:var(--display); font-weight:700; font-size:12px; border:0; padding:12px 10px; background:var(--flame); color:#2A1004; cursor:pointer; box-shadow:0 4px 0 var(--deep)}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 var(--deep)}
+.btn.alt{background:#1E1924; color:var(--text); box-shadow:0 4px 0 #050407}
+.btn.wax{background:var(--wax); color:#2A1004; box-shadow:0 4px 0 #9C8E72}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+.sec{font-family:var(--display); font-size:8px; letter-spacing:.12em; color:var(--dim); margin-bottom:-2px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:2px 10px; font-size:17px}
+.missions li small{color:var(--dim); font-size:16px}
+.missions .mb{grid-column:1/-1; height:3px; background:var(--rock); overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--ember)}
+.missions li.done{color:var(--flame)} .missions li.done .mb i{background:var(--flame)}
+.legend{display:grid; grid-template-columns:18px 1fr; gap:4px 10px; font-size:17px; color:#BFB2A3; align-items:center}
+.legend i{display:block; width:10px; height:10px; margin:auto}
+.toast{position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:9; background:var(--flame); color:#2A1004; padding:6px 12px; font-size:17px; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">LAST LIGHT</div>
+    <div class="hud">
+      <div><small>DEPTH</small><b id="hDepth">0m</b></div>
+      <div><small>CANDLES</small><b id="hCandles">0</b></div>
+      <div><small>BEST</small><b id="hBest">0m</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A dark cave. You are a small flame drifting upward. Drag to move."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Last Light</h2>
+        <p>You are a flame drifting up through a cave. You <b>shrink every second</b>, and the smaller you get, the less of the cave you can see.</p>
+        <div class="legend">
+          <i style="background:#FFD166; box-shadow:0 0 8px #F7931E"></i><span>candles: brush past to refuel</span>
+          <i style="background:#F7931E; width:5px; height:5px"></i><span>embers: a little wax each</span>
+          <i style="background:#7FB6D9; width:3px; height:10px"></i><span>drips: they hiss you smaller</span>
+          <i style="background:#9AA4B8; height:2px; width:14px"></i><span>wind: pushes you and eats wax</span>
+          <i style="background:#3B3140"></i><span>rock: scrapes cost wax too</span>
+        </div>
+        <p>Drag anywhere to drift. Candles glow even in the dark, so steer toward the next one.</p>
+        <div class="sec">MISSIONS</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Light</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo" style="font-size:16px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Snuffed</h2>
+        <div class="big"><span id="eDepth">0</span>m<small>DEPTH REACHED</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Candles lit</dt><dd id="eCandles">0</dd>
+          <dt>Embers</dt><dd id="eEmbers">0</dd>
+          <dt>Longest clean stretch</dt><dd id="eClean">0</dd>
+        </dl>
+        <div class="sec">MISSIONS · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn wax" id="wickBtn" type="button">Second wick · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Relight</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wax"><span>WAX</span><div class="t" id="waxT"><i id="waxBar"></i></div><span id="waxPct">100%</span></div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const LW = 144; let LH = 256, W = 0, H = 0, scale = 1;
+const lc = document.createElement('canvas'), l = lc.getContext('2d');
+const dk = document.createElement('canvas'), d = dk.getContext('2d');
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  d100:{t:'Reach 100 m', g:100, run:G=>G.m()},
+  d250:{t:'Reach 250 m', g:250, run:G=>G.m()},
+  d500:{t:'Reach 500 m', g:500, run:G=>G.m()},
+  c10: {t:'Light 10 candles in one run', g:10, run:G=>G.candles},
+  c20: {t:'Light 20 candles in one run', g:20, run:G=>G.candles},
+  clean80:{t:'Go 80 m without a single hit', g:80, run:G=>G.cleanBest},
+  em40:{t:'Collect 40 embers in one run', g:40, run:G=>G.embers},
+  tot60:{t:'Light 60 candles (total)', g:60, total:'candles'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('lastlight-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('lastlight-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  let ch = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; ch = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  if (ch) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p+' / '+m.g)+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+
+/* ---------- cave ---------- */
+function center(wy){ return LW/2 + Math.sin(wy*.011 + G.s1)*LW*.17 + Math.sin(wy*.029 + G.s2)*LW*.07; }
+function halfw(wy){ return Math.max(17, LW*.37 - wy*.0045) + Math.sin(wy*.047 + G.s3)*5 + Math.sin(wy*.13 + G.s1)*1.5; }
+
+/* ---------- rock texture ---------- */
+const tile = document.createElement('canvas'); tile.width = tile.height = 48;
+(function(){ const t = tile.getContext('2d'); const cols = ['#1A1620','#1F1A26','#241E2B','#16121B'];
+  for (let y=0;y<48;y++) for (let x=0;x<48;x++){ const h = Math.sin(x*12.9898 + y*78.233)*43758.5453; const f = h - Math.floor(h);
+    t.fillStyle = cols[f < .55 ? 0 : f < .8 ? 1 : f < .93 ? 2 : 3]; t.fillRect(x,y,1,1); } })();
+let rockPat = null;
+
+/* ---------- state ---------- */
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', rs:seed|0, daily:!!daily, key, cam:0, p:{x:LW/2, wy:40}, s:1, t:0,
+        candles:0, embers:0, cleanFrom:0, cleanBest:0, lastHit:null, hitCd:0, invuln:0, wicked:false,
+        items:[], drips:[], winds:[], moths:[], parts:[], nextCandle:90, nextEmber:60, nextWind:260, dripT:1.5, mothT:3, doneM:[],
+        m(){ return Math.floor(this.p.wy/10); } };
+  G.s1 = rand()*6.28; G.s2 = rand()*6.28; G.s3 = rand()*6.28;
+  G.p.x = center(G.p.wy);
+}
+function spawnAhead(){
+  const top = G.cam + LH + 30;
+  while (G.nextCandle < top){
+    const wy = G.nextCandle, c = center(wy), hw = halfw(wy);
+    G.items.push({ type:'candle', x: c + rr(-.6,.6)*(hw-6), wy, lit:true });
+    G.nextCandle += rr(95, 150) + G.nextCandle*.012;
+  }
+  while (G.nextEmber < top){
+    const wy = G.nextEmber, c = center(wy), hw = halfw(wy), ox = rr(-.5,.5)*(hw-6);
+    for (let k=0;k<3;k++){ const y = wy + k*9; G.items.push({ type:'ember', x: center(y) + ox + Math.sin(k)*3, wy:y, lit:true }); }
+    G.nextEmber += rr(55, 90);
+  }
+  while (G.nextWind < top){
+    const wy = G.nextWind, h = rr(26, 44);
+    G.winds.push({ y0:wy, y1:wy+h, dir: rand() < .5 ? -1 : 1, str: rr(22, 34) + Math.min(20, wy/80) });
+    G.nextWind += rr(170, 280) - Math.min(90, wy/20);
+  }
+}
+
+/* ---------- input ---------- */
+let down = null, pdx = 0, pdy = 0; const keys = {};
+cv.addEventListener('pointerdown', e => { down = { id:e.pointerId, x:e.clientX, y:e.clientY }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!down || down.id !== e.pointerId) return; pdx += e.clientX - down.x; pdy += e.clientY - down.y; down.x = e.clientX; down.y = e.clientY; });
+const up = e => { if (down && down.id === e.pointerId) down = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { if (e.key.startsWith('Arrow')){ keys[e.key] = true; e.preventDefault(); } });
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* ---------- sim ---------- */
+const flameR = () => 1.5 + G.s*3.2;
+const lightR = () => 10 + G.s*46;
+function hurt(amount, cause){
+  if (G.invuln > 0) return;
+  G.s -= amount; G.lastHit = { cause, t:G.t };
+  G.cleanBest = Math.max(G.cleanBest, Math.floor((G.p.wy - G.cleanFrom)/10)); G.cleanFrom = G.p.wy;
+  for (let i=0;i<8;i++) G.parts.push({ x:G.p.x, wy:G.p.wy, vx:rr(-30,30), vy:rr(-10,30), life:1, c: cause === 'drip' ? '#7FB6D9' : '#8C7F74' });
+  buzz(20);
+}
+function update(dt){
+  if (G.phase !== 'play') return;
+  G.t += dt;
+  const speed = Math.min(44, 20 + G.p.wy*.012);
+  G.cam += speed*dt;
+  // steer
+  let dx = pdx * LW / W * 1.1, dy = -pdy * LW / W * 1.1; pdx = pdy = 0;
+  const k = 70*dt; if (keys.ArrowLeft) dx -= k; if (keys.ArrowRight) dx += k; if (keys.ArrowUp) dy += k; if (keys.ArrowDown) dy -= k;
+  G.p.x += dx; G.p.wy += dy + speed*dt;
+  G.p.wy = Math.max(G.cam + 14, Math.min(G.cam + LH - 18, G.p.wy));
+  // wind
+  let inWind = false;
+  for (const w of G.winds){ if (G.p.wy > w.y0 && G.p.wy < w.y1){ G.p.x += w.dir*w.str*dt; inWind = true; } }
+  if (inWind){ G.s -= .07*dt; if (!G.lastHit || G.t - G.lastHit.t > .6) { G.lastHit = { cause:'wind', t:G.t }; } }
+  // walls
+  const c = center(G.p.wy), hw = halfw(G.p.wy), r = flameR();
+  if (G.p.x - r < c - hw){ G.p.x = c - hw + r + 2; if (G.hitCd <= 0){ hurt(.13, 'rock'); G.hitCd = .5; } }
+  if (G.p.x + r > c + hw){ G.p.x = c + hw - r - 2; if (G.hitCd <= 0){ hurt(.13, 'rock'); G.hitCd = .5; } }
+  G.hitCd -= dt; G.invuln = Math.max(0, G.invuln - dt);
+  // burn
+  G.s -= (.048 + Math.min(.04, G.p.wy/25000)) * dt;
+  spawnAhead();
+  // pickups
+  for (const it of G.items){
+    if (!it.lit) continue;
+    const dist = Math.hypot(it.x - G.p.x, it.wy - G.p.wy);
+    if (it.type === 'candle' && dist < r + 5){ it.lit = false; G.s = Math.min(1, G.s + .3); G.candles++; buzz(12); burst(it.x, it.wy, '#FFD166', 14); checkMissions({ candles:1 }); }
+    if (it.type === 'ember' && dist < r + 3){ it.lit = false; G.s = Math.min(1, G.s + .035); G.embers++; burst(it.x, it.wy, '#F7931E', 4); }
+  }
+  G.items = G.items.filter(it => it.wy > G.cam - 20);
+  // drips
+  G.dripT -= dt;
+  if (G.p.wy > 120 && G.dripT <= 0){
+    const wy = G.cam + LH + 6, cc = center(wy), hh = halfw(wy);
+    const aim = rand() < .45 ? G.p.x + rr(-12,12) : cc + rr(-.8,.8)*hh;
+    G.drips.push({ x: Math.max(cc-hh+3, Math.min(cc+hh-3, aim)), wy, v: rr(60, 85) });
+    G.dripT = Math.max(.35, 1.6 - G.p.wy/900) * rr(.6, 1.3);
+  }
+  for (const dp of G.drips){
+    dp.wy -= dp.v*dt;
+    if (!dp.gone && Math.abs(dp.x - G.p.x) < r + 1.5 && Math.abs(dp.wy - G.p.wy) < r + 2){ dp.gone = true; hurt(.12, 'drip'); }
+  }
+  G.drips = G.drips.filter(dp => !dp.gone && dp.wy > G.cam - 10);
+  // moths, deeper down
+  if (G.p.wy > 1500){
+    G.mothT -= dt;
+    if (G.mothT <= 0){ const wy = G.cam + LH + 4; G.moths.push({ x:center(wy) + rr(-15,15), wy, ph:rand()*6 }); G.mothT = rr(3, 6) - Math.min(2, G.p.wy/4000); }
+  }
+  for (const m of G.moths){
+    m.ph += dt*9; const ang = Math.atan2(G.p.wy - m.wy, G.p.x - m.x);
+    m.x += (Math.cos(ang)*26 + Math.sin(m.ph)*30)*dt; m.wy += (Math.sin(ang)*26 + Math.cos(m.ph*1.3)*20)*dt;
+    if (!m.gone && Math.hypot(m.x - G.p.x, m.wy - G.p.wy) < r + 2){ m.gone = true; hurt(.1, 'moth'); }
+  }
+  G.moths = G.moths.filter(m => !m.gone && m.wy > G.cam - 20);
+  // particles
+  for (const p of G.parts){ p.x += p.vx*dt; p.wy += p.vy*dt; p.life -= dt*1.8; }
+  G.parts = G.parts.filter(p => p.life > 0);
+  G.winds = G.winds.filter(w => w.y1 > G.cam - 10);
+  G.cleanBest = Math.max(G.cleanBest, Math.floor((G.p.wy - G.cleanFrom)/10));
+  checkMissions({});
+  if (G.s <= 0){ G.s = 0; G.phase = 'dead'; buzz([40,80,40]); setTimeout(endRun, 900); }
+}
+function burst(x, wy, c, n){ for (let i=0;i<n;i++) G.parts.push({ x, wy, vx:rr(-35,35), vy:rr(-20,40), life:1, c }); }
+
+/* ---------- render ---------- */
+function resize(){
+  const r = stage.getBoundingClientRect(); W = r.width; H = r.height;
+  scale = W / LW; LH = Math.ceil(H / scale);
+  lc.width = dk.width = LW; lc.height = dk.height = LH;
+  cv.width = Math.round(W * Math.min(2, devicePixelRatio||1)); cv.height = Math.round(H * Math.min(2, devicePixelRatio||1));
+  rockPat = l.createPattern(tile, 'repeat');
+}
+const SY = wy => Math.round(LH - (wy - G.cam));
+function drawFlame(c, x, y, s, t){
+  const k = s, f = reduced ? 0 : (Math.sin(t*23) + Math.sin(t*37))*.5;
+  const h = Math.round(3 + k*8 + f), w = Math.round(2 + k*3);
+  x = Math.round(x); y = Math.round(y);
+  c.fillStyle = '#C4441C'; c.fillRect(x - w, y - h + 2, w*2 + 1, h);
+  c.fillStyle = '#F7931E'; c.fillRect(x - w + 1, y - h + 1, w*2 - 1, h - 1);
+  c.fillStyle = '#FFD166'; c.fillRect(x - Math.max(1, w - 2), y - h + 3, Math.max(1, w*2 - 3), Math.max(1, h - 4));
+  c.fillStyle = '#FFF6D5'; c.fillRect(x - Math.max(0, w - 3), y - Math.round(h*.45), Math.max(1, w*2 - 5), Math.max(1, Math.round(h*.35)));
+  c.fillStyle = '#C4441C'; c.fillRect(x + Math.round(f), y - h - 1, 1, 2);
+}
+function render(now){
+  const t = now/1000;
+  l.imageSmoothingEnabled = false;
+  l.fillStyle = '#07060A'; l.fillRect(0,0,LW,LH);
+  if (!G){ return; }
+  // walls
+  rockPat.setTransform(new DOMMatrix().translate(0, Math.round(G.cam) % 48));
+  l.fillStyle = rockPat;
+  for (let sy=0; sy<LH; sy+=2){
+    const wy = G.cam + (LH - sy), c = center(wy), hw = halfw(wy);
+    const a = Math.round(c - hw), b = Math.round(c + hw);
+    l.fillRect(0, sy, a, 2); l.fillRect(b, sy, LW - b, 2);
+    l.fillStyle = '#3B3140'; l.fillRect(a-1, sy, 1, 2); l.fillRect(b, sy, 1, 2); l.fillStyle = rockPat;
+  }
+  // embers + candles bodies
+  for (const it of G.items){
+    const y = SY(it.wy), x = Math.round(it.x);
+    if (it.type === 'ember'){ if (it.lit){ l.fillStyle = (Math.floor(t*6 + it.wy) % 2) ? '#F7931E' : '#FFD166'; l.fillRect(x, y, 2, 2); } }
+    else { l.fillStyle = '#E8DCC2'; l.fillRect(x-2, y, 4, 6); l.fillStyle = '#B9AB8E'; l.fillRect(x+1, y, 1, 6); l.fillStyle = '#2A2330'; l.fillRect(x, y-1, 1, 1); }
+  }
+  // wind streaks
+  for (const w of G.winds){
+    const y0 = SY(w.y1), y1 = SY(w.y0);
+    for (let yy = y0; yy < y1; yy += 5){
+      const off = ((t * w.str * 2 * w.dir) + yy*13) % LW;
+      const x = ((off % LW) + LW) % LW;
+      l.fillStyle = 'rgba(154,164,184,.45)'; l.fillRect(Math.round(x), yy, 10, 1); l.fillRect(Math.round((x + LW/2) % LW), yy + 2, 6, 1);
+    }
+  }
+  // moths
+  for (const m of G.moths){ const x = Math.round(m.x), y = SY(m.wy), fl = Math.floor(t*14) % 2;
+    l.fillStyle = '#CFC3B0'; l.fillRect(x-1-fl, y, 1+fl, 2); l.fillRect(x+1, y, 1+fl, 2); l.fillStyle = '#6E6258'; l.fillRect(x, y, 1, 3); }
+  // drips
+  l.fillStyle = '#7FB6D9';
+  for (const dp of G.drips){ const x = Math.round(dp.x), y = SY(dp.wy); l.fillRect(x, y - 3, 1, 3); l.fillRect(x, y, 1, 1); }
+  // particles
+  for (const p of G.parts){ l.globalAlpha = Math.max(0, p.life); l.fillStyle = p.c; l.fillRect(Math.round(p.x), SY(p.wy), 1, 1); }
+  l.globalAlpha = 1;
+
+  // darkness with banded light
+  d.globalCompositeOperation = 'source-over';
+  d.fillStyle = '#050408'; d.fillRect(0,0,LW,LH);
+  d.globalCompositeOperation = 'destination-out';
+  const px = G.p.x, py = SY(G.p.wy) - 3;
+  const lr = lightR() * (reduced ? 1 : 1 + Math.sin(t*17)*.02 + Math.sin(t*5)*.02);
+  [[1, .38], [.78, .65], [.55, 1]].forEach(([f, a]) => { d.globalAlpha = a; d.beginPath(); d.arc(px, py, lr*f, 0, 6.283); d.fill(); });
+  for (const it of G.items){ if (it.type === 'candle' && it.lit){ const y = SY(it.wy); d.globalAlpha = .55; d.beginPath(); d.arc(it.x, y - 3, 9, 0, 6.283); d.fill(); d.globalAlpha = .9; d.beginPath(); d.arc(it.x, y - 3, 5, 0, 6.283); d.fill(); } }
+  d.globalAlpha = 1; d.globalCompositeOperation = 'source-over';
+  l.drawImage(dk, 0, 0);
+
+  // warm glow tint
+  l.globalCompositeOperation = 'lighter';
+  const g = l.createRadialGradient(px, py, 0, px, py, lr*.9);
+  g.addColorStop(0, `rgba(247,147,30,${.18 + G.s*.1})`); g.addColorStop(1, 'rgba(247,147,30,0)');
+  l.fillStyle = g; l.fillRect(0,0,LW,LH);
+  l.globalCompositeOperation = 'source-over';
+
+  // always-visible cues: candle flames, faint drip glints and wind hints
+  for (const it of G.items){ if (it.type === 'candle' && it.lit) drawFlame(l, it.x, SY(it.wy), .15, t + it.wy); }
+  l.fillStyle = 'rgba(127,182,217,.35)'; for (const dp of G.drips){ l.fillRect(Math.round(dp.x), SY(dp.wy), 1, 1); }
+  // the player
+  if (G.phase !== 'dead' && !(G.invuln > 0 && Math.floor(G.invuln*12) % 2)) drawFlame(l, px, SY(G.p.wy), G.s, t);
+  if (G.phase === 'dead'){ l.fillStyle = 'rgba(140,127,116,.8)'; const k = Math.min(20, (performance.now() - G.deadAt)/40); for (let i=0;i<4;i++) l.fillRect(Math.round(px + Math.sin(i*2 + k*.3)*3), Math.round(py - k - i*4), 1, 2); }
+  if (G.phase === 'play' && G.t < 2.5){ l.fillStyle = 'rgba(243,230,200,.7)'; l.font = '8px "Silkscreen", monospace'; l.textAlign = 'center'; l.fillText('DRAG TO DRIFT', LW/2, LH - 10); }
+
+  ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(lc, 0, 0, LW, LH, 0, 0, cv.width, Math.round(LH * cv.width / LW));
+  hud();
+}
+function hud(){
+  $('#hDepth').textContent = G.m() + 'm';
+  $('#hCandles').textContent = G.candles;
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best) + 'm';
+  $('#waxBar').style.width = (G.s*100) + '%';
+  $('#waxPct').textContent = Math.round(G.s*100) + '%';
+  $('#waxT').classList.toggle('low', G.s < .22 && G.phase === 'play');
+}
+
+/* ---------- flow ---------- */
+const CAUSE = { rock:'You scraped the rock once too often.', drip:'A drip hissed you out.', wind:'The wind blew you out.', moth:'A moth got too close.' };
+function endRun(){
+  const depth = G.m(), prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, depth); else P.best = Math.max(P.best, depth);
+  checkMissions({}); save();
+  $('#eTitle').textContent = depth > prev && depth > 0 ? 'New best!' : 'Snuffed';
+  $('#eDepth').textContent = depth;
+  const recent = G.lastHit && G.t - G.lastHit.t < 1.2;
+  const gap = prev - depth;
+  $('#eMsg').textContent = (recent ? CAUSE[G.lastHit.cause] : 'You burned down to the wick.') + (gap > 0 && gap <= Math.max(20, prev*.15) ? ' ' + gap + ' m short of your best.' : '');
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best) + ' m';
+  $('#eCandles').textContent = G.candles; $('#eEmbers').textContent = G.embers; $('#eClean').textContent = G.cleanBest + ' m';
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const wb = $('#wickBtn'); wb.hidden = G.wicked; wb.disabled = P.stars < 1;
+  wb.textContent = P.stars < 1 ? 'Second wick · need 1★' : 'Second wick, keep climbing · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function wick(){
+  if (P.stars < 1 || G.wicked) return;
+  P.stars--; save(); G.wicked = true;
+  G.s = .6; G.invuln = 2; G.phase = 'play'; G.drips = []; G.moths = [];
+  $('#end').hidden = true;
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily: the same cave for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' m · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false); spawnAhead();
+}
+function play(daily){ $('#ready').hidden = true; $('#end').hidden = true; fresh(daily); spawnAhead(); G.phase = 'play'; }
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#wickBtn').addEventListener('click', wick);
+addEventListener('resize', resize);
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  const wasPlay = G.phase === 'play';
+  update(dt);
+  if (wasPlay && G.phase === 'dead') G.deadAt = now;
+  render(now);
+  requestAnimationFrame(frame);
+}
+resize(); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3B4A5C">
+<meta name="description" content="A paper-folding puzzle: fold the sheet over itself to pop matching dots in as few folds as possible.">
+<title>Fold Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --desk:#3B4A5C; --desk-2:#33414F; --paper:#FBFAF6; --back:#E9E4D8; --text:#F4F2EC; --dim:#AAB4BF; --ink:#232323; --card:#FBFAF6;
+  --tomato:#E8553E; --cobalt:#2F5BD3; --sun:#F2B31B; --jade:#2E9E6E; --ok:#7FE0AE;
+  --display:"Archivo Black", "Arial Black", Impact, sans-serif;
+  --body:"Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+html,body{height:100%}
+body{background:var(--desk); color:var(--text); font-family:var(--body); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-size:32px; line-height:1; letter-spacing:.02em; position:relative}
+.brand::after{content:""; position:absolute; right:-2px; top:0; width:14px; height:14px; background:linear-gradient(225deg, var(--desk) 50%, var(--back) 50%); box-shadow:-2px 2px 3px rgba(0,0,0,.25)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums}
+.hud b i{font-style:normal; color:var(--dim); font-weight:600; font-size:14px}
+.stage{flex:1; min-height:0; position:relative; touch-action:none}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.controls{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+.btn{font-family:var(--body); font-weight:700; font-size:14px; border:0; border-radius:10px; padding:11px 10px; background:var(--paper); color:var(--ink); cursor:pointer; box-shadow:0 3px 0 #9A968C}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #9A968C}
+.btn.alt{background:var(--desk-2); color:var(--text); box-shadow:0 3px 0 #222C36}
+.btn.gold{background:var(--sun); color:#2A1D02; box-shadow:0 3px 0 #9E7410}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
+.hint{font-size:12px; color:var(--dim); text-align:center} .hint b{color:var(--text)}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(40,50,62,.6)}
+.overlay.sheet{align-items:end; background:linear-gradient(transparent 45%, rgba(40,50,62,.8))}
+.card{background:var(--card); color:var(--ink); border-radius:6px; padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:11px; box-shadow:0 18px 40px rgba(0,0,0,.35); position:relative}
+.card::after{content:""; position:absolute; right:0; top:0; width:26px; height:26px; background:linear-gradient(225deg, rgba(59,74,92,1) 50%, var(--back) 50%); border-bottom-left-radius:3px; box-shadow:-3px 3px 4px rgba(0,0,0,.18)}
+.card h2{font-family:var(--display); font-weight:400; font-size:30px; margin:0; line-height:1}
+.card p{margin:0; font-size:13.5px; line-height:1.55; color:#4A4A48}
+.card p b{color:var(--ink)}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:13.5px}
+.card dt{color:#77756F} .card dd{margin:0; text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.card .btn{background:var(--ink); color:var(--paper); box-shadow:0 3px 0 #000}
+.card .btn.alt{background:transparent; color:var(--ink); box-shadow:none; border:1.5px solid var(--ink)}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#77756F; margin-bottom:-3px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13px}
+.missions li small{color:#77756F; font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:#E7E3DA; border-radius:9px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--cobalt)}
+.missions li.done{color:var(--jade)} .missions li.done .mb i{background:var(--jade)}
+.rules{display:grid; grid-template-columns:22px 1fr; gap:6px 10px; align-items:center; font-size:13px; color:#4A4A48}
+.rules i{display:block; width:14px; height:14px; border-radius:50%; margin:auto}
+.rating{font-family:var(--display); font-size:38px; line-height:1}
+.toast{position:absolute; top:56px; left:50%; transform:translateX(-50%); z-index:9; background:var(--paper); color:var(--ink); padding:7px 14px; border-radius:99px; font-size:13px; font-weight:700; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">FOLD</div>
+    <div class="hud">
+      <div><small id="lvlLbl">Sheet</small><b id="hLevel">1</b></div>
+      <div><small>Folds</small><b id="hFolds">0 <i>/ par 2</i></b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A sheet of paper with coloured dots. Drag from an edge to fold it over."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">FOLD</h2>
+        <p><b>Drag from any edge</b> of the sheet toward the middle to fold it over. The crease lands halfway between the edge and your finger.</p>
+        <div class="rules">
+          <i style="background:var(--tomato)"></i><span>Two dots of the <b>same colour</b> that land on each other pop.</span>
+          <i style="background:repeating-linear-gradient(45deg,#E8553E 0 3px,#fff 3px 6px); border-radius:2px"></i><span>Different colours <b>can't touch</b>, so that fold won't go through.</span>
+          <i style="background:var(--ink)"></i><span>Ink blots don't need clearing, but nothing else can land on them.</span>
+          <i style="background:radial-gradient(#F6E3A6,#B8903F)"></i><span>Pinned squares can't be folded.</span>
+          <i style="background:var(--desk); box-shadow:inset 0 0 0 2px #888"></i><span>Holes swallow any dot that lands on them.</span>
+        </div>
+        <p>Pop every dot in as few folds as you can.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Sheet 1</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily sheet</button>
+        </div>
+        <p id="dailyInfo" style="font-size:12px; color:#77756F"></p>
+      </div>
+    </div>
+    <div class="overlay sheet" id="win" hidden>
+      <div class="card" role="dialog" aria-labelledby="wTitle">
+        <div class="rating" id="wTitle">Perfect</div>
+        <p id="wMsg"></p>
+        <dl>
+          <dt>Folds · par</dt><dd id="wFolds">0</dd>
+          <dt>Points</dt><dd id="wPts">0</dd>
+        </dl>
+        <div class="row">
+          <button class="btn" id="nextBtn" type="button">Next sheet</button>
+          <button class="btn alt" id="retryBtn" type="button">Retry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn alt" id="undoBtn" type="button">Undo</button>
+    <button class="btn alt" id="restartBtn" type="button">Restart</button>
+    <button class="btn gold" id="hintBtn" type="button">Hint · 1★</button>
+  </div>
+  <div class="hint" id="hint"><b>Drag from an edge</b> toward the middle to fold</div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MAXW = 6, MAXH = 8;
+const COLORS = ['#E8553E','#2F5BD3','#F2B31B','#2E9E6E'];
+let W=0, H=0, dpr=1;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  par5:  {t:'Clear 5 sheets at par or better', g:5, total:'par'},
+  under1:{t:'Beat par on a sheet', g:1, total:'under'},
+  clean5:{t:'Clear 5 sheets in a row with no undo', g:5, run:()=>P.cleanStreak},
+  pop100:{t:'Pop 100 dots', g:100, total:'pops'},
+  big3:  {t:'Pop 3 pairs with one fold', g:3, run:()=>G ? G.bestPops : 0},
+  reach10:{t:'Reach sheet 10', g:10, run:()=>P.level},
+  reach20:{t:'Reach sheet 20', g:20, run:()=>P.level},
+  sink8: {t:'Drop 8 dots through holes', g:8, total:'sinks'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('foldsheet-profile') || 'null'); } catch(e){}
+if (!P) P = { level:1, score:0, stars:2, mission:[], mprog:{}, daily:{}, cleanStreak:0 };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('foldsheet-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  let done = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    P.mprog[id] = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run());
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; toast('Mission done · +1★ · ' + m.t); done = true; }
+  });
+  if (done){ P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); }
+  save(); hud();
+}
+function missionList(ul){
+  ul.innerHTML = '';
+  P.mission.slice(0,3).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g);
+    const li = document.createElement('li');
+    li.innerHTML = '<span>'+m.t+'</span><small>'+p+' / '+m.g+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- sheet model ---------- */
+const blank = () => ({ hole:false, pin:false, item:null });
+const clone = c => ({ hole:c.hole, pin:c.pin, item:c.item ? { ...c.item } : null });
+const cloneSheet = s => ({ w:s.w, h:s.h, cells:s.cells.map(clone) });
+function merge(b, f){
+  if (!f) return { cell:clone(b) };
+  if (!b) return { cell:{ hole:f.hole, pin:false, item:f.item ? { ...f.item } : null } };
+  const items = [b.item, f.item].filter(Boolean);
+  if (b.hole || f.hole) return { cell:{ hole:true, pin:b.pin, item:null }, sunk:items };
+  if (items.length < 2) return { cell:{ hole:false, pin:b.pin, item:items[0] ? { ...items[0] } : null } };
+  const [x, y] = items;
+  if (x.t === 'dot' && y.t === 'dot'){ if (x.c === y.c) return { cell:{ hole:false, pin:b.pin, item:null }, pop:x.c }; return { clash:true }; }
+  if (x.t === 'blot' && y.t === 'blot') return { cell:{ hole:false, pin:b.pin, item:{ t:'blot' } } };
+  return { clash:true };
+}
+// fold a sheet along a grid line. side 'lo' grabs the left/top edge, 'hi' the right/bottom edge; k is the crease index.
+function foldSheet(s, axis, side, k){
+  const N = axis === 'x' ? s.w : s.h, M = Math.max(N - k, k), off = side === 'hi' ? Math.max(0, (N - k) - k) : 0;
+  const nw = axis === 'x' ? M : s.w, nh = axis === 'x' ? s.h : M;
+  const baseA = new Array(nw*nh).fill(null), flapA = new Array(nw*nh).fill(null);
+  const toNew = i => side === 'lo' ? (i >= k ? [i - k, false] : [k - 1 - i, true]) : (i < k ? [i + off, false] : [2*k - 1 - i + off, true]);
+  for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+    const [n, fl] = toNew(axis === 'x' ? x : y), nx = axis === 'x' ? n : x, ny = axis === 'x' ? y : n;
+    (fl ? flapA : baseA)[ny*nw + nx] = { c:s.cells[y*s.w + x], ox:x, oy:y };
+  }
+  const out = { w:nw, h:nh, cells:new Array(nw*nh) }, ev = { pops:[], sinks:[], clashes:[], pins:[] };
+  for (let i=0;i<nw*nh;i++){
+    const b = baseA[i], f = flapA[i];
+    if (f && f.c.pin) ev.pins.push(f);
+    const m = merge(b && b.c, f && f.c);
+    const nx = i % nw, ny = Math.floor(i / nw);
+    if (m.clash){ ev.clashes.push({ f, b }); out.cells[i] = blank(); continue; }
+    out.cells[i] = m.cell;
+    if (m.pop !== undefined) ev.pops.push({ x:nx, y:ny, c:m.pop });
+    if (m.sunk && m.sunk.length) m.sunk.forEach(it => ev.sinks.push({ x:nx, y:ny, it }));
+  }
+  return { ok: !ev.clashes.length && !ev.pins.length, sheet:out, ev, off };
+}
+const dotsLeft = s => s.cells.reduce((a, c) => a + (c.item && c.item.t === 'dot' ? 1 : 0), 0);
+function anyLegal(s){
+  for (const axis of ['x','y']){ const N = axis === 'x' ? s.w : s.h;
+    for (let k=1;k<N;k++) for (const side of ['lo','hi']) if (foldSheet(s, axis, side, k).ok) return true; }
+  return false;
+}
+
+/* ---------- generator: unfold backwards from a cleared sheet, so every sheet has a known solution ---------- */
+function genPuzzle(n, seed){
+  let rs = seed|0;
+  const rnd = () => { rs=(rs+0x6D2B79F5)|0; let t=Math.imul(rs^(rs>>>15),1|rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
+  const U = Math.min(7, 2 + Math.floor((n - 1)/2)), ncol = Math.min(4, 2 + Math.floor(n/4));
+  const blots = n >= 4 ? (n >= 9 ? 2 : 1) : 0, pins = n >= 6 ? 1 : 0, holes = n >= 8 ? 1 : 0;
+  let best = null, anyBest = null;
+  for (let attempt=0; attempt<40; attempt++){
+    const specials = blots + pins + holes;
+    let s = { w: specials > 1 ? 2 : 1 + (rnd() < .4 ? 1 : 0), h: specials > 2 ? 2 : 1 + (rnd() < .5 ? 1 : 0), cells:[] };
+    for (let i=0;i<s.w*s.h;i++) s.cells.push(blank());
+    const free = () => { const f = []; s.cells.forEach((c, i) => { if (!c.hole && !c.pin && !c.item) f.push(i); }); return f; };
+    const put = fn => { const f = free(); if (f.length) fn(s.cells[f[Math.floor(rnd()*f.length)]]); };
+    for (let i=0;i<blots;i++) put(c => c.item = { t:'blot' });
+    for (let i=0;i<pins;i++) put(c => c.pin = true);
+    for (let i=0;i<holes;i++) put(c => c.hole = true);
+    const sol = [];
+    for (let u=0; u<U; u++){
+      const axes = []; if (s.w < MAXW) axes.push('x'); if (s.h < MAXH) axes.push('y');
+      if (!axes.length) break;
+      const axis = axes.length === 2 ? (s.w/MAXW < s.h/MAXH ? (rnd() < .7 ? 'x' : 'y') : (rnd() < .7 ? 'y' : 'x')) : axes[0];
+      const M = axis === 'x' ? s.w : s.h, maxF = Math.min(M, (axis === 'x' ? MAXW : MAXH) - M);
+      const f = 1 + Math.floor(rnd()*maxF), side = rnd() < .5 ? 'lo' : 'hi';
+      s = unfold(s, axis, side, f, rnd, ncol, holes > 0);
+      sol.unshift({ axis, side, k: side === 'lo' ? f : M });
+    }
+    const dots = dotsLeft(s);
+    // replay to be certain the solution works
+    let chk = cloneSheet(s), good = true;
+    for (const m of sol){ const r = foldSheet(chk, m.axis, m.side, m.k); if (!r.ok){ good = false; break; } chk = r.sheet; }
+    if (!good || dotsLeft(chk)) continue;
+    if (anyLegal(s) === false) continue;
+    const score = dots + s.w*s.h*.2 + rnd();
+    if (dots && (!anyBest || score > anyBest.score)) anyBest = { sheet:s, sol, score };
+    if (dots >= Math.min(8, 2 + n) && (!best || score > best.score)) best = { sheet:s, sol, score };
+    if (best && attempt > 8) break;
+  }
+  return best || anyBest || genPuzzle(n, seed + 1);
+}
+function unfold(s, axis, side, f, rnd, ncol, sinks){
+  const M = axis === 'x' ? s.w : s.h, N = M + f;
+  const big = { w: axis === 'x' ? N : s.w, h: axis === 'x' ? s.h : N, cells:[] };
+  for (let i=0;i<big.w*big.h;i++) big.cells.push(blank());
+  const at = (x, y) => big.cells[y*big.w + x];
+  const empties = []; let pairs = 0;
+  for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+    const cur = s.cells[y*s.w + x], j = axis === 'x' ? x : y;
+    const baseJ = side === 'lo' ? j + f : j;
+    const inOverlap = side === 'lo' ? j < f : j >= M - f;
+    const flapJ = side === 'lo' ? f - 1 - j : 2*M - 1 - j;
+    const B = axis === 'x' ? at(baseJ, y) : at(x, baseJ);
+    B.pin = cur.pin;
+    if (!inOverlap){ B.hole = cur.hole; B.item = cur.item ? { ...cur.item } : null; continue; }
+    const F = axis === 'x' ? at(flapJ, y) : at(x, flapJ);
+    if (cur.hole){
+      if (sinks && rnd() < .5){ B.hole = true; F.item = { t:'dot', c:Math.floor(rnd()*ncol) }; }
+      else if (rnd() < .5){ B.hole = true; F.hole = true; } else { B.hole = true; }
+    } else if (cur.item && cur.item.t === 'dot'){ (rnd() < .5 ? B : F).item = { ...cur.item }; }
+    else if (cur.item && cur.item.t === 'blot'){ const r = rnd(); if (r < .4) B.item = { t:'blot' }; else if (r < .8) F.item = { t:'blot' }; else { B.item = { t:'blot' }; F.item = { t:'blot' }; } }
+    else if (rnd() < .45){ const c = Math.floor(rnd()*ncol); B.item = { t:'dot', c }; F.item = { t:'dot', c }; pairs++; }
+    else empties.push([B, F]);
+  }
+  if (!pairs && empties.length){ const [B, F] = empties[Math.floor(rnd()*empties.length)]; const c = Math.floor(rnd()*ncol); B.item = { t:'dot', c }; F.item = { t:'dot', c }; }
+  return big;
+}
+
+/* ---------- game state ---------- */
+let G = null;
+function load(n, daily){
+  const seed = daily ? [...todayKey()].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (n*7919 + 12345);
+  const pz = genPuzzle(daily ? 10 : n, seed);
+  G = { n, daily:!!daily, start:cloneSheet(pz.sheet), sheet:cloneSheet(pz.sheet), sol:pz.sol, par:pz.sol.length, hist:[], snaps:[], folds:0, undos:0,
+        anim:null, drag:null, view:null, floats:[], parts:[], hintShow:null, done:false, stuck:false, bestPops:0, pops:0, sinks:0, cell:0 };
+  G.cell = Math.floor(Math.min(64, (W - 60)/G.sheet.w, (H - 70)/G.sheet.h));
+  G.view = target(G.sheet);
+  $('#win').hidden = true;
+  hud();
+}
+function target(s){ return { x:(W - s.w*G.cell)/2, y:(H - s.h*G.cell)/2 }; }
+
+/* ---------- input ---------- */
+const pos = e => { const r = cv.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; };
+function sheetRect(){ return { x:G.view.x, y:G.view.y, w:G.sheet.w*G.cell, h:G.sheet.h*G.cell }; }
+cv.addEventListener('pointerdown', e => {
+  if (!G || G.anim || G.done || !$('#ready').hidden) return;
+  const p = pos(e), R = sheetRect(), band = Math.max(30, G.cell*.6);
+  const inX = p.x > R.x - band && p.x < R.x + R.w + band, inY = p.y > R.y - band && p.y < R.y + R.h + band;
+  if (!inX || !inY) return;
+  const d = { L:Math.abs(p.x - R.x), R:Math.abs(R.x + R.w - p.x), T:Math.abs(p.y - R.y), B:Math.abs(R.y + R.h - p.y) };
+  const edge = Object.keys(d).reduce((a, b) => d[a] < d[b] ? a : b);
+  if (d[edge] > band) return;
+  cv.setPointerCapture(e.pointerId);
+  G.drag = { id:e.pointerId, edge, fl:0, move:null };
+});
+cv.addEventListener('pointermove', e => {
+  if (!G || !G.drag || G.drag.id !== e.pointerId) return;
+  const p = pos(e), R = sheetRect(), dr = G.drag;
+  const dist = dr.edge === 'L' ? p.x - R.x : dr.edge === 'R' ? R.x + R.w - p.x : dr.edge === 'T' ? p.y - R.y : R.y + R.h - p.y;
+  const N = (dr.edge === 'L' || dr.edge === 'R') ? G.sheet.w : G.sheet.h;
+  const fl = Math.max(0, Math.min(N - 1, Math.round(dist/2/G.cell)));
+  dr.fl = fl; dr.dist = Math.max(0, dist);
+  dr.move = fl ? moveFor(dr.edge, fl) : null;
+  dr.res = dr.move ? foldSheet(G.sheet, dr.move.axis, dr.move.side, dr.move.k) : null;
+});
+function moveFor(edge, fl){
+  const axis = (edge === 'L' || edge === 'R') ? 'x' : 'y', N = axis === 'x' ? G.sheet.w : G.sheet.h;
+  const side = (edge === 'L' || edge === 'T') ? 'lo' : 'hi';
+  return { axis, side, k: side === 'lo' ? fl : N - fl };
+}
+function endDrag(e){
+  if (!G || !G.drag || G.drag.id !== e.pointerId) return;
+  const dr = G.drag; G.drag = null;
+  if (!dr.move) return;
+  if (!dr.res.ok){
+    const msg = dr.res.ev.pins.length ? 'a pin holds that part down' : 'different colours can\'t touch';
+    G.floats.push({ t:msg, x:W/2, y:G.view.y - 16, c:'#FFB4A6', life:1.2 }); buzz(30); return;
+  }
+  doFold(dr.move, dr.res);
+}
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', e => { if (G && G.drag && G.drag.id === e.pointerId) G.drag = null; });
+
+function doFold(move, res){
+  G.snaps.push({ sheet:cloneSheet(G.sheet), hist:G.hist.slice(), folds:G.folds });
+  G.anim = { move, res, t:0, from:cloneSheet(G.sheet), fromView:{ ...G.view } };
+  G.hintShow = null; $('#hint').innerHTML = '<b>Drag from an edge</b> toward the middle to fold';
+  buzz(8);
+}
+function finishFold(){
+  const a = G.anim; G.anim = null;
+  const { move, res } = a;
+  // place the new sheet where the base part stayed, then glide to centre
+  const off = res.off, c = G.cell;
+  let vx = a.fromView.x, vy = a.fromView.y;
+  if (move.axis === 'x'){ vx += move.side === 'lo' ? move.k*c : -off*c; } else { vy += move.side === 'lo' ? move.k*c : -off*c; }
+  G.sheet = res.sheet; G.view = { x:vx, y:vy }; G.folds++; G.hist.push(move);
+  const pops = res.ev.pops.length, sinks = res.ev.sinks.filter(s => s.it.t === 'dot').length;
+  G.pops += pops*2; G.sinks += sinks; G.bestPops = Math.max(G.bestPops, pops);
+  res.ev.pops.forEach(p => { burst(vx + (p.x + .5)*c, vy + (p.y + .5)*c, COLORS[p.c], 16); });
+  res.ev.sinks.forEach(p => { burst(vx + (p.x + .5)*c, vy + (p.y + .5)*c, '#1E2731', 8); });
+  if (pops > 1) G.floats.push({ t:pops + ' pairs!', x:W/2, y:G.view.y - 16, c:'#F2B31B', life:1.2 });
+  if (pops || sinks) buzz(pops > 1 ? [15,30,15] : 12);
+  checkMissions({ pops:pops*2, sinks });
+  if (!dotsLeft(G.sheet)) win();
+  else { G.stuck = !anyLegal(G.sheet); if (G.stuck) G.floats.push({ t:'no fold works from here. Undo or restart.', x:W/2, y:G.view.y - 16, c:'#FFB4A6', life:3 }); }
+  hud();
+}
+function burst(x, y, c, n){ for (let i=0;i<n;i++){ const a = Math.random()*6.283, s = 60 + Math.random()*200; G.parts.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1, c }); } }
+function win(){
+  G.done = true;
+  const par = G.par, f = G.folds, under = f < par, atPar = f <= par;
+  const pts = 100 + Math.max(0, (par - f + 1))*40 + G.pops*5;
+  $('#wTitle').textContent = under ? 'Under par!' : atPar ? 'Perfect fold' : 'Cleared';
+  $('#wMsg').textContent = under ? 'You found a shorter way than the one I had.' : atPar ? 'The tiniest it could get.' : (f - par) + ' more fold' + (f - par === 1 ? '' : 's') + ' than par. Retry for a perfect one?';
+  $('#wFolds').textContent = f + ' · ' + par;
+  $('#wPts').textContent = '+' + pts;
+  if (G.daily){
+    const k = todayKey(); P.daily[k] = Math.min(P.daily[k] || 99, f);
+    $('#nextBtn').textContent = 'Back to my sheets';
+  } else {
+    P.score += pts; if (G.n === P.level) P.level++;
+    P.cleanStreak = G.undos ? 0 : P.cleanStreak + 1;
+    $('#nextBtn').textContent = 'Next sheet';
+  }
+  save();
+  checkMissions({ par: atPar ? 1 : 0, under: under ? 1 : 0 });
+  buzz([20,40,20,40]);
+  setTimeout(() => { $('#win').hidden = false; }, 700);
+}
+
+/* ---------- controls ---------- */
+$('#undoBtn').addEventListener('click', () => {
+  if (!G || G.anim || !G.snaps.length || G.done) return;
+  const s = G.snaps.pop(); G.sheet = s.sheet; G.hist = s.hist; G.folds = s.folds; G.undos++; G.stuck = false;
+  G.view = target(G.sheet); hud();
+});
+$('#restartBtn').addEventListener('click', () => { if (!G || G.anim) return; restart(); });
+function restart(){ G.sheet = cloneSheet(G.start); G.snaps = []; G.hist = []; G.folds = 0; G.done = false; G.stuck = false; G.undos++; G.view = target(G.sheet); $('#win').hidden = true; hud(); }
+$('#hintBtn').addEventListener('click', () => {
+  if (!G || G.anim || G.done || P.stars < 1) return;
+  // rewind to the last point where your folds matched the known solution
+  let m = 0; while (m < G.hist.length && m < G.sol.length && sameMove(G.hist[m], G.sol[m])) m++;
+  if (m < G.hist.length){ while (G.hist.length > m && G.snaps.length){ const s = G.snaps.pop(); G.sheet = s.sheet; G.hist = s.hist; G.folds = s.folds; } G.view = target(G.sheet); G.floats.push({ t:'rewound to a solvable point', x:W/2, y:G.view.y - 16, c:'#F2B31B', life:1.6 }); }
+  const next = G.sol[G.hist.length]; if (!next) return;
+  P.stars--; save();
+  G.hintShow = { move:next, t:0 };
+  const edge = next.axis === 'x' ? (next.side === 'lo' ? 'left' : 'right') : (next.side === 'lo' ? 'top' : 'bottom');
+  $('#hint').innerHTML = 'Hint: fold from the <b>' + edge + '</b> edge along the glowing crease';
+  hud();
+});
+const sameMove = (a, b) => a.axis === b.axis && a.side === b.side && a.k === b.k;
+$('#nextBtn').addEventListener('click', () => { $('#win').hidden = true; load(P.level, false); });
+$('#retryBtn').addEventListener('click', () => { $('#win').hidden = true; if (G.daily) load(G.n, true); else load(G.n, false); });
+
+/* ---------- drawing ---------- */
+function resize(){
+  const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W = r.width; H = r.height;
+  cv.width = W*dpr; cv.height = H*dpr;
+  if (G){ G.cell = Math.floor(Math.min(64, (W - 60)/Math.max(G.start.w, G.sheet.w), (H - 70)/Math.max(G.start.h, G.sheet.h))); G.view = target(G.sheet); }
+}
+function drawItem(it, x, y, c, alpha){
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  if (it.t === 'dot'){
+    ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.beginPath(); ctx.arc(x + 1.5, y + 2.5, c*.3, 0, 6.283); ctx.fill();
+    ctx.fillStyle = COLORS[it.c]; ctx.beginPath(); ctx.arc(x, y, c*.3, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x - c*.09, y - c*.09, c*.09, 0, 6.283); ctx.fill();
+  } else {
+    ctx.fillStyle = '#232323'; ctx.beginPath();
+    for (let i=0;i<12;i++){ const a = i/12*6.283, r = c*(.3 + (i % 3 === 0 ? .08 : 0) + Math.sin(i*2.3)*.03); ctx.lineTo(x + Math.cos(a)*r, y + Math.sin(a)*r); }
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + c*.3, y - c*.25, c*.05, 0, 6.283); ctx.arc(x - c*.28, y + c*.3, c*.04, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawPin(x, y, c){
+  const g = ctx.createRadialGradient(x - 2, y - 2, 1, x, y, c*.14);
+  g.addColorStop(0, '#F6E3A6'); g.addColorStop(1, '#8E6A24');
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.arc(x + 1.5, y + 2, c*.13, 0, 6.283); ctx.fill();
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, c*.13, 0, 6.283); ctx.fill();
+}
+// draw the cells of sheet s at origin (ox,oy). pick(x,y) chooses which cells; back=true paints the paper's reverse side
+function drawCells(s, ox, oy, c, pick, back){
+  for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+    if (pick && !pick(x, y)) continue;
+    const cell = s.cells[y*s.w + x], px = ox + x*c, py = oy + y*c;
+    ctx.fillStyle = back ? '#E9E4D8' : '#FBFAF6'; ctx.fillRect(px - .5, py - .5, c + 1, c + 1);
+    if (cell.hole){
+      ctx.fillStyle = '#2B3743'; ctx.beginPath(); ctx.arc(px + c/2, py + c/2, c*.3, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px + c/2, py + c/2 + 1, c*.3, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+    }
+  }
+  // faint grid creases
+  ctx.strokeStyle = back ? 'rgba(0,0,0,.08)' : 'rgba(59,74,92,.1)'; ctx.lineWidth = 1;
+  for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+    if (pick && !pick(x, y)) continue;
+    ctx.strokeRect(ox + x*c + .5, oy + y*c + .5, c - 1, c - 1);
+  }
+  for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+    if (pick && !pick(x, y)) continue;
+    const cell = s.cells[y*s.w + x], px = ox + x*c, py = oy + y*c;
+    if (cell.item) drawItem(cell.item, px + c/2, py + c/2, c);
+    if (cell.pin) drawPin(px + c*.2, py + c*.2, c);
+  }
+}
+function render(dt){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#3B4A5C'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1;
+  for (let x=0; x<W; x+=24){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y=0; y<H; y+=24){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  if (!G) return;
+  const c = G.cell;
+  // glide to centre
+  if (!G.anim){ const t = target(G.sheet); G.view.x += (t.x - G.view.x)*Math.min(1, dt*9); G.view.y += (t.y - G.view.y)*Math.min(1, dt*9); }
+  if (G.anim){
+    const a = G.anim; a.t += dt/(reduced ? .15 : .5);
+    const p = Math.min(1, a.t), e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2, ang = e*Math.PI, cs = Math.cos(ang);
+    const s = a.from, { axis, side, k } = a.move, ox = a.fromView.x, oy = a.fromView.y;
+    const inFlap = (x, y) => { const i = axis === 'x' ? x : y; return side === 'lo' ? i < k : i >= k; };
+    const crease = axis === 'x' ? ox + k*c : oy + k*c;
+    const b0 = side === 'lo' ? k : 0, b1 = side === 'lo' ? (axis === 'x' ? s.w : s.h) : k;
+    if (axis === 'x') shadow((b1 - b0)*c, s.h*c, ox + b0*c, oy); else shadow(s.w*c, (b1 - b0)*c, ox, oy + b0*c);
+    drawCells(s, ox, oy, c, (x, y) => !inFlap(x, y), false);
+    ctx.save();
+    if (axis === 'x'){ ctx.translate(crease, 0); ctx.scale(cs, 1); ctx.translate(-crease, 0); }
+    else { ctx.translate(0, crease); ctx.scale(1, cs); ctx.translate(0, -crease); }
+    ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 18*Math.sin(ang); ctx.shadowOffsetY = 8*Math.sin(ang);
+    drawCells(s, ox, oy, c, inFlap, cs < 0 && false);
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = `rgba(40,40,60,${Math.sin(ang)*.18})`;
+    for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++) if (inFlap(x, y)) ctx.fillRect(ox + x*c, oy + y*c, c, c);
+    ctx.restore();
+    if (p >= 1) finishFold();
+  } else {
+    const s = G.sheet;
+    shadow(s.w*c, s.h*c, G.view.x, G.view.y);
+    const dr = G.drag;
+    if (dr && dr.move){
+      const { axis, side, k } = dr.move, ox = G.view.x, oy = G.view.y;
+      const inFlap = (x, y) => { const i = axis === 'x' ? x : y; return side === 'lo' ? i < k : i >= k; };
+      drawCells(s, ox, oy, c, null, false);
+      // preview: lift the flap slightly and show where things land
+      ctx.fillStyle = dr.res.ok ? 'rgba(47,91,211,.12)' : 'rgba(232,85,62,.18)';
+      for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++) if (inFlap(x, y)) ctx.fillRect(ox + x*c, oy + y*c, c, c);
+      const crease = axis === 'x' ? ox + k*c : oy + k*c;
+      ctx.setLineDash([6, 5]); ctx.strokeStyle = dr.res.ok ? '#2F5BD3' : '#E8553E'; ctx.lineWidth = 2.5; ctx.beginPath();
+      if (axis === 'x'){ ctx.moveTo(crease, oy - 14); ctx.lineTo(crease, oy + s.h*c + 14); } else { ctx.moveTo(ox - 14, crease); ctx.lineTo(ox + s.w*c + 14, crease); }
+      ctx.stroke(); ctx.setLineDash([]);
+      for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){
+        if (!inFlap(x, y)) continue;
+        const cell = s.cells[y*s.w + x];
+        const lx = axis === 'x' ? 2*k - 1 - x : x, ly = axis === 'y' ? 2*k - 1 - y : y;
+        const px = ox + (lx + .5)*c, py = oy + (ly + .5)*c;
+        if (cell.pin){ ctx.strokeStyle = '#E8553E'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ox + (x + .2)*c, oy + (y + .2)*c, c*.2, 0, 6.283); ctx.stroke(); }
+        if (!cell.item) continue;
+        const inside = lx >= 0 && ly >= 0 && lx < s.w && ly < s.h, under = inside ? s.cells[ly*s.w + lx] : null;
+        const m = merge(under, cell);
+        ctx.setLineDash([3, 3]); ctx.lineWidth = 2;
+        ctx.strokeStyle = m.clash ? '#E8553E' : m.pop !== undefined ? '#2E9E6E' : 'rgba(35,35,35,.5)';
+        ctx.beginPath(); ctx.arc(px, py, c*.36, 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+        if (m.clash){ ctx.strokeStyle = '#E8553E'; ctx.lineWidth = 3; const r = c*.18; ctx.beginPath(); ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r); ctx.moveTo(px + r, py - r); ctx.lineTo(px - r, py + r); ctx.stroke(); }
+        else if (!inside) drawItem(cell.item, px, py, c, .35);
+      }
+      // finger guide
+      ctx.fillStyle = 'rgba(244,242,236,.8)'; ctx.font = '700 13px Figtree, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(dr.res.ok ? 'let go to fold' : dr.res.ev.pins.length ? 'pinned' : 'colours would touch', W/2, Math.max(16, oy - 12));
+    } else {
+      drawCells(s, G.view.x, G.view.y, c, null, false);
+      // dog-ear corners hint that edges can be grabbed
+      if (!G.done){
+        const s2 = c*.28, X1 = G.view.x + s.w*c, Y1 = G.view.y + s.h*c;
+        ctx.fillStyle = '#E9E4D8'; ctx.beginPath(); ctx.moveTo(X1 - s2, Y1); ctx.lineTo(X1, Y1 - s2); ctx.lineTo(X1 - s2, Y1 - s2); ctx.closePath(); ctx.fill();
+      }
+      if (G.hintShow){
+        const { axis, side, k } = G.hintShow.move, ox = G.view.x, oy = G.view.y, crease = axis === 'x' ? ox + k*c : oy + k*c;
+        G.hintShow.t += dt; const a = .5 + Math.sin(G.hintShow.t*5)*.4;
+        ctx.strokeStyle = `rgba(242,179,27,${a})`; ctx.lineWidth = 4; ctx.beginPath();
+        if (axis === 'x'){ ctx.moveTo(crease, oy - 16); ctx.lineTo(crease, oy + s.h*c + 16); } else { ctx.moveTo(ox - 16, crease); ctx.lineTo(ox + s.w*c + 16, crease); }
+        ctx.stroke();
+        ctx.fillStyle = `rgba(242,179,27,${a*.18})`;
+        for (let y=0;y<s.h;y++) for (let x=0;x<s.w;x++){ const i = axis === 'x' ? x : y; if (side === 'lo' ? i < k : i >= k) ctx.fillRect(ox + x*c, oy + y*c, c, c); }
+      }
+    }
+  }
+  // particles
+  for (const p of G.parts){ p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= .93; p.vy *= .93; p.vy += 200*dt; p.life -= dt*1.6; ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, 6.283); ctx.fill(); }
+  G.parts = G.parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
+  // floats
+  for (let i=G.floats.length-1;i>=0;i--){ const f = G.floats[i]; f.life -= dt*.8; if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2); ctx.fillStyle = f.c; ctx.font = '700 14px Figtree, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(f.t, f.x, Math.max(18, f.y)); }
+  ctx.globalAlpha = 1;
+}
+function shadow(w, h, x, y){ ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6; ctx.fillStyle = '#FBFAF6'; ctx.fillRect(x, y, w, h); ctx.restore(); }
+function hud(){
+  if (!G) return;
+  $('#lvlLbl').textContent = G.daily ? 'Daily' : 'Sheet';
+  $('#hLevel').textContent = G.daily ? todayKey().slice(5) : G.n;
+  $('#hFolds').innerHTML = G.folds + ' <i>/ par ' + G.par + '</i>';
+  $('#hScore').textContent = P.score.toLocaleString();
+  $('#undoBtn').disabled = !G.snaps.length || G.done;
+  $('#hintBtn').disabled = P.stars < 1 || G.done;
+  $('#hintBtn').textContent = 'Hint · 1★ (' + P.stars + ')';
+}
+
+/* ---------- flow ---------- */
+function ready(){
+  missionList($('#rMissions'));
+  $('#playBtn').textContent = P.level > 1 ? 'Continue: sheet ' + P.level : 'Sheet 1';
+  const d = P.daily[todayKey()];
+  $('#dailyInfo').textContent = 'Daily sheet: the same puzzle for everyone today.' + (d ? ' Your best today: ' + d + ' folds.' : '') + ' You have ' + P.stars + '★ for hints.';
+  $('#ready').hidden = false;
+}
+$('#playBtn').addEventListener('click', () => { $('#ready').hidden = true; load(P.level, false); });
+$('#dailyBtn').addEventListener('click', () => { $('#ready').hidden = true; load(P.level, true); });
+addEventListener('resize', resize);
+
+let last = performance.now();
+function frame(now){ const dt = Math.min(.05, (now - last)/1000); last = now; render(dt); requestAnimationFrame(frame); }
+resize(); load(P.level, false); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

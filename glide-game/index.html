@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B2140">
+<meta name="description" content="A paper airplane with no engine: hold to climb, let go to dive, and ride rising air through meadows, cities, caves and storms.">
+<title>Glide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600;1,9..144,800&family=Karla:wght@400;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --ink:#1B2140; --paper:#FFFDF8; --dim:#B9C2DE; --card:rgba(27,33,64,.92); --line:#3A4478; --gold:#FFD27A; --mint:#8FE3C8; --rose:#F6A48E;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Karla", "Helvetica Neue", Arial, sans-serif;
+}
+html,body{height:100%}
+body{background:#1B2140; color:var(--paper); font-family:var(--body); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:820px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-style:italic; font-weight:800; font-size:36px; line-height:.9; letter-spacing:-.01em}
+.brand small{display:block; font-family:var(--body); font-style:normal; font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:4px}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700}
+.hud b{font-size:20px; font-weight:700; font-variant-numeric:tabular-nums}
+.hud .aloft b{font-family:var(--display); font-style:italic; font-size:26px; color:var(--gold)}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; border-radius:18px; overflow:hidden}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:pointer}
+.foot{display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; color:var(--dim)}
+.foot b{color:var(--paper)}
+.btn{font-family:var(--body); font-weight:700; font-size:15px; border:0; border-radius:12px; padding:12px 12px; background:var(--paper); color:var(--ink); cursor:pointer; box-shadow:0 3px 0 #9AA3C4}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #9AA3C4}
+.btn.alt{background:transparent; color:var(--paper); border:1.5px solid var(--line); box-shadow:none}
+.btn.gold{background:var(--gold); color:#3A2A06; box-shadow:0 3px 0 #B8903F}
+.btn.sm{padding:5px 10px; font-size:12px; box-shadow:none}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:linear-gradient(rgba(27,33,64,.1), rgba(27,33,64,.45))}
+.card{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:20px; width:min(340px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:11px; box-shadow:0 20px 50px rgba(0,0,0,.35); backdrop-filter:blur(6px)}
+.card h2{font-family:var(--display); font-style:italic; font-weight:800; font-size:42px; margin:0; line-height:.9}
+.card p{margin:0; font-size:14px; line-height:1.55; color:#D9DEF0}
+.card p b{color:var(--paper)}
+.loop{font-family:var(--display); font-style:italic; font-size:16px; color:var(--gold); line-height:1.4}
+.big{font-family:var(--display); font-style:italic; font-weight:800; font-size:60px; line-height:.85; color:var(--gold)}
+.big small{display:block; font-family:var(--body); font-style:normal; font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:8px}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:14px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-3px; font-weight:700}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:#2A3260; border-radius:9px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--rose)}
+.missions li.done{color:var(--mint)} .missions li.done .mb i{background:var(--mint)}
+.toast{position:absolute; top:60px; left:50%; transform:translateX(-50%); z-index:9; background:var(--paper); color:var(--ink); padding:7px 14px; border-radius:99px; font-size:13px; font-weight:700; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">Glide<small id="biome">Meadows · dawn</small></div>
+    <div class="hud">
+      <div class="aloft"><small>Aloft</small><b id="hTime">0:00</b></div>
+      <div><small>Distance</small><b id="hDist">0m</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A paper airplane gliding over a landscape. Hold to climb, let go to dive."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Glide</h2>
+        <div class="loop">dive → speed up → pull up → soar → slow down → dive</div>
+        <p>You're a paper airplane with no engine. <b>Hold</b> to pull the nose up and climb, which costs speed. <b>Let go</b> and the nose drops into a dive, which earns the speed back.</p>
+        <p>Climb too slowly and you <b>stall</b>. The air drains a little energy all the time, so ride the <b>rising air</b> (shimmering columns) and <b>tailwinds</b> to stay up. Cities, caves and storms arrive the further you fly.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Launch</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily flight</button>
+        </div>
+        <p id="dailyInfo" style="font-size:12px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Landed</h2>
+        <div class="big"><span id="eTime">0:00</span><small>time aloft</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Distance · score</dt><dd id="eDist">0</dd>
+          <dt>Best score</dt><dd id="eBest">0</dd>
+          <dt>Longest flight ever</dt><dd id="eLong">0</dd>
+          <dt>Rings · thermals ridden</dt><dd id="eRings">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn gold" id="gustBtn" type="button">Lucky gust · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Fold another</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <span><b>Hold</b> to climb · <b>let go</b> to dive · space bar on desktop</span>
+    <button class="btn alt sm" id="soundBtn" type="button" aria-pressed="true">Sound on</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const GR = 600, DRAG = .00012, VSTALL = 120, VMAX = 1100, UNIT = 20, DAY = 240;
+let W=0, H=0, dpr=1, SC=1, VW=800, VH=800;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  t60:  {t:'Stay aloft for 1 minute', g:60, run:G=>Math.floor(G.t)},
+  t180: {t:'Stay aloft for 3 minutes', g:180, run:G=>Math.floor(G.t)},
+  t600: {t:'Stay aloft for 10 minutes', g:600, run:G=>Math.floor(G.t)},
+  d3k:  {t:'Fly 3,000 m in one flight', g:3000, run:G=>G.distM},
+  ring20:{t:'Fly through 20 rings in one flight', g:20, run:G=>G.rings},
+  therm10:{t:'Ride 10 thermals in one flight', g:10, run:G=>G.thermals},
+  cave1:{t:'Fly all the way through a cave', g:1, run:G=>G.cavesN},
+  storm1:{t:'Make it through a storm', g:1, run:G=>G.stormsN},
+  sunset:{t:'Fly until nightfall', g:1, run:G=>G.t > DAY*.72 ? 1 : 0},
+  tot:  {t:'Spend 30 minutes aloft (total)', g:1800, total:'secs'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('glide-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, longest:0, stars:1, mission:[], mprog:{}, daily:{}, sound:true };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('glide-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  if (!G || G.demo) return;
+  let ch = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; ch = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · ' + m.t); }
+  });
+  if (ch) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    const fmtv = v => m.g >= 60 && id.startsWith('t') ? fmt(v) : v.toLocaleString();
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':fmtv(p)+' / '+fmtv(m.g))+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2400}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+const fmt = s => Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- sound ---------- */
+let AC = null, windNode = null, windGain = null;
+function ensureAudio(){
+  if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return; }
+    // a soft wind bed whose volume follows speed
+    const len = AC.sampleRate*2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0); let last = 0;
+    for (let i=0;i<len;i++){ last = (last + (Math.random()*2 - 1)*.02)*.995; d[i] = last*3; }
+    windNode = AC.createBufferSource(); windNode.buffer = buf; windNode.loop = true;
+    const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700;
+    windGain = AC.createGain(); windGain.gain.value = 0;
+    windNode.connect(f).connect(windGain).connect(AC.destination); windNode.start();
+  }
+  if (AC.state === 'suspended') AC.resume();
+}
+function chime(n){ if (!AC || !P.sound || !G || G.demo) return; try { const t0 = AC.currentTime; [0, 4, 7].forEach((st, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = 523*Math.pow(2, (st + n)/12); g.gain.setValueAtTime(0, t0 + i*.05); g.gain.linearRampToValueAtTime(.07, t0 + i*.05 + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + i*.05 + .6); o.connect(g).connect(AC.destination); o.start(t0 + i*.05); o.stop(t0 + i*.05 + .65); }); } catch(e){} }
+function setSoundBtn(){ const b = $('#soundBtn'); b.textContent = P.sound ? 'Sound on' : 'Sound off'; b.setAttribute('aria-pressed', P.sound); }
+$('#soundBtn').addEventListener('click', () => { P.sound = !P.sound; save(); setSoundBtn(); if (P.sound) ensureAudio(); });
+setSoundBtn();
+
+/* ---------- rng + noise ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+function noise(){ const v = Array.from({length:4096}, rand); return x => { const i = Math.floor(x), f = x - i, u = f*f*(3 - 2*f), a = v[((i % 4096) + 4096) % 4096], b = v[(((i+1) % 4096) + 4096) % 4096]; return a + (b - a)*u; }; }
+
+/* ---------- world ---------- */
+const BIOMES = { meadow:'Meadows', city:'Rooftops', canyon:'Caves', storm:'Storm front' };
+function fresh(daily, demo){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', demo:!!demo, rs:seed|0, daily:!!daily, key, t:0, segs:[], trees:[], blds:[], therms:[], winds:[], rings:[], birds:[], caves:[], storms:[], bolts:[],
+        parts:[], floats:[], trail:[], ringsArr:[], segEnd:0, distM:0, rings:0, thermals:0, cavesN:0, stormsN:0, caveInside:null, stormInside:null, inTherm:null,
+        camX:0, camA:0, flash:0, gusted:false, doneM:[], why:'', secAcc:0, boltT:2 };
+  G.n1 = noise(); G.n2 = noise(); G.n3 = noise();
+  genTo(12000);
+  const a0 = ground(0) + 480;
+  G.pl = { x:0, a:a0, v:520, th:0, stall:0 };
+  G.camX = -VW*.35; G.camA = a0;
+}
+function segAt(x){ for (const s of G.segs) if (x >= s.x0 && x < s.x1) return s; return G.segs[G.segs.length-1]; }
+function amp(x){ const s = segAt(x); const m = { meadow:1, city:.35, canyon:1.5, storm:.8 }[s.type]; const e = Math.min(x - s.x0, s.x1 - x, 500)/500; return 1 + (m - 1)*Math.max(0, Math.min(1, e)); }
+function ground(x){ return (G.n1(x/2600)*260 + G.n2(x/800)*110 + G.n3(x/260)*26)*amp(x) - 60; }
+function ceilAt(x){ for (const c of G.caves){ if (x > c.x0 && x < c.x1){ const e = Math.min(x - c.x0, c.x1 - x), k = Math.max(0, 1 - e/420); return ground(x) + c.gap + Math.sin(x/170)*30 + k*k*1400; } } return 1e9; }
+function genTo(limit){
+  while (G.segEnd < limit){
+    const x0 = G.segEnd, len = rr(3200, 5000), x1 = x0 + len, k = G.segs.length;
+    let type = 'meadow';
+    if (k >= 2 && !G.demo){ const r = rand(); type = r < .34 ? 'meadow' : r < .58 ? 'city' : r < .8 && k >= 3 ? 'canyon' : k >= 4 ? 'storm' : 'city'; }
+    const s = { x0, x1, type }; G.segs.push(s); G.segEnd = x1;
+    const hard = Math.min(1, k/14);
+    // rising air
+    for (let x = x0 + rr(400, 900); x < x1 - 300; x += rr(1300, 2100) + hard*500){
+      if (type === 'storm') G.therms.push({ x, w:rr(260, 380), s:-rr(170, 250), used:false });
+      else G.therms.push({ x, w:rr(380, 640), s:rr(230, 330) - hard*40, used:false });
+    }
+    if (type === 'storm'){ G.therms.push({ x:x0 + len*.6, w:420, s:360, used:false }); G.storms.push({ x0, x1, done:false }); }
+    // tailwinds
+    if (rand() < .6){ const wx = x0 + rr(300, len - 1200); G.winds.push({ x0:wx, x1:wx + rr(800, 1400), a:0, h:rr(160, 240), rel:rr(260, 520) }); }
+    if (type === 'meadow'){ for (let x = x0 + 60; x < x1; x += rr(70, 230)) if (rand() < .6) G.trees.push({ x, h:rr(50, 110) + hard*50, r:rr(22, 40), poplar: rand() < .3 }); }
+    if (type === 'city'){ for (let x = x0 + 200; x < x1 - 200; ){ const w = rr(60, 140); G.blds.push({ x, w, h:rr(110, 260) + hard*220*rand(), lit:Array.from({length:40}, () => rand() < .4) }); x += w + rr(20, 160); } }
+    if (type === 'canyon'){ const c0 = x0 + rr(500, 900), cl = rr(1300, 2200); G.caves.push({ x0:c0, x1:c0 + cl, gap:rr(250, 320) - hard*30, done:false }); }
+    // rings follow nice lines
+    const nR = 3 + Math.floor(rand()*4);
+    for (let i=0;i<nR;i++){ const rx = x0 + rr(300, len - 300); G.ringsArr.push({ x:rx, rel:rr(160, 520), got:false }); }
+    if (!G.demo && k >= 3 && rand() < .5){ const bx = x0 + rr(600, len - 600); G.birds.push({ x:bx, rel:rr(200, 480), vx:-rr(40, 80), n:5 + Math.floor(rand()*5), ph:rand()*6, hit:false }); }
+  }
+}
+const ringAlt = r => { const c = ceilAt(r.x); return c < 1e8 ? ground(r.x) + (c - ground(r.x))*.5 : ground(r.x) + r.rel; };
+
+/* ---------- input ---------- */
+let holding = false;
+cv.addEventListener('pointerdown', e => { if (G.phase !== 'play') return; ensureAudio(); cv.setPointerCapture(e.pointerId); holding = true; });
+const up = () => { holding = false; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { if (e.key === ' ' && G && G.phase === 'play'){ e.preventDefault(); ensureAudio(); holding = true; } });
+addEventListener('keyup', e => { if (e.key === ' '){ holding = false; } });
+
+/* ---------- flight ---------- */
+function autopilot(){
+  const p = G.pl, clear = p.a - Math.max(ground(p.x + 200), ground(p.x + 400)) ;
+  return (clear < 260 && p.v > 250) || p.th < -.45 || (G.inTherm && p.v > 300);
+}
+function step(dt){
+  const p = G.pl;
+  G.t += dt;
+  const hold = G.demo ? autopilot() : holding;
+  // pitch: holding pulls up (harder at speed), letting go drops the nose
+  if (p.v < VSTALL){ p.stall = Math.min(1, p.stall + dt*3); p.th -= 2.4*dt; }
+  else { p.stall = Math.max(0, p.stall - dt*2);
+    if (hold) p.th += Math.min(2.1, p.v/180)*dt;
+    else p.th += (-.6 - p.th)*Math.min(1, 1.3*dt);
+  }
+  p.th = Math.max(-1.35, Math.min(1.25, p.th));
+  const thin = Math.max(0, (p.a - ground(p.x) - 1700)/600);
+  p.v += (-GR*Math.sin(p.th) - DRAG*(hold ? 1.5 : 1)*(1 + thin*3)*p.v*p.v)*dt;
+  p.v = Math.max(40, Math.min(VMAX, p.v));
+  p.x += p.v*Math.cos(p.th)*dt; p.a += p.v*Math.sin(p.th)*dt;
+  // air currents
+  G.inTherm = null;
+  for (const t of G.therms){ const dx = Math.abs(p.x - t.x); if (dx < t.w/2){ const f = 1 - (dx/(t.w/2))**2; p.a += t.s*f*dt; G.inTherm = t; if (!t.used && t.s > 0){ t.used = true; G.thermals++; if (!G.demo) G.floats.push({ t:'rising air', x:p.x, a:p.a + 50, c:'#FFD27A', life:1.2 }); checkMissions({}); } } }
+  for (const w of G.winds){ if (p.x > w.x0 && p.x < w.x1){ const wa = ground(p.x) + w.rel; if (Math.abs(p.a - wa) < w.h/2 && Math.cos(p.th) > .5){ p.v += 110*dt; } } }
+  // rings
+  for (const r of (G.ringsArr || [])){ if (r.got) continue; if (Math.abs(p.x - r.x) < 16 && Math.abs(p.a - ringAlt(r)) < 44){ r.got = true; G.rings++; p.v = Math.min(VMAX, p.v + 60); chime(G.rings % 12); burst(p.x, p.a, '#FFD27A', 14); if (!G.demo) G.floats.push({ t:'+ring', x:p.x, a:p.a + 40, c:'#FFD27A', life:.9 }); checkMissions({}); } }
+  // birds
+  for (const b of G.birds){ b.x += b.vx*dt; b.ph += dt*9; if (b.hit) continue; const ba = ground(b.x) + b.rel; if (Math.abs(p.x - b.x) < 60 && Math.abs(p.a - ba) < 34){ b.hit = true; p.v *= .75; burst(p.x, p.a, '#FFFDF8', 14); if (!G.demo){ G.floats.push({ t:'birds!', x:p.x, a:p.a + 40, c:'#F6A48E', life:1 }); buzz(30); } } }
+  // storms: lightning
+  const st = G.storms.find(s => p.x > s.x0 && p.x < s.x1);
+  if (st && !G.demo){
+    G.boltT -= dt;
+    if (G.boltT <= 0){ G.bolts.push({ x:p.x + rr(260, 700) + p.v*.6, t:0 }); G.boltT = rr(1.4, 2.6); }
+  }
+  for (const b of G.bolts){ b.t += dt; if (b.t > .9 && b.t < 1.15 && Math.abs(p.x - b.x) < 26){ G.flash = 1; return crash('bolt'); } if (b.t > .9 && !b.boom){ b.boom = true; G.flash = .8; } }
+  G.bolts = G.bolts.filter(b => b.t < 1.4);
+  for (const s of G.storms){ if (!s.done && p.x > s.x1){ s.done = true; G.stormsN++; checkMissions({}); } }
+  for (const c of G.caves){ if (!c.done && p.x > c.x1){ c.done = true; G.cavesN++; checkMissions({}); } }
+  // collisions
+  const gr = ground(p.x);
+  if (p.a < gr + 6) return crash('ground');
+  if (p.a > ceilAt(p.x) - 6) return crash('ceiling');
+  for (const b of G.blds){ if (p.x > b.x - 6 && p.x < b.x + b.w + 6){ const base = ground(b.x + b.w/2); if (p.a < base + b.h + 4) return crash('building'); } }
+  for (const t of G.trees){ if (Math.abs(p.x - t.x) < t.r){ const base = ground(t.x); if (p.a < base + t.h + t.r*.7) return crash('tree'); } }
+  // bookkeeping
+  G.distM = Math.max(G.distM, Math.floor(p.x/UNIT));
+  if (!G.demo){ G.secAcc += dt; if (G.secAcc >= 1){ G.secAcc -= 1; checkMissions({ secs:1 }); } }
+  G.trail.push(p.x, p.a); if (G.trail.length > 160) G.trail.splice(0, 2);
+}
+function crash(why){
+  if (G.demo){ G.demoReset = true; return; }
+  if (G.phase !== 'play') return;
+  G.phase = 'dead'; G.why = why; holding = false; burst(G.pl.x, G.pl.a, '#FFFDF8', 26); buzz([50,60,90]);
+  setTimeout(endRun, 1200);
+}
+function burst(x, a, c, n){ for (let i=0;i<n;i++){ const ang = Math.random()*6.283, v = 40 + Math.random()*160; G.parts.push({ x, a, vx:Math.cos(ang)*v, va:Math.sin(ang)*v, life:1, c }); } }
+
+/* ---------- palette over the day ---------- */
+const KEYS = [
+  { t:0,   top:'#5E6FB8', bot:'#F6B89E', far:'#9A98C8', mid:'#7C88BD', near:'#4E6A8C', acc:'#FFD2B8', sun:1 },
+  { t:.14, top:'#58A8E0', bot:'#CDEBF7', far:'#A9CDE2', mid:'#7DB797', near:'#4E8F6A', acc:'#FFFFFF', sun:1 },
+  { t:.55, top:'#58A8E0', bot:'#CDEBF7', far:'#A9CDE2', mid:'#7DB797', near:'#4E8F6A', acc:'#FFFFFF', sun:1 },
+  { t:.7,  top:'#3E3F8C', bot:'#F48C6A', far:'#8C6B9E', mid:'#6A5A8E', near:'#3F4A6E', acc:'#FFB38A', sun:1 },
+  { t:.84, top:'#0E1330', bot:'#2B3563', far:'#283158', mid:'#1E2649', near:'#151B38', acc:'#9FB4FF', sun:0 },
+  { t:.94, top:'#0E1330', bot:'#2B3563', far:'#283158', mid:'#1E2649', near:'#151B38', acc:'#9FB4FF', sun:0 },
+  { t:1,   top:'#5E6FB8', bot:'#F6B89E', far:'#9A98C8', mid:'#7C88BD', near:'#4E6A8C', acc:'#FFD2B8', sun:1 },
+];
+const hex = h => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
+function mix(a, b, f){ const A = hex(a), B = hex(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v)*f)).join(',') + ')'; }
+function palette(t){
+  const u = (t/DAY + .08) % 1; let i = 0; while (i < KEYS.length - 2 && KEYS[i+1].t <= u) i++;
+  const a = KEYS[i], b = KEYS[i+1], f = (u - a.t)/(b.t - a.t || 1), o = {};
+  for (const k of ['top','bot','far','mid','near','acc']) o[k] = mix(a[k], b[k], f);
+  o.night = a.sun + (b.sun - a.sun)*f; o.u = u; return o;
+}
+
+/* ---------- render ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W = r.width; H = r.height; cv.width = W*dpr; cv.height = H*dpr; SC = H/800; VW = W/SC; VH = 800; }
+const clouds = Array.from({length:14}, () => ({ x:Math.random()*4000, y:Math.random()*.45, s:.6 + Math.random()*1.2 }));
+function render(dt){
+  const p = G.pl, pal = palette(G.t + (G.demo ? DAY*.2 : 0));
+  // camera
+  G.camX += ((p.x - VW*.34) - G.camX)*Math.min(1, dt*6);
+  G.camA += ((p.a + Math.sin(p.th)*60) - G.camA)*Math.min(1, dt*3);
+  genTo(G.camX + VW + 6000);
+  const X = x => (x - G.camX)*SC, Y = a => H*.5 - (a - G.camA)*SC;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const sky = ctx.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, pal.top); sky.addColorStop(1, pal.bot);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // stars + sun/moon
+  const night = 1 - pal.night;
+  if (night > .05){ ctx.fillStyle = `rgba(255,255,255,${night*.8})`; for (let i=0;i<80;i++){ const sx = ((i*197 - G.camX*.02) % W + W) % W, sy = (i*83) % (H*.6); ctx.fillRect(sx, sy, 1.5, 1.5); } }
+  const sunA = pal.u*6.283 - Math.PI*.35, sx = W*.5 + Math.cos(sunA)*W*.42, sy = H*.62 - Math.sin(sunA)*H*.55;
+  ctx.fillStyle = night > .5 ? 'rgba(230,235,255,.9)' : 'rgba(255,236,200,.95)'; ctx.beginPath(); ctx.arc(sx, sy, 26, 0, 6.283); ctx.fill();
+  ctx.fillStyle = night > .5 ? 'rgba(230,235,255,.12)' : 'rgba(255,236,200,.2)'; ctx.beginPath(); ctx.arc(sx, sy, 60, 0, 6.283); ctx.fill();
+  // far + mid parallax ranges
+  const layer = (col, par, base, amp1, fn, freq) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, H); for (let sx2 = 0; sx2 <= W + 8; sx2 += 8){ const wx = (G.camX*par + sx2/SC); ctx.lineTo(sx2, Y(G.camA*(1 - par*.6)) + (base - fn(wx/freq)*amp1)*SC); } ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); };
+  layer(pal.far, .15, -40, 320, G.n3, 700);
+  // clouds
+  for (const c of clouds){ const w = 4000, cx = ((c.x - G.camX*.35) % w + w) % w - 200, cy = c.y*H; ctx.fillStyle = `rgba(255,255,255,${.22 + pal.night*.2})`; const r = 26*c.s; ctx.beginPath(); ctx.ellipse(cx, cy, r*2.4, r, 0, 0, 6.283); ctx.ellipse(cx + r*1.2, cy - r*.5, r*1.4, r*.9, 0, 0, 6.283); ctx.fill(); }
+  layer(pal.mid, .45, 140, 260, G.n1, 900);
+  // storm darkening
+  const stNear = G.storms.find(s => G.camX + VW > s.x0 - 800 && G.camX < s.x1 + 400);
+  if (stNear){ const mid = (stNear.x0 + stNear.x1)/2, k = Math.max(0, 1 - Math.abs(p.x - mid)/((stNear.x1 - stNear.x0)/2 + 800)); ctx.fillStyle = `rgba(25,28,48,${k*.55})`; ctx.fillRect(0, 0, W, H); }
+  // thermals + winds
+  for (const t of G.therms){ const sx2 = X(t.x); if (sx2 < -300 || sx2 > W + 300) continue; const hw = t.w/2*SC, up = t.s > 0;
+    const g = ctx.createLinearGradient(sx2 - hw, 0, sx2 + hw, 0); const c = up ? '255,210,122' : '90,100,150';
+    g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(.5, `rgba(${c},${up ? .16 : .22})`); g.addColorStop(1, `rgba(${c},0)`); ctx.fillStyle = g; ctx.fillRect(sx2 - hw, 0, hw*2, H);
+    ctx.fillStyle = up ? 'rgba(255,240,210,.7)' : 'rgba(200,210,240,.6)';
+    for (let i=0;i<14;i++){ const ph = ((G.t*(up ? .35 : -.5) + i/14) % 1 + 1) % 1, yy = H - ph*H, xx = sx2 + Math.sin(i*3.1 + G.t*2)*hw*.7; ctx.beginPath(); ctx.arc(xx, yy, 2, 0, 6.283); ctx.fill(); }
+  }
+  for (const w of G.winds){ const a = X(w.x0), b = X(w.x1); if (b < 0 || a > W) continue; ctx.strokeStyle = `rgba(255,255,255,.28)`; ctx.lineWidth = 2;
+    for (let i=0;i<5;i++){ const off = ((G.t*260 + i*170) % (b - a + 200)) - 100; const xx = a + off, wa = ground(w.x0 + off/SC) + w.rel + (i - 2)*w.h/6; ctx.beginPath(); ctx.moveTo(xx, Y(wa)); ctx.quadraticCurveTo(xx + 30, Y(wa) - 8, xx + 70, Y(wa)); ctx.stroke(); } }
+  // near terrain, caves, city, trees
+  ctx.fillStyle = pal.near; ctx.beginPath(); ctx.moveTo(0, H);
+  for (let sx2 = 0; sx2 <= W + 6; sx2 += 6) ctx.lineTo(sx2, Y(ground(G.camX + sx2/SC)));
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = `rgba(255,255,255,${.15 + pal.night*.1})`; ctx.lineWidth = 2; ctx.beginPath(); for (let sx2 = 0; sx2 <= W + 6; sx2 += 6){ const yy = Y(ground(G.camX + sx2/SC)); sx2 ? ctx.lineTo(sx2, yy) : ctx.moveTo(sx2, yy); } ctx.stroke();
+  for (const c of G.caves){ const a = X(c.x0), b = X(c.x1); if (b < 0 || a > W) continue; ctx.fillStyle = pal.near; ctx.beginPath(); ctx.moveTo(Math.max(0, a), -10);
+    for (let sx2 = Math.max(0, a); sx2 <= Math.min(W, b) + 6; sx2 += 6){ ctx.lineTo(sx2, Math.max(-10, Y(ceilAt(G.camX + sx2/SC)))); } ctx.lineTo(Math.min(W, b) + 6, -10); ctx.closePath(); ctx.fill(); }
+  for (const b of G.blds){ const a = X(b.x); if (a > W || a + b.w*SC < 0) continue; const base = ground(b.x + b.w/2), top = Y(base + b.h);
+    ctx.fillStyle = pal.near; ctx.fillRect(a, top, b.w*SC, Y(base - 200) - top);
+    ctx.fillStyle = `rgba(255,255,255,${.06 + night*.02})`; ctx.fillRect(a, top, 4, Y(base) - top);
+    ctx.fillStyle = night > .4 ? 'rgba(255,214,140,.85)' : 'rgba(255,255,255,.18)'; let k = 0;
+    for (let yy = top + 12*SC; yy < Y(base) - 8; yy += 22*SC) for (let xx = a + 8*SC; xx < a + b.w*SC - 12*SC; xx += 18*SC){ if (b.lit[k++ % 40] || night < .4) ctx.fillRect(xx, yy, 7*SC, 10*SC); } }
+  for (const t of G.trees){ const a = X(t.x); if (a < -60 || a > W + 60) continue; const base = ground(t.x);
+    ctx.fillStyle = pal.near; ctx.fillRect(a - 3*SC, Y(base + t.h), 6*SC, t.h*SC);
+    ctx.beginPath(); if (t.poplar) ctx.ellipse(a, Y(base + t.h + t.r*.6), t.r*.55*SC, t.r*1.5*SC, 0, 0, 6.283); else ctx.arc(a, Y(base + t.h), t.r*SC, 0, 6.283); ctx.fill(); }
+  // storm clouds + rain + bolts
+  for (const s of G.storms){ const a = X(s.x0), b = X(s.x1); if (b < -200 || a > W + 200) continue;
+    ctx.fillStyle = 'rgba(30,32,56,.9)'; for (let xx = a; xx < b; xx += 60*SC){ ctx.beginPath(); ctx.arc(xx, 30*SC + Math.sin(xx*.02)*14, 70*SC, 0, 6.283); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(190,200,235,.35)'; ctx.lineWidth = 1.5; for (let i=0;i<60;i++){ const xx = a + ((i*97 + G.t*120) % Math.max(1, b - a)), yy = ((i*53 + G.t*700) % H); ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx - 6, yy + 16); ctx.stroke(); } }
+  for (const b of G.bolts){ const bx = X(b.x); if (b.t < .9){ ctx.fillStyle = `rgba(255,255,255,${.08 + Math.sin(b.t*30)*.05})`; ctx.fillRect(bx - 26*SC, 0, 52*SC, H); }
+    else { ctx.strokeStyle = 'rgba(255,255,240,.95)'; ctx.lineWidth = 4; ctx.beginPath(); let yy = 0, xx = bx; ctx.moveTo(xx, yy); while (yy < Y(ground(b.x))){ yy += 40; xx += Math.sin(yy*.7 + b.x)*18; ctx.lineTo(xx, yy); } ctx.stroke(); } }
+  // rings
+  for (const r of (G.ringsArr || [])){ if (r.got) continue; const rx = X(r.x); if (rx < -60 || rx > W + 60) continue; const ry = Y(ringAlt(r));
+    ctx.strokeStyle = '#FFD27A'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(rx, ry, 10*SC, 44*SC, 0, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,210,122,.3)'; ctx.lineWidth = 10; ctx.stroke(); }
+  // birds
+  for (const b of G.birds){ if (b.hit) continue; const bx = X(b.x); if (bx < -100 || bx > W + 100) continue; const ba = ground(b.x) + b.rel;
+    ctx.strokeStyle = night > .5 ? '#C9D2F0' : '#2B3050'; ctx.lineWidth = 2;
+    for (let i=0;i<b.n;i++){ const ox = bx + (i % 3)*18*SC - 18*SC, oy = Y(ba) + (i - b.n/2)*9*SC, f = Math.sin(b.ph + i)*5; ctx.beginPath(); ctx.moveTo(ox - 7, oy - f); ctx.lineTo(ox, oy); ctx.lineTo(ox + 7, oy - f); ctx.stroke(); } }
+  // trail
+  const tr = G.trail; ctx.setLineDash([3, 7]); ctx.strokeStyle = `rgba(255,255,255,${.35 + night*.2})`; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i=0;i<tr.length;i+=2){ const xx = X(tr[i]), yy = Y(tr[i+1]); i ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke(); ctx.setLineDash([]);
+  // plane
+  if (G.phase !== 'dead'){
+    const px = X(p.x), py = Y(p.a), wob = p.stall ? Math.sin(G.t*40)*.12*p.stall : 0;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(-p.th + wob); const s = SC*1.3;
+    ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.beginPath(); ctx.moveTo(24*s, 4*s); ctx.lineTo(-18*s, 2*s); ctx.lineTo(-14*s, 10*s); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FFFDF8'; ctx.beginPath(); ctx.moveTo(24*s, 0); ctx.lineTo(-18*s, -9*s); ctx.lineTo(-10*s, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#D8D2C6'; ctx.beginPath(); ctx.moveTo(24*s, 0); ctx.lineTo(-10*s, 0); ctx.lineTo(-16*s, 7*s); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(27,33,64,.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(24*s, 0); ctx.lineTo(-10*s, 0); ctx.stroke();
+    ctx.restore();
+  }
+  // particles
+  for (const q of G.parts){ q.x += q.vx*dt; q.a += q.va*dt; q.va -= 120*dt; q.life -= dt; ctx.globalAlpha = Math.max(0, q.life); ctx.fillStyle = q.c; ctx.fillRect(X(q.x) - 2, Y(q.a) - 2, 4, 4); }
+  G.parts = G.parts.filter(q => q.life > 0); ctx.globalAlpha = 1;
+  for (let i=G.floats.length-1;i>=0;i--){ const f = G.floats[i]; f.life -= dt; f.a += dt*40; if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2); ctx.font = 'italic 800 18px Fraunces, Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = f.c; ctx.fillText(f.t, X(f.x), Y(f.a)); }
+  ctx.globalAlpha = 1;
+  if (G.flash > 0){ ctx.fillStyle = `rgba(255,255,250,${G.flash*.6})`; ctx.fillRect(0, 0, W, H); G.flash = Math.max(0, G.flash - dt*3); }
+  // instruments
+  if (G.phase === 'play'){
+    const bw = Math.min(150, W*.32), sp = p.v/VMAX;
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(14, H - 26, bw, 6);
+    ctx.fillStyle = p.v < VSTALL*1.6 ? '#F6A48E' : '#8FE3C8'; ctx.fillRect(14, H - 26, bw*sp, 6);
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = '700 11px Karla, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('speed', 14, H - 32);
+    if (p.stall > .2 || p.v < VSTALL*1.3){ ctx.textAlign = 'center'; ctx.font = 'italic 800 22px Fraunces, serif'; ctx.fillStyle = '#F6A48E'; ctx.fillText(p.stall > .2 ? 'stall · let go and dive' : 'losing speed', W/2, 36); }
+    else if (G.t < 5){ ctx.textAlign = 'center'; ctx.font = '700 14px Karla, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText('hold to climb · let go to dive', W/2, 32); }
+  }
+  // wind sound follows speed
+  if (windGain && AC){ const v = P.sound && G.phase === 'play' ? Math.min(.25, (p.v/VMAX)*.3) : 0; windGain.gain.setTargetAtTime(v, AC.currentTime, .2); }
+  hud(pal);
+}
+function hud(pal){
+  $('#hTime').textContent = fmt(G.t);
+  $('#hDist').textContent = G.distM.toLocaleString() + 'm';
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+  const tod = pal.u < .1 ? 'dawn' : pal.u < .6 ? 'day' : pal.u < .78 ? 'dusk' : pal.u < .95 ? 'night' : 'dawn';
+  $('#biome').textContent = BIOMES[segAt(G.pl.x).type] + ' · ' + tod;
+}
+const score = () => G.distM + G.rings*25;
+
+/* ---------- flow ---------- */
+const WHY = { ground:'You glided into the ground.', ceiling:'You clipped the cave roof.', building:'You flew into a building.', tree:'You caught a treetop.', bolt:'Lightning found you.' };
+function endRun(){
+  const sc = score(), prev = G.daily ? (P.daily[G.key]||0) : P.best, prevLong = P.longest;
+  if (G.daily) P.daily[G.key] = Math.max(prev, sc); else P.best = Math.max(P.best, sc);
+  P.longest = Math.max(P.longest, Math.floor(G.t));
+  checkMissions({}); save();
+  $('#eTitle').textContent = G.t > prevLong && prevLong > 0 ? 'Longest yet!' : sc > prev && sc > 0 ? 'New best!' : 'Landed';
+  $('#eTime').textContent = fmt(G.t);
+  $('#eMsg').textContent = WHY[G.why] + (G.t > prevLong && prevLong > 0 ? ' That beats your longest flight.' : '');
+  $('#eDist').textContent = G.distM.toLocaleString() + ' m · ' + sc.toLocaleString();
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#eLong').textContent = fmt(P.longest);
+  $('#eRings').textContent = G.rings + ' · ' + G.thermals;
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const gb = $('#gustBtn'); gb.hidden = G.gusted; gb.disabled = P.stars < 1;
+  gb.textContent = P.stars < 1 ? 'Lucky gust · need 1★' : 'Lucky gust, keep flying · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function gust(){
+  if (P.stars < 1 || G.gusted) return;
+  P.stars--; save(); G.gusted = true;
+  const p = G.pl; let x = p.x;
+  // find open air ahead (outside caves) and lift the plane well clear of the ground
+  while (ceilAt(x) < 1e8) x += 200;
+  p.x = x; p.a = Math.max(ground(x), ground(x + 300), ground(x + 600)) + 420; p.v = 560; p.th = 0; p.stall = 0;
+  G.bolts = []; G.trail = []; G.phase = 'play'; $('#end').hidden = true;
+  G.floats.push({ t:'lucky gust', x:p.x, a:p.a + 50, c:'#FFD27A', life:1.4 });
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily flight: the same sky for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' · longest ever ' + fmt(P.longest) + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false, true);
+}
+function play(daily){
+  ensureAudio();
+  $('#ready').hidden = true; $('#end').hidden = true; holding = false;
+  fresh(daily, false); G.phase = 'play';
+}
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#gustBtn').addEventListener('click', gust);
+addEventListener('resize', resize);
+
+let last = performance.now(), acc = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  acc += dt;
+  while (acc >= 1/120){ if (G.phase === 'play' || G.demo) step(1/120); acc -= 1/120; }
+  if (G.demo && G.demoReset) fresh(false, true);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+resize(); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

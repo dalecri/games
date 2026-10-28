@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#D8D3C7">
+<meta name="description" content="A string-art puzzle: wrap one thread around pins without crossing it, and close loops to catch beads.">
+<title>Thread</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: light;
+  --wall:#D8D3C7; --linen:#E9E5DC; --ink:#1E2230; --dim:#6B6A66; --card:#F8F6F1; --line:#C9C2B3;
+  --navy:#243B6B; --red:#C8423B; --mustard:#E0A526; --teal:#2D8A7B; --brass:#B8903F;
+  --serif:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans:"Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+html,body{height:100%}
+body{background:var(--wall); color:var(--ink); font-family:var(--sans); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:620px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--serif); font-style:italic; font-size:40px; line-height:.85; letter-spacing:-.01em}
+.brand i{font-style:normal; color:var(--red)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums}
+.spool{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+.spool .t{height:8px; border-radius:9px; background:#CFC8B9; overflow:hidden}
+.spool .t i{display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg, var(--navy), #8E3B5B, #B5562F, #C99A2E); transition:width .25s ease}
+.spool .t.low i{background:var(--red)}
+.spool b{font-size:14px; letter-spacing:0; color:var(--ink); font-variant-numeric:tabular-nums; min-width:44px; text-align:right}
+.stage{flex:1; min-height:0; position:relative; touch-action:none}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+.controls{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center}
+.controls p{margin:0; font-size:12px; color:var(--dim); text-align:center; line-height:1.35}
+.controls p b{color:var(--ink)}
+.btn{font-family:var(--sans); font-weight:700; font-size:14px; border:1.5px solid var(--ink); border-radius:8px; padding:10px 14px; background:var(--ink); color:#F8F6F1; cursor:pointer; box-shadow:0 3px 0 #000}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #000}
+.btn.alt{background:var(--card); color:var(--ink); box-shadow:0 3px 0 var(--ink)}
+.btn.warn{background:var(--red); border-color:var(--red); box-shadow:0 3px 0 #7E2320}
+.btn.gold{background:var(--mustard); color:var(--ink); box-shadow:0 3px 0 var(--ink)}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:3px solid var(--teal); outline-offset:2px}
+.stuck{position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:4; background:var(--ink); color:#F8F6F1; padding:8px 14px; border-radius:99px; font-size:13px; white-space:nowrap; pointer-events:none}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(216,211,199,.72)}
+.overlay.sheet{align-items:end; background:linear-gradient(transparent 40%, rgba(216,211,199,.85))}
+.card{background:var(--card); border:1.5px solid var(--ink); border-radius:12px; padding:18px; width:min(340px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:11px; box-shadow:5px 5px 0 var(--ink)}
+.card h2{font-family:var(--serif); font-style:italic; font-weight:400; font-size:38px; margin:0; line-height:.9}
+.card p{margin:0; font-size:13.5px; line-height:1.5; color:#46474C}
+.card p b{color:var(--ink)}
+.big{font-family:var(--serif); font-size:56px; line-height:.85}
+.big small{display:block; font-family:var(--sans); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:6px}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:13.5px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-3px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:#E3DED3; border-radius:9px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--navy)}
+.missions li.done{color:var(--teal)} .missions li.done .mb i{background:var(--teal)}
+.legend{display:grid; grid-template-columns:18px 1fr; gap:6px 10px; align-items:center; font-size:13px; color:#46474C}
+.legend i{display:block; width:11px; height:11px; border-radius:50%; margin:auto}
+.pill{position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:6}
+.toast{position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:9; background:var(--ink); color:#F8F6F1; padding:7px 14px; border-radius:99px; font-size:13px; font-weight:600; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">Thread<i>.</i></div>
+    <div class="hud">
+      <div><small>Loops</small><b id="hLoops">0</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="spool"><span>Thread</span><div class="t" id="spT"><i id="spBar"></i></div><b id="spNum">700</b></div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A board of pins with one thread. Drag from the end of the thread across pins to wrap it."></canvas>
+    <div class="stuck" id="stuck" hidden>No stitch fits from here. Unpick or tie off.</div>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Thread</h2>
+        <p>You have one thread, tied to a pin. <b>Drag from the end of the thread</b> across other pins to wrap it around them. The thread <b>can never cross itself</b>.</p>
+        <p>Bring it back to any pin it already touches and the loop closes. Everything inside is <b>caught</b>, and the beads give you more thread. Closed loops are permanent, so every loop reshapes the board.</p>
+        <div class="legend">
+          <i style="background:var(--red)"></i><span>beads: 3 or more of one colour in a loop scores double</span>
+          <i style="background:var(--mustard); border-radius:2px; transform:rotate(45deg); width:10px; height:10px"></i><span>gems: worth three beads</span>
+          <i style="background:#9A7A55; border-radius:2px"></i><span>spools: +250 thread</span>
+          <i style="background:#3B3A36; box-shadow:0 0 0 2px #3B3A36 inset, 0 0 0 1px #F8F6F1"></i><span>burrs: they fray thread, so leave them outside</span>
+        </div>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Start stitching</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo" style="font-size:12px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay sheet" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Tied off</h2>
+        <div class="big"><span id="eScore">0</span><small>points</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Loops · pure loops</dt><dd id="eLoops">0</dd>
+          <dt>Beads caught · biggest loop</dt><dd id="eBeads">0</dd>
+          <dt>Thread used</dt><dd id="eUsed">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn gold" id="pinsBtn" type="button">New pins · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">New board</button>
+          <button class="btn alt" id="artBtn" type="button">View artwork</button>
+        </div>
+        <button class="btn alt" id="menuBtn" type="button">Menu</button>
+      </div>
+    </div>
+    <button class="btn pill" id="resultsBtn" type="button" hidden>Show results</button>
+  </div>
+  <div class="controls">
+    <button class="btn alt" id="unpickBtn" type="button">Unpick</button>
+    <p>Drag from the <b>end of the thread</b> · tap a pin to stitch to it</p>
+    <button class="btn alt" id="tieBtn" type="button">Tie off</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const WW = 600, LINE_CATCH = 7, START_SPOOL = 700, BEAD_TARGET = 30;
+const BEAD = ['#C8423B','#E0A526','#2D8A7B'];
+const FLOSS = ['#243B6B','#8E3B5B','#B5562F','#C99A2E','#2E7D6B','#3D5A99'];
+let W=0, H=0, dpr=1, S=1, OX=0, OY=0, WH=800;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  loops5: {t:'Close 5 loops in one run', g:5, run:G=>G.loopsN},
+  loops12:{t:'Close 12 loops in one run', g:12, run:G=>G.loopsN},
+  pure1:  {t:'Close a pure loop', g:1, run:G=>G.pureLoops},
+  pure3:  {t:'Close 3 pure loops in one run', g:3, run:G=>G.pureLoops},
+  big8:   {t:'Catch 8 beads in one loop', g:8, run:G=>G.bestLoop},
+  sc800:  {t:'Score 800 in one run', g:800, run:G=>G.score},
+  sc2500: {t:'Score 2,500 in one run', g:2500, run:G=>G.score},
+  gems3:  {t:'Catch 3 gems in one run', g:3, run:G=>G.gems},
+  tot150: {t:'Catch 150 beads (total)', g:150, total:'beads'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('thread-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('thread-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  if (!G || G.demo) return;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    P.mprog[id] = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+
+/* ---------- geometry ---------- */
+const PG = i => G.pegs[i];
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const endIdx = () => G.path[G.path.length-1];
+function cross(ax,ay,bx,by,cx,cy,dx,dy){
+  const r1=bx-ax, r2=by-ay, s1=dx-cx, s2=dy-cy, den=r1*s2-r2*s1;
+  if (Math.abs(den) < 1e-9) return false;
+  const t=((cx-ax)*s2-(cy-ay)*s1)/den, u=((cx-ax)*r2-(cy-ay)*r1)/den, e=1e-6;
+  return t>e && t<1-e && u>e && u<1-e;
+}
+function inPoly(x, y, poly){
+  let inside = false;
+  for (let i=0, j=poly.length-2; i<poly.length; j=i, i+=2){
+    const xi=poly[i], yi=poly[i+1], xj=poly[j], yj=poly[j+1];
+    if (((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside = !inside;
+  }
+  return inside;
+}
+function segDist(px, py, ax, ay, bx, by){
+  const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy; let t = L2 ? ((px-ax)*dx+(py-ay)*dy)/L2 : 0; t = Math.max(0, Math.min(1, t));
+  return Math.hypot(ax+dx*t-px, ay+dy*t-py);
+}
+function inAnyLoop(x, y){ for (const L of G.loops) if (inPoly(x, y, L.poly)) return true; return false; }
+function isRetrace(a, b){ const p = G.path; for (let i=0;i<p.length-1;i++) if ((p[i]===a&&p[i+1]===b)||(p[i]===b&&p[i+1]===a)) return true; return false; }
+function crossesThread(ax, ay, bx, by){
+  const p = G.path;
+  for (let i=0;i<p.length-1;i++){ const C=PG(p[i]), D=PG(p[i+1]); if (cross(ax,ay,bx,by,C.x,C.y,D.x,D.y)) return true; }
+  return false;
+}
+function legal(a, b){
+  if (a === b || isRetrace(a, b)) return false;
+  const A=PG(a), B=PG(b);
+  if (crossesThread(A.x,A.y,B.x,B.y)) return false;
+  return !inAnyLoop((A.x+B.x)/2, (A.y+B.y)/2);
+}
+function caught(a, b){
+  const A=PG(a), B=PG(b), dx=B.x-A.x, dy=B.y-A.y, L2=dx*dx+dy*dy, out=[];
+  G.pegs.forEach((p, j) => {
+    if (j===a || j===b || p.sealed) return;
+    const t = ((p.x-A.x)*dx+(p.y-A.y)*dy)/L2; if (t <= .001 || t >= .999) return;
+    const ex = A.x+dx*t-p.x, ey = A.y+dy*t-p.y;
+    if (ex*ex+ey*ey < LINE_CATCH*LINE_CATCH) out.push([t, j]);
+  });
+  return out.sort((u,v) => u[0]-v[0]).map(x => x[1]);
+}
+
+/* ---------- board ---------- */
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  const r = stage.getBoundingClientRect();
+  WH = Math.max(560, Math.min(1050, Math.round(WW * (r.height||800) / (r.width||600))));
+  G = { phase:'ready', rs:seed|0, daily:!!daily, key, pegs:[], path:[], locked:1, loops:[], beads:[], spool:START_SPOOL, used:0,
+        score:0, loopsN:0, beadsTotal:0, pureLoops:0, bestLoop:0, gems:0, floats:[], fx:[], flash:null, doneM:[], revived:false, demo:false, t:0 };
+  const minD = 58, m = 28;
+  for (let t=0; t<6000; t++){
+    const x = m + rand()*(WW-2*m), y = m + rand()*(WH-2*m);
+    if (G.pegs.every(p => (p.x-x)**2 + (p.y-y)**2 >= minD*minD)) G.pegs.push({ x, y, sealed:false });
+  }
+  let best = 0, bd = 1e9;
+  G.pegs.forEach((p, j) => { const d = Math.hypot(p.x - WW/2, p.y - WH*.55); if (d < bd){ bd = d; best = j; } });
+  G.path = [best];
+  replenish();
+  resize();
+}
+function free(x, y, pegGap, segGap){
+  if (x < 20 || y < 20 || x > WW-20 || y > WH-20) return false;
+  if (inAnyLoop(x, y)) return false;
+  for (const p of G.pegs) if ((p.x-x)**2 + (p.y-y)**2 < pegGap*pegGap) return false;
+  const pa = G.path;
+  for (let i=0;i<pa.length-1;i++){ const A=PG(pa[i]), B=PG(pa[i+1]); if (segDist(x,y,A.x,A.y,B.x,B.y) < segGap) return false; }
+  for (const b of G.beads) if ((b.x-x)**2 + (b.y-y)**2 < 13*13) return false;
+  return true;
+}
+function spawnCluster(){
+  for (let tries=0; tries<30; tries++){
+    const cx = 30 + rand()*(WW-60), cy = 30 + rand()*(WH-60);
+    if (!free(cx, cy, 14, 14)) continue;
+    const c = Math.floor(rand()*3), n = 2 + Math.floor(rand()*4), made = [];
+    for (let t=0; t<50 && made.length<n; t++){
+      const a = rand()*6.283, r = rand()*36, x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+      if (!free(x, y, 11, 9)) continue;
+      const b = { x, y, c: rand() < .86 ? c : Math.floor(rand()*3), v:1, kind:'bead' };
+      G.beads.push(b); made.push(b);
+    }
+    if (made.length && rand() < .22){ const g = made[0]; g.kind = 'gem'; g.v = 3; }
+    return made.length;
+  }
+  return 0;
+}
+function placeItem(kind, near){
+  for (let t=0; t<60; t++){
+    let x, y;
+    if (near && t < 30){ const a = rand()*6.283, r = 22 + rand()*26; x = near.x + Math.cos(a)*r; y = near.y + Math.sin(a)*r; }
+    else { x = 30 + rand()*(WW-60); y = 30 + rand()*(WH-60); }
+    if (!free(x, y, 12, 10)) continue;
+    G.beads.push({ x, y, c:0, v:0, kind }); return true;
+  }
+  return false;
+}
+function replenish(){
+  const beadCount = () => G.beads.filter(b => b.kind === 'bead' || b.kind === 'gem').length;
+  let guard = 0;
+  while (beadCount() < BEAD_TARGET && guard++ < 25) if (!spawnCluster()) break;
+  const burrWant = G.loopsN >= 2 ? Math.min(6, 1 + Math.floor(G.loopsN/2)) : 0;
+  let burrs = G.beads.filter(b => b.kind === 'burr').length;
+  while (burrs < burrWant){
+    const beads = G.beads.filter(b => b.kind === 'bead');
+    if (!placeItem('burr', rand() < .6 && beads.length ? beads[Math.floor(rand()*beads.length)] : null)) break;
+    burrs++;
+  }
+  if (G.loopsN > 0 && !G.beads.some(b => b.kind === 'spool') && rand() < .4) placeItem('spool', null);
+}
+
+/* ---------- moves ---------- */
+function hop(target, silent){
+  const a0 = endIdx(); if (target === a0 || G.pegs[target].sealed) return false;
+  const chain = [...caught(a0, target), target];
+  let cur = a0, moved = false;
+  for (const q of chain){
+    const A = PG(cur), B = PG(q), cost = dist(A, B);
+    if (!legal(cur, q)){ if (!silent && !isRetrace(cur, q)) flashBad(A, B, inAnyLoop((A.x+B.x)/2,(A.y+B.y)/2) ? 'that area is sewn shut' : 'it would cross your thread'); break; }
+    if (cost > G.spool){ if (!silent) flashBad(A, B, 'not enough thread'); break; }
+    G.spool -= cost; G.used += cost;
+    const k = G.path.lastIndexOf(q);
+    G.path.push(q); moved = true;
+    if (!G.demo) buzz(6);
+    if (k >= 0){ closeLoop(k); break; }
+    cur = q;
+  }
+  if (moved) afterMove();
+  return moved;
+}
+function closeLoop(k){
+  const verts = G.path.slice(k, G.path.length-1), poly = [];
+  verts.forEach(i => poly.push(PG(i).x, PG(i).y));
+  let per = 0, area = 0;
+  for (let i=0;i<poly.length;i+=2){ const j = (i+2) % poly.length; per += Math.hypot(poly[j]-poly[i], poly[j+1]-poly[i+1]); area += poly[i]*poly[j+1] - poly[j]*poly[i+1]; }
+  area = Math.abs(area)/2;
+  const inside = G.beads.filter(b => inPoly(b.x, b.y, poly));
+  G.beads = G.beads.filter(b => !inside.includes(b));
+  const vset = new Set(verts);
+  G.pegs.forEach((p, j) => { if (!p.sealed && !vset.has(j) && inPoly(p.x, p.y, poly)) p.sealed = true; });
+  const beads = inside.filter(b => b.kind === 'bead' || b.kind === 'gem');
+  const spools = inside.filter(b => b.kind === 'spool').length, burrs = inside.filter(b => b.kind === 'burr').length;
+  const count = beads.length, sumv = beads.reduce((a,b) => a + b.v, 0);
+  const pure = count >= 3 && beads.every(b => b.c === beads[0].c);
+  let pts = count ? Math.round(sumv*10*(1 + .25*(count-1)) * (pure ? 2 : 1)) : 0;
+  pts -= burrs*50;
+  let gain = (count ? per*.4 + sumv*100 : 0) + spools*250 - burrs*180;
+  G.spool = Math.max(0, G.spool + gain); G.score = Math.max(0, G.score + pts);
+  G.loopsN++; G.beadsTotal += count; if (pure) G.pureLoops++; G.bestLoop = Math.max(G.bestLoop, count); G.gems += beads.filter(b => b.kind === 'gem').length;
+  const tally = [0,0,0]; beads.forEach(b => tally[b.c] += b.v);
+  const color = count ? BEAD[tally.indexOf(Math.max(...tally))] : '#8C8577';
+  G.loops.push({ poly, color, ang: ((G.loopsN*47) % 180) * Math.PI/180, pure });
+  G.locked = G.path.length;
+  artDirty = true;
+  let cx = 0, cy = 0; for (let i=0;i<poly.length;i+=2){ cx += poly[i]; cy += poly[i+1]; } cx /= poly.length/2; cy /= poly.length/2;
+  const E = PG(endIdx());
+  inside.forEach(b => G.fx.push({ x:b.x, y:b.y, tx:E.x, ty:E.y, b, life:1 }));
+  if (!G.demo){
+    if (count){ floatText((pure ? 'pure loop! ' : '') + '+' + pts, cx, cy - 10, pure ? '#2D8A7B' : '#1E2230', true); floatText('+' + Math.round(gain) + ' thread', cx, cy + 14, '#243B6B'); buzz(pure ? [15,30,15,30] : [15,30]); }
+    else if (spools && !burrs) floatText('+' + Math.round(gain) + ' thread', cx, cy, '#243B6B', true);
+    else floatText('empty loop', cx, cy, '#6B6A66');
+    if (burrs) floatText('burr! −' + burrs*180 + ' thread', cx, cy + 34, '#C8423B');
+  }
+  replenish();
+  checkMissions({ beads:count });
+}
+function afterMove(){
+  if (G.demo || G.phase !== 'play') return;
+  const stuck = !hasMove();
+  $('#stuck').hidden = !(stuck && G.path.length > G.locked);
+  if (stuck && G.path.length <= G.locked){ G.phase = 'ending'; setTimeout(() => endRun('stuck'), 900); }
+}
+function hasMove(){
+  const a = endIdx(), cands = new Set();
+  G.pegs.forEach((p, j) => { if (j === a || p.sealed) return; const ch = caught(a, j); cands.add(ch.length ? ch[0] : j); });
+  for (const c of cands) if (dist(PG(a), PG(c)) <= G.spool && legal(a, c)) return true;
+  return false;
+}
+function unpick(){
+  if (G.phase !== 'play' || G.path.length <= G.locked) return;
+  const q = G.path.pop(), c = dist(PG(q), PG(endIdx()));
+  G.spool += c; G.used -= c; afterMove();
+}
+function flashBad(A, B, msg){ G.flash = { x1:A.x, y1:A.y, x2:B.x, y2:B.y, life:1 }; floatText(msg, (A.x+B.x)/2, (A.y+B.y)/2 - 12, '#C8423B'); buzz(25); }
+function floatText(t, x, y, c, big){ G.floats.push({ t, x, y, c, big, life:1 }); }
+
+/* ---------- input ---------- */
+let drag = null;
+const toWorld = e => { const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left - OX)/S, y:(e.clientY - r.top - OY)/S }; };
+function pegAt(w){
+  const R = Math.max(16, 22/S); let best = -1, bd = R;
+  G.pegs.forEach((p, j) => { if (p.sealed) return; const d = Math.hypot(p.x-w.x, p.y-w.y); if (d < bd){ bd = d; best = j; } });
+  return best;
+}
+cv.addEventListener('pointerdown', e => {
+  if (G.phase !== 'play') return;
+  cv.setPointerCapture(e.pointerId);
+  const w = toWorld(e), q = pegAt(w);
+  drag = { id:e.pointerId, w, sx:e.clientX, sy:e.clientY, moved:false, downPeg: q !== endIdx() ? q : -1, lastFail:-1 };
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId || G.phase !== 'play') return;
+  const w = toWorld(e); drag.w = w;
+  if (Math.hypot(e.clientX-drag.sx, e.clientY-drag.sy) > 8) drag.moved = true;
+  const q = pegAt(w);
+  if (q !== drag.downPeg) drag.downPeg = -1;
+  if (q < 0){ drag.lastFail = -1; return; }
+  if (q === endIdx() || q === drag.downPeg || q === drag.lastFail) return;
+  if (!hop(q)) drag.lastFail = q;
+});
+function endDrag(e){
+  if (!drag || drag.id !== e.pointerId) return;
+  if (!drag.moved && drag.downPeg >= 0 && G.phase === 'play') hop(drag.downPeg);
+  drag = null;
+}
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+$('#unpickBtn').addEventListener('click', unpick);
+let tieArm = 0;
+$('#tieBtn').addEventListener('click', () => {
+  if (G.phase !== 'play') return;
+  if (Date.now() - tieArm < 3000){ tieArm = 0; $('#tieBtn').textContent = 'Tie off'; endRun('tied'); }
+  else { tieArm = Date.now(); $('#tieBtn').textContent = 'Tap to confirm'; setTimeout(() => { if (Date.now() - tieArm >= 2900) $('#tieBtn').textContent = 'Tie off'; }, 3000); }
+});
+addEventListener('keydown', e => { if ((e.key === 'Backspace' || e.key === 'z') && G.phase === 'play'){ unpick(); e.preventDefault(); } });
+
+/* ---------- drawing ---------- */
+const weave = document.createElement('canvas'); weave.width = weave.height = 6;
+(function(){ const w = weave.getContext('2d'); w.fillStyle = '#EAE6DD'; w.fillRect(0,0,6,6); w.fillStyle = 'rgba(160,150,130,.14)'; w.fillRect(0,0,6,1); w.fillRect(0,3,6,1); w.fillStyle = 'rgba(160,150,130,.09)'; w.fillRect(1,0,1,6); w.fillRect(4,0,1,6); })();
+let weavePat = null;
+const art = document.createElement('canvas'), actx = art.getContext('2d'); let artDirty = true;
+const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const rgba = (h, a) => { const c = hex(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+function threadCol(cum){
+  const f = cum/380, i = Math.floor(f) % FLOSS.length, j = (i+1) % FLOSS.length, t = f - Math.floor(f);
+  const a = hex(FLOSS[i]), b = hex(FLOSS[j]);
+  return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`;
+}
+function resize(){
+  const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W = r.width; H = r.height;
+  cv.width = W*dpr; cv.height = H*dpr;
+  S = Math.min((W-4)/WW, (H-4)/WH); OX = (W - WW*S)/2; OY = (H - WH*S)/2;
+  weavePat = ctx.createPattern(weave, 'repeat');
+  artDirty = true;
+}
+function drawArt(){
+  art.width = Math.max(1, Math.round(WW*S*dpr)); art.height = Math.max(1, Math.round(WH*S*dpr));
+  actx.setTransform(S*dpr, 0, 0, S*dpr, 0, 0);
+  for (const L of G.loops){
+    const p = L.poly;
+    actx.save(); actx.beginPath(); actx.moveTo(p[0], p[1]); for (let i=2;i<p.length;i+=2) actx.lineTo(p[i], p[i+1]); actx.closePath();
+    actx.fillStyle = rgba(L.color, .15); actx.fill(); actx.clip();
+    let x0=1e9, y0=1e9, x1=-1e9, y1=-1e9; for (let i=0;i<p.length;i+=2){ x0=Math.min(x0,p[i]); x1=Math.max(x1,p[i]); y0=Math.min(y0,p[i+1]); y1=Math.max(y1,p[i+1]); }
+    const cx=(x0+x1)/2, cy=(y0+y1)/2, R=Math.hypot(x1-x0, y1-y0)/2 + 4, dx=Math.cos(L.ang), dy=Math.sin(L.ang);
+    actx.strokeStyle = rgba(L.color, L.pure ? .62 : .42); actx.lineWidth = L.pure ? 1.4 : 1.1;
+    actx.beginPath();
+    for (let o=-R; o<=R; o+=5.5){ const bx = cx - dy*o, by = cy + dx*o; actx.moveTo(bx - dx*R, by - dy*R); actx.lineTo(bx + dx*R, by + dy*R); }
+    actx.stroke();
+    if (L.pure){ actx.strokeStyle = rgba(L.color, .3); actx.beginPath(); for (let o=-R; o<=R; o+=11){ const bx = cx + dx*o, by = cy + dy*o; actx.moveTo(bx + dy*R, by - dx*R); actx.lineTo(bx - dy*R, by + dx*R); } actx.stroke(); }
+    actx.restore();
+  }
+  artDirty = false;
+}
+function drawItem(b, x, y, k){
+  const s = k == null ? 1 : k;
+  if (b.kind === 'bead'){
+    ctx.fillStyle = 'rgba(30,34,48,.2)'; ctx.beginPath(); ctx.arc(x+1, y+1.5, 5.4*s, 0, 6.283); ctx.fill();
+    const g = ctx.createRadialGradient(x-1.8, y-1.8, .5, x, y, 5.6*s); g.addColorStop(0, '#FFFFFF'); g.addColorStop(.25, BEAD[b.c]); g.addColorStop(1, rgba(BEAD[b.c], .85));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 5.4*s, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(30,34,48,.35)'; ctx.beginPath(); ctx.arc(x, y, 1.3*s, 0, 6.283); ctx.fill();
+  } else if (b.kind === 'gem'){
+    const r = 7.5*s; ctx.fillStyle = 'rgba(30,34,48,.2)'; ctx.beginPath(); ctx.moveTo(x+1, y-r+2); ctx.lineTo(x+r+1, y+2); ctx.lineTo(x+1, y+r+2); ctx.lineTo(x-r+1, y+2); ctx.fill();
+    ctx.fillStyle = BEAD[b.c]; ctx.beginPath(); ctx.moveTo(x, y-r); ctx.lineTo(x+r, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(x, y-r); ctx.lineTo(x+r*.45, y); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(30,34,48,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y-r); ctx.lineTo(x+r, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r, y); ctx.closePath(); ctx.stroke();
+  } else if (b.kind === 'spool'){
+    ctx.fillStyle = '#9A7A55'; ctx.fillRect(x-7*s, y-8*s, 14*s, 3*s); ctx.fillRect(x-7*s, y+5*s, 14*s, 3*s);
+    ctx.fillStyle = '#243B6B'; ctx.fillRect(x-5*s, y-5*s, 10*s, 10*s);
+    ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 1; for (let i=-3;i<=3;i+=2){ ctx.beginPath(); ctx.moveTo(x-5*s, y+i*s); ctx.lineTo(x+5*s, y+i*s+1); ctx.stroke(); }
+  } else if (b.kind === 'burr'){
+    ctx.fillStyle = '#3B3A36'; ctx.beginPath();
+    for (let i=0;i<16;i++){ const a = i/16*6.283, r = (i%2 ? 3.5 : 8.5)*s; ctx.lineTo(x + Math.cos(a)*r, y + Math.sin(a)*r); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#6E6A60'; ctx.beginPath(); ctx.arc(x, y, 2.6*s, 0, 6.283); ctx.fill();
+  }
+}
+function render(now){
+  G.t = now/1000;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#D8D3C7'; ctx.fillRect(0,0,W,H);
+  ctx.setTransform(dpr*S, 0, 0, dpr*S, dpr*OX, dpr*OY);
+  // board
+  ctx.fillStyle = 'rgba(30,34,48,.12)'; ctx.fillRect(3, 5, WW, WH);
+  ctx.fillStyle = weavePat; ctx.fillRect(0, 0, WW, WH);
+  ctx.setLineDash([6,5]); ctx.strokeStyle = 'rgba(30,34,48,.28)'; ctx.lineWidth = 1.2; ctx.strokeRect(9, 9, WW-18, WH-18); ctx.setLineDash([]);
+  if (artDirty) drawArt();
+  ctx.drawImage(art, 0, 0, WW, WH);
+  // items
+  for (const b of G.beads) drawItem(b, b.x, b.y);
+  // thread
+  const p = G.path, cols = [];
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (p.length > 1){
+    ctx.strokeStyle = 'rgba(30,34,48,.2)'; ctx.lineWidth = 4.4; ctx.beginPath();
+    p.forEach((i, k) => { const q = PG(i); k ? ctx.lineTo(q.x+1.2, q.y+1.8) : ctx.moveTo(q.x+1.2, q.y+1.8); }); ctx.stroke();
+    let cum = 0;
+    for (let k=0;k<p.length-1;k++){
+      const a = PG(p[k]), b = PG(p[k+1]), L = dist(a, b);
+      const c = threadCol(cum + L/2); cols.push(c);
+      ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      cum += L;
+    }
+    ctx.setLineDash([2.5, 3.5]); ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1; ctx.beginPath();
+    p.forEach((i, k) => { const q = PG(i); k ? ctx.lineTo(q.x-.4, q.y-.4) : ctx.moveTo(q.x-.4, q.y-.4); }); ctx.stroke(); ctx.setLineDash([]);
+    for (let k=1;k<p.length;k++){ const q = PG(p[k]); ctx.strokeStyle = cols[k-1]; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, 6.4, 0, 6.283); ctx.stroke(); }
+  }
+  // preview
+  const E = PG(endIdx());
+  if (drag && G.phase === 'play' && drag.moved){
+    const w = drag.w, ok = !crossesThread(E.x, E.y, w.x, w.y) && !inAnyLoop((E.x+w.x)/2, (E.y+w.y)/2), cost = Math.hypot(w.x-E.x, w.y-E.y);
+    const afford = cost <= G.spool;
+    ctx.setLineDash([5,5]); ctx.strokeStyle = ok && afford ? 'rgba(36,59,107,.65)' : 'rgba(200,66,59,.85)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(E.x, E.y); ctx.lineTo(w.x, w.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = `600 ${13/S}px Figtree, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = ok && afford ? '#243B6B' : '#C8423B'; ctx.fillText('−' + Math.round(cost), w.x, w.y - 26/S);
+    const q = pegAt(w); if (q >= 0 && q !== endIdx()){ ctx.strokeStyle = G.path.includes(q) ? '#2D8A7B' : '#1E2230'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(PG(q).x, PG(q).y, 11, 0, 6.283); ctx.stroke(); }
+  }
+  // pegs
+  G.pegs.forEach((q, j) => {
+    if (q.sealed){ ctx.fillStyle = '#A9A08E'; ctx.beginPath(); ctx.arc(q.x, q.y, 3.2, 0, 6.283); ctx.fill(); return; }
+    ctx.fillStyle = 'rgba(30,34,48,.28)'; ctx.beginPath(); ctx.arc(q.x+1.4, q.y+2, 4.8, 0, 6.283); ctx.fill();
+    const g = ctx.createRadialGradient(q.x-1.5, q.y-1.5, .4, q.x, q.y, 5);
+    g.addColorStop(0, '#F6E3A6'); g.addColorStop(.5, '#C49A45'); g.addColorStop(1, '#7A5B22');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q.x, q.y, 4.6, 0, 6.283); ctx.fill();
+  });
+  // end marker
+  if (G.phase === 'play' || G.demo){
+    const pulse = reduced ? 0 : Math.sin(G.t*4)*1.8;
+    ctx.strokeStyle = 'rgba(30,34,48,.7)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(E.x, E.y, 11 + pulse, 0, 6.283); ctx.stroke();
+    ctx.fillStyle = 'rgba(30,34,48,.08)'; ctx.beginPath(); ctx.arc(E.x, E.y, 22/S + 6, 0, 6.283); ctx.fill();
+  }
+  // capture fx
+  G.fx = G.fx.filter(f => (f.life -= .03) > 0);
+  G.fx.forEach(f => { const k = 1 - f.life, e = k*k; drawItem(f.b, f.x + (f.tx-f.x)*e, f.y + (f.ty-f.y)*e - Math.sin(k*Math.PI)*24, Math.max(.2, f.life)); });
+  // bad flash
+  if (G.flash){ const f = G.flash; f.life -= .03; if (f.life <= 0) G.flash = null; else {
+    ctx.globalAlpha = f.life; ctx.setLineDash([4,4]); ctx.strokeStyle = '#C8423B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(f.x1, f.y1); ctx.lineTo(f.x2, f.y2); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; } }
+  // floats
+  for (let i=G.floats.length-1;i>=0;i--){
+    const f = G.floats[i]; f.life -= .012; f.y -= .35;
+    if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2.5);
+    ctx.font = f.big ? `italic ${26/S}px "Instrument Serif", Georgia, serif` : `600 ${13/S}px Figtree, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const x = Math.max(80/S, Math.min(WW - 80/S, f.x));
+    ctx.lineWidth = 4/S; ctx.strokeStyle = 'rgba(233,229,220,.9)'; ctx.strokeText(f.t, x, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, x, f.y);
+  }
+  ctx.globalAlpha = 1;
+  // signature on the finished piece
+  if (G.phase === 'over'){
+    ctx.font = `italic ${18/S}px "Instrument Serif", Georgia, serif`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillStyle = 'rgba(30,34,48,.7)';
+    ctx.fillText('Thread · ' + G.key + ' · ' + G.score.toLocaleString(), WW - 16, WH - 14);
+  }
+  hud();
+}
+function hud(){
+  $('#hLoops').textContent = G.loopsN;
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+  const sp = Math.round(G.spool);
+  $('#spNum').textContent = sp.toLocaleString();
+  $('#spBar').style.width = Math.min(100, sp / Math.max(1000, sp) * 100) + '%';
+  $('#spT').classList.toggle('low', sp < 150);
+  $('#unpickBtn').disabled = G.phase !== 'play' || G.path.length <= G.locked;
+  $('#tieBtn').disabled = G.phase !== 'play';
+}
+
+/* ---------- flow ---------- */
+function endRun(reason){
+  G.phase = 'over'; drag = null; $('#stuck').hidden = true;
+  const prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, G.score); else P.best = Math.max(P.best, G.score);
+  checkMissions({}); save();
+  $('#eTitle').textContent = G.score > prev && G.score > 0 ? 'New best' : reason === 'stuck' ? 'Tangled' : 'Tied off';
+  $('#eScore').textContent = G.score.toLocaleString();
+  const gap = prev - G.score;
+  const why = reason === 'stuck' ? (G.spool < 60 ? 'You ran out of thread.' : 'No pin left that your thread can reach without crossing itself.') : 'You tied off the thread.';
+  $('#eMsg').textContent = why + (gap > 0 && gap <= Math.max(150, prev*.12) ? ' Only ' + gap + ' off your best.' : '');
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#eLoops').textContent = G.loopsN + ' · ' + G.pureLoops;
+  $('#eBeads').textContent = G.beadsTotal + ' · ' + G.bestLoop;
+  $('#eUsed').textContent = Math.round(G.used).toLocaleString();
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const pb = $('#pinsBtn'); pb.hidden = G.revived || reason !== 'stuck'; pb.disabled = P.stars < 1;
+  pb.textContent = P.stars < 1 ? 'New pins · need 1★' : 'New pins and +250 thread · 1★ (you have ' + P.stars + ')';
+  $('#resultsBtn').hidden = true;
+  $('#end').hidden = false;
+}
+function newPins(){
+  if (P.stars < 1 || G.revived) return;
+  P.stars--; save(); G.revived = true;
+  const E = PG(endIdx()); let added = 0;
+  for (let t=0; t<400 && added<9; t++){
+    const near = added < 5, a = rand()*6.283, r = 45 + rand()*110;
+    const x = near ? E.x + Math.cos(a)*r : 30 + rand()*(WW-60), y = near ? E.y + Math.sin(a)*r : 30 + rand()*(WH-60);
+    if (x < 26 || y < 26 || x > WW-26 || y > WH-26 || inAnyLoop(x, y)) continue;
+    if (G.pegs.some(p => (p.x-x)**2 + (p.y-y)**2 < 40*40)) continue;
+    const pa = G.path; let okSeg = true;
+    for (let i=0;i<pa.length-1;i++){ const A=PG(pa[i]), B=PG(pa[i+1]); if (segDist(x,y,A.x,A.y,B.x,B.y) < 12){ okSeg = false; break; } }
+    if (!okSeg || G.beads.some(b => (b.x-x)**2 + (b.y-y)**2 < 12*12)) continue;
+    G.pegs.push({ x, y, sealed:false }); added++;
+  }
+  G.spool += 250; G.phase = 'play';
+  $('#end').hidden = true;
+  floatText('+' + added + ' pins, +250 thread', E.x, E.y - 30, '#243B6B', true);
+  afterMove();
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily: the same pins and beads for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#resultsBtn').hidden = true; $('#ready').hidden = false; $('#stuck').hidden = true;
+  fresh(false); G.demo = true;
+  // stitch one example loop so the board shows what a run looks like
+  const target = G.beads.find(b => b.kind === 'bead') || { x:WW/2, y:WH/2 };
+  const ring = G.pegs.map((p, j) => ({ j, d:Math.hypot(p.x-target.x, p.y-target.y), a:Math.atan2(p.y-target.y, p.x-target.x) }))
+    .filter(o => o.d > 40 && o.d < 105).sort((u,v) => u.a - v.a).map(o => o.j);
+  if (ring.length >= 4){
+    G.path = [ring[0]];
+    for (let i=1;i<ring.length;i++) hop(ring[i], true);
+    hop(ring[0], true);
+    const extra = G.pegs.findIndex((p, j) => !p.sealed && !G.path.includes(j) && Math.hypot(p.x - PG(endIdx()).x, p.y - PG(endIdx()).y) < 90);
+    if (extra >= 0) hop(extra, true);
+  }
+  G.phase = 'ready';
+}
+function play(daily){
+  $('#ready').hidden = true; $('#end').hidden = true; $('#resultsBtn').hidden = true;
+  fresh(daily); G.phase = 'play'; afterMove();
+  floatText('drag from the ringed pin', PG(endIdx()).x, PG(endIdx()).y - 30, '#1E2230');
+}
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#pinsBtn').addEventListener('click', newPins);
+$('#artBtn').addEventListener('click', () => { $('#end').hidden = true; $('#resultsBtn').hidden = false; });
+$('#resultsBtn').addEventListener('click', () => { $('#end').hidden = false; $('#resultsBtn').hidden = true; });
+addEventListener('resize', resize);
+
+function frame(now){ render(now); requestAnimationFrame(frame); }
+resize(); ready();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

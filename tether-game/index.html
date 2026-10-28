@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2B2D6E">
+<title>Tether</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  color-scheme: dark;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  --night:#1E1B3A; --indigo:#2B2D6E; --violet:#7A5FA8; --peach:#F29E7E; --text:#FFF6EC; --dim:#C9BFE0;
+  --mint:#5CE1C6; --coral:#FF6F61; --gold:#FFD27A; --card:#26234A; --line:#433E73;
+  --display:"Lilita One", "Arial Rounded MT Bold", "Arial Black", sans-serif;
+  --body:"Nunito", "Helvetica Neue", Arial, sans-serif;
+}
+html,body{height:100%}
+body{margin:0; background:var(--night); color:var(--text); font-family:var(--body); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; max-width:760px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-size:34px; line-height:1; letter-spacing:.03em; color:var(--text); text-shadow:0 3px 0 var(--violet)}
+.brand span{color:var(--mint)}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700}
+.hud b{font-family:var(--display); font-weight:400; font-size:22px; font-variant-numeric:tabular-nums}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; border-radius:16px; overflow:hidden; box-shadow:0 0 0 1px var(--line)}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:crosshair}
+.foot{font-size:12px; color:var(--dim); text-align:center} .foot b{color:var(--text)}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(30,27,58,.45)}
+.card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; width:min(340px,100%); display:flex; flex-direction:column; gap:11px; box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.card h2{font-family:var(--display); font-weight:400; font-size:38px; margin:0; line-height:1; text-shadow:0 3px 0 var(--violet)}
+.card p{margin:0; font-size:14px; line-height:1.5; color:#DDD5F0}
+.card p b{color:var(--text)}
+.big{font-family:var(--display); font-size:58px; line-height:.9; color:var(--mint)}
+.big small{display:block; font-family:var(--body); font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:6px}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:14px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-weight:800; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.btn{font-family:var(--body); font-weight:800; font-size:15px; border:0; border-radius:12px; padding:12px 10px; background:var(--mint); color:#113A33; cursor:pointer; box-shadow:0 4px 0 #2E9C86}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 #2E9C86}
+.btn.alt{background:transparent; color:var(--text); border:1.5px solid var(--line); box-shadow:none}
+.btn.gold{background:var(--gold); color:#3A2A06; box-shadow:0 4px 0 #B8903F}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+.steps{display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-family:var(--display); font-size:15px; color:var(--mint)}
+.steps i{font-style:normal; color:var(--dim); font-family:var(--body)}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-3px; font-weight:700}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:4px; background:#1B1838; border-radius:9px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--violet)}
+.missions li.done{color:var(--mint)} .missions li.done .mb i{background:var(--mint)}
+.toast{position:absolute; top:56px; left:50%; transform:translateX(-50%); z-index:9; background:var(--text); color:var(--night); padding:7px 14px; border-radius:99px; font-size:13px; font-weight:800; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="brand">TETH<span>ER</span></div>
+    <div class="hud">
+      <div><small>Distance</small><b id="hDist">0m</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A sky full of anchors. Press and hold to tether, let go to fly."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Tether</h2>
+        <div class="steps">Hold <i>→</i> tether <i>→</i> swing <i>→</i> let go <i>→</i> fly</div>
+        <p><b>Press and hold</b> near a rock, balloon or drone to throw your rope at it. If you press in open sky, it grabs the best anchor within reach. <b>Let go</b> to release.</p>
+        <p>Release while you're moving <b>up and forward</b> for a <b>Perfect</b>: a speed boost and a longer chain. Bump into rocks or towers and you lose your momentum. The storm behind you never stops, and the storm sea below is the end.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Jump</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily sky</button>
+        </div>
+        <p id="dailyInfo" style="font-size:12px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Swept away</h2>
+        <div class="big"><span id="eDist">0</span>m<small>distance flown</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Score</dt><dd id="eScore">0</dd>
+          <dt>Best score</dt><dd id="eBest">0</dd>
+          <dt>Perfect releases</dt><dd id="ePerf">0</dd>
+          <dt>Longest chain · longest flight</dt><dd id="eChain">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn gold" id="windBtn" type="button">Second wind · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Jump again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><b>Hold</b> to tether · <b>let go</b> to fly · space bar on desktop</div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const GRAV = 1400, RMAX = 370, SEA = 1060, UNIT = 40, MAXV = 1500;
+let W=0, H=0, dpr=1, SC=1, VW=560, VH=760;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  d500:  {t:'Fly 500 m in one run', g:500, run:G=>G.distM},
+  d1500: {t:'Fly 1,500 m in one run', g:1500, run:G=>G.distM},
+  d3000: {t:'Fly 3,000 m in one run', g:3000, run:G=>G.distM},
+  perf5: {t:'5 perfect releases in one run', g:5, run:G=>G.perfects},
+  perf15:{t:'15 perfect releases in one run', g:15, run:G=>G.perfects},
+  chain12:{t:'Build a 12-swing chain', g:12, run:G=>G.bestChain},
+  coins50:{t:'Grab 50 coins in one run', g:50, run:G=>G.coinsN},
+  loon8: {t:'Swing from 8 balloons in one run', g:8, run:G=>G.balloons},
+  fly30: {t:'Fly 30 m on a single release', g:30, run:G=>Math.floor(G.bestFlight)},
+  tot:   {t:'Fly 20,000 m (total)', g:20000, total:'m'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('tether-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('tether-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  if (!G || G.phase === 'ready') return;
+  let ch = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; ch = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · ' + m.t); }
+  });
+  if (ch) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+
+/* ---------- world ---------- */
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', rs:seed|0, daily:!!daily, key, t:0, p:{ x:0, y:330, vx:0, vy:0, trail:[] }, teth:null, anchors:[], rocks:[], towers:[], coinList:[], parts:[], floats:[],
+        nextX:240, baseY:360, stormX:-1100, distM:0, bonus:0, coinsN:0, perfects:0, chain:0, bestChain:0, balloons:0, air:0, releaseX:null, bestFlight:0,
+        slow:0, shake:0, camX:-200, camY:0, zoom:1, winded:false, doneM:[], lastM:0, why:'' };
+  // opening anchor right above the start
+  addRock(220, 200, 34);
+  genUntil(2400);
+}
+function addRock(x, y, r){
+  const rock = { x, y, r, bumps:Array.from({length:9}, () => rr(.85, 1.12)) };
+  G.rocks.push(rock);
+  G.anchors.push({ kind:'rock', x, y:y + r + 10, rock, used:false });
+}
+function genUntil(limit){
+  while (G.nextX < limit){
+    const d = Math.max(0, G.nextX/UNIT);
+    const gap = 230 + rand()*150 + Math.min(130, d*.03);
+    const px = G.nextX, py = G.anchors.length ? G.anchors[G.anchors.length-1].y : 250;
+    G.nextX += gap;
+    G.baseY = Math.max(220, Math.min(560, G.baseY + rr(-120, 120)));
+    const x = G.nextX, y = Math.max(150, Math.min(620, G.baseY + rr(-90, 90)));
+    const r = rand(), drones = d > 400, balloonP = .26;
+    if (r < balloonP) G.anchors.push({ kind:'balloon', x, y, bx:x, by:y, ph:rand()*6, col:['#FF6F61','#FFD27A','#5CE1C6','#B79CFF'][Math.floor(rand()*4)], pop:0, used:false });
+    else if (drones && r < balloonP + .18) G.anchors.push({ kind:'drone', x, y, bx:x, by:y, ph:rand()*6, amp:rr(50, 110), spd:rr(.8, 1.5), axis: rand() < .6 ? 'x' : 'y', used:false });
+    else addRock(x, y - rr(34, 52), rr(26, 44));
+    // towers rise from the sea between anchors
+    if (d > 60 && rand() < Math.min(.5, .2 + d*.0003)){
+      const tx = px + gap*rr(.35, .65), tw = rr(60, 120), top = Math.max(y + 230, rr(480, 780));
+      G.towers.push({ x:tx - tw/2, w:tw, top, lit:Array.from({length:60}, () => rand() < .35) });
+    }
+    // a coin arc that hints at a good line
+    if (rand() < .7){
+      const n = 5, mx = (px + x)/2, my = Math.min(py, y) - rr(40, 120);
+      for (let i=0;i<n;i++){ const f = (i - (n-1)/2)/((n-1)/2); G.coinList.push({ x:mx + f*gap*.28, y:my + f*f*50, got:false, ph:i*.4 }); }
+    }
+  }
+}
+function anchorPos(a){
+  if (a.kind === 'balloon') return { x:a.x, y:a.y + 34 };
+  return { x:a.x, y:a.y };
+}
+
+/* ---------- input ---------- */
+let holding = false, tapWorld = null;
+function toWorld(e){ const r = cv.getBoundingClientRect(); return { x:G.camX + (e.clientX - r.left)/SC/G.zoom, y:G.camY + (e.clientY - r.top)/SC/G.zoom }; }
+function inReach(a){ const q = anchorPos(a); return Math.hypot(q.x - G.p.x, q.y - G.p.y) <= RMAX && !(a.kind === 'balloon' && a.pop > 0); }
+function autoTarget(){
+  let best = null, bs = -1e9;
+  for (const a of G.anchors){
+    if (!inReach(a)) continue;
+    const q = anchorPos(a), dx = q.x - G.p.x, dy = q.y - G.p.y, d = Math.hypot(dx, dy);
+    let s = dx*.9 - Math.abs(d - 220)*.5 + (dy < 0 ? 60 : -120) + (G.teth && G.teth.a === a ? -400 : 0);
+    if (dx < -40) s -= 300;
+    if (s > bs){ bs = s; best = a; }
+  }
+  return best;
+}
+function grab(w){
+  if (G.phase !== 'play') return;
+  let pick = null;
+  if (w){ let bd = 95; for (const a of G.anchors){ if (!inReach(a)) continue; const q = anchorPos(a), d = Math.hypot(q.x - w.x, q.y - w.y); if (d < bd){ bd = d; pick = a; } } }
+  if (!pick) pick = autoTarget();
+  if (!pick){ G.floats.push({ t:'out of reach', x:G.p.x, y:G.p.y - 30, c:'#C9BFE0', life:.8 }); return; }
+  const q = anchorPos(pick), d = Math.hypot(q.x - G.p.x, q.y - G.p.y);
+  G.teth = { a:pick, L:Math.max(70, d), t:0 };
+  if (G.releaseX != null){ const fl = (G.p.x - G.releaseX)/UNIT; G.bestFlight = Math.max(G.bestFlight, fl); }
+  G.releaseX = null;
+  G.chain = G.air < 3 ? G.chain + 1 : 1; G.bestChain = Math.max(G.bestChain, G.chain); G.air = 0;
+  if (pick.kind === 'balloon' && !pick.used){ G.balloons++; }
+  pick.used = true;
+  buzz(8); checkMissions({});
+}
+function release(){
+  if (!G.teth) return;
+  const p = G.p, s = Math.hypot(p.vx, p.vy), ang = Math.atan2(p.vy, p.vx)*180/Math.PI;
+  G.teth = null; G.releaseX = p.x;
+  if (p.vx > 0 && ang > -72 && ang < -18 && s > 560){
+    p.vx *= 1.14; p.vy *= 1.1; G.perfects++; G.slow = .18;
+    const pts = Math.round(50*mult()); G.bonus += pts;
+    G.floats.push({ t:'PERFECT +' + pts, x:p.x, y:p.y - 34, c:'#5CE1C6', life:1.1, big:true });
+    for (let i=0;i<14;i++){ const a = Math.random()*6.283, v = 80 + Math.random()*200; G.parts.push({ x:p.x, y:p.y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:.7, c:'#5CE1C6' }); }
+    buzz([10,20,10]); checkMissions({});
+  } else if (p.vx > 0 && ang > -85 && ang < 5 && s > 420){
+    G.bonus += 10; G.floats.push({ t:'nice', x:p.x, y:p.y - 30, c:'#FFF6EC', life:.7 });
+  }
+}
+const mult = () => 1 + Math.floor(G.chain/5)*.5;
+cv.addEventListener('pointerdown', e => { if (G.phase !== 'play') return; cv.setPointerCapture(e.pointerId); holding = true; grab(toWorld(e)); });
+const up = () => { if (!holding) return; holding = false; release(); };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { if (e.key === ' ' && !e.repeat && G && G.phase === 'play' && !holding){ e.preventDefault(); holding = true; grab(null); } });
+addEventListener('keyup', e => { if (e.key === ' ' && G && G.phase === 'play'){ e.preventDefault(); up(); } });
+
+/* ---------- physics ---------- */
+function step(dt){
+  const p = G.p;
+  G.t += dt;
+  // anchors that move
+  for (const a of G.anchors){
+    if (a.kind === 'balloon'){ a.ph += dt; a.y = a.by + Math.sin(a.ph*1.2)*14; if (a.pop > 0) a.pop += dt; }
+    if (a.kind === 'drone'){ a.ph += dt*a.spd; if (a.axis === 'x') a.x = a.bx + Math.sin(a.ph)*a.amp; else a.y = a.by + Math.sin(a.ph)*a.amp*.8; }
+  }
+  p.vy += GRAV*dt;
+  if (G.teth){
+    const a = G.teth.a, q = anchorPos(a);
+    G.teth.t += dt;
+    G.teth.L = Math.max(80, G.teth.L - 60*dt);
+    const dx = p.x - q.x, dy = p.y - q.y, d = Math.hypot(dx, dy) || 1, tx = -dy/d, ty = dx/d;
+    const dir = Math.sign(p.vx*tx + p.vy*ty) || 1;
+    p.vx += tx*dir*110*dt; p.vy += ty*dir*110*dt;
+    if (a.kind === 'balloon' && G.teth.t > 1.35 && !a.pop){ a.pop = .001; burst(q.x, q.y - 30, a.col, 16); G.floats.push({ t:'pop!', x:q.x, y:q.y - 50, c:a.col, life:.8 }); G.teth = null; G.releaseX = p.x; buzz(15); }
+  } else if (G.phase === 'play') G.air += dt;
+  const s = Math.hypot(p.vx, p.vy); if (s > MAXV){ p.vx *= MAXV/s; p.vy *= MAXV/s; }
+  p.x += p.vx*dt; p.y += p.vy*dt;
+  if (G.teth){
+    const q = anchorPos(G.teth.a), dx = p.x - q.x, dy = p.y - q.y, d = Math.hypot(dx, dy);
+    if (d > G.teth.L){ const nx = dx/d, ny = dy/d; p.x = q.x + nx*G.teth.L; p.y = q.y + ny*G.teth.L; const vr = p.vx*nx + p.vy*ny; if (vr > 0){ p.vx -= vr*nx; p.vy -= vr*ny; } }
+  }
+  // bumps
+  for (const r of G.rocks){
+    const dx = p.x - r.x, dy = p.y - r.y, d = Math.hypot(dx, dy), R = r.r + 12;
+    if (d < R && d > 0){ const nx = dx/d, ny = dy/d; p.x = r.x + nx*R; p.y = r.y + ny*R; bonk(nx, ny); }
+  }
+  for (const t of G.towers){
+    if (p.x > t.x - 12 && p.x < t.x + t.w + 12 && p.y > t.top - 12){
+      const dl = p.x - (t.x - 12), dr = t.x + t.w + 12 - p.x, dt2 = p.y - (t.top - 12), m = Math.min(dl, dr, dt2);
+      if (m === dt2){ p.y = t.top - 12; bonk(0, -1); } else if (m === dl){ p.x = t.x - 12; bonk(-1, 0); } else { p.x = t.x + t.w + 12; bonk(1, 0); }
+    }
+  }
+  // coins
+  for (const c of G.coinList){ if (!c.got && Math.abs(c.x - p.x) < 24 && Math.abs(c.y - p.y) < 24){ c.got = true; G.coinsN++; G.bonus += Math.round(10*mult()); burst(c.x, c.y, '#FFD27A', 5); } }
+  // chain breaks after a long fall with nothing to hold
+  if (G.air > 3 && G.chain){ G.chain = 0; }
+  // distance, storm, sea
+  if (G.phase === 'play'){
+    G.distM = Math.max(G.distM, Math.floor(p.x/UNIT));
+    const ss = Math.min(640, 200 + G.t*3.6);
+    G.stormX = Math.max(G.stormX + ss*dt, p.x - 1350);
+    if (p.x < G.stormX + 30) die('storm');
+    if (p.y > SEA) die('sea');
+    if (G.distM - G.lastM >= 10){ checkMissions({ m:G.distM - G.lastM }); G.lastM = G.distM; }
+  }
+  // trail for the scarf
+  p.trail.push(p.x, p.y); if (p.trail.length > 24) p.trail.splice(0, 2);
+}
+function bonk(nx, ny){
+  const p = G.p, vn = p.vx*nx + p.vy*ny;
+  if (vn >= 0) return;
+  p.vx -= 1.45*vn*nx; p.vy -= 1.45*vn*ny; p.vx *= .6; p.vy *= .6;
+  if (-vn > 220){ G.shake = .5; if (G.phase === 'play'){ G.chain = 0; G.floats.push({ t:'bonk', x:p.x, y:p.y - 26, c:'#FF6F61', life:.8 }); buzz(30); } burst(p.x, p.y, '#FFF6EC', 8); }
+}
+function burst(x, y, c, n){ for (let i=0;i<n;i++){ const a = Math.random()*6.283, v = 60 + Math.random()*220; G.parts.push({ x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:.9, c }); } }
+function die(why){
+  if (G.phase !== 'play') return;
+  G.phase = 'dead'; G.why = why; G.teth = null; holding = false; G.shake = 1;
+  burst(G.p.x, Math.min(G.p.y, SEA), '#5CE1C6', 30); buzz([50,60,90]);
+  setTimeout(endRun, 1100);
+}
+
+/* ---------- ready-screen idle swing ---------- */
+function idle(dt){
+  const a = G.anchors[0];
+  if (!G.teth){ G.teth = { a, L:170, t:0 }; G.p.x = a.x - 150; G.p.y = a.y + 80; G.p.vx = 0; G.p.vy = 0; }
+  G.teth.t = 0;
+  step(dt);
+  const q = anchorPos(a), dx = G.p.x - q.x; if (Math.abs(dx) < 4 && Math.abs(G.p.vx) < 300){ G.p.vx += Math.sign(G.p.vx || 1)*40; }
+}
+
+/* ---------- render ---------- */
+const clouds = Array.from({length:26}, (_, i) => ({ x:Math.random()*2400, y:Math.random()*900, s:.5 + Math.random()*1.2, layer:i % 3 }));
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W = r.width; H = r.height; cv.width = W*dpr; cv.height = H*dpr; SC = Math.min(W/560, H/760); VW = W/SC; VH = H/SC; }
+function render(dt){
+  const p = G.p, sp = Math.hypot(p.vx, p.vy);
+  // camera leads in the direction of travel and eases out at speed
+  const zt = 1 - Math.min(.16, Math.max(0, sp - 600)/5000);
+  G.zoom += (zt - G.zoom)*Math.min(1, dt*2);
+  const vw = VW/G.zoom, vh = VH/G.zoom;
+  const tx = p.x - vw*.36 + Math.max(-60, Math.min(140, p.vx*.12)), ty = Math.min(p.y - vh*.48, SEA + 60 - vh);
+  G.camX += (tx - G.camX)*Math.min(1, dt*5); G.camY += (ty - G.camY)*Math.min(1, dt*4);
+  genUntil(G.camX + vw + 900);
+  // tidy up behind the storm
+  const cut = Math.min(G.stormX, G.camX) - 500;
+  if (G.anchors.length > 60){ G.anchors = G.anchors.filter(a => a.x > cut || a === (G.teth && G.teth.a)); G.rocks = G.rocks.filter(r => r.x > cut); G.towers = G.towers.filter(t => t.x + t.w > cut); G.coinList = G.coinList.filter(c => c.x > cut && !c.got); }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  const hy = Math.max(0, Math.min(1, (SEA - 380 - G.camY)/vh));
+  sky.addColorStop(0, '#2B2D6E'); sky.addColorStop(Math.max(.05, hy*.6), '#7A5FA8'); sky.addColorStop(Math.min(.98, hy + .08), '#F29E7E'); sky.addColorStop(1, '#F7C59F');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // parallax clouds
+  for (const c of clouds){
+    const f = [.15, .3, .5][c.layer], w = 2400;
+    const x = (((c.x - G.camX*f) % w) + w) % w - 200, y = c.y - G.camY*f*.5;
+    ctx.fillStyle = `rgba(255,246,236,${[.08, .12, .16][c.layer]})`;
+    const r = 40*c.s*(c.layer + 1)*.6;
+    ctx.beginPath(); ctx.arc(x*W/VW, y*H/VH, r, 0, 6.283); ctx.arc(x*W/VW + r*.9, y*H/VH + r*.2, r*.8, 0, 6.283); ctx.arc(x*W/VW - r*.9, y*H/VH + r*.25, r*.7, 0, 6.283); ctx.fill();
+  }
+  const sk = G.shake > 0 && !reduced ? G.shake*8 : 0; G.shake = Math.max(0, G.shake - dt*3);
+  ctx.setTransform(dpr*SC*G.zoom, 0, 0, dpr*SC*G.zoom, dpr*(-G.camX*SC*G.zoom + (Math.random()-.5)*sk), dpr*(-G.camY*SC*G.zoom + (Math.random()-.5)*sk));
+  const x0 = G.camX - 100, x1 = G.camX + vw + 100;
+  // towers
+  for (const t of G.towers){
+    if (t.x + t.w < x0 || t.x > x1) continue;
+    ctx.fillStyle = '#2A2750'; ctx.fillRect(t.x, t.top, t.w, SEA + 200 - t.top);
+    ctx.fillStyle = '#35316A'; ctx.fillRect(t.x, t.top, 6, SEA + 200 - t.top);
+    ctx.fillStyle = '#1E1B3A'; ctx.fillRect(t.x - 4, t.top - 8, t.w + 8, 10);
+    let k = 0;
+    for (let y = t.top + 18; y < SEA; y += 26) for (let x = t.x + 12; x < t.x + t.w - 12; x += 20){ if (t.lit[k++ % 60]){ ctx.fillStyle = 'rgba(255,210,122,.85)'; ctx.fillRect(x, y, 9, 12); } }
+  }
+  // storm sea below
+  ctx.fillStyle = '#1E1B3A';
+  ctx.beginPath(); ctx.moveTo(x0, SEA + 400);
+  for (let x = x0; x <= x1; x += 30) ctx.lineTo(x, SEA - 10 + Math.sin(x*.02 + G.t*2)*8 + Math.sin(x*.05 - G.t*3)*4);
+  ctx.lineTo(x1, SEA + 400); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(122,95,168,.35)'; ctx.fillRect(x0, SEA - 26, x1 - x0, 4);
+  // coins
+  for (const c of G.coinList){
+    if (c.got || c.x < x0 || c.x > x1) continue;
+    const w = Math.abs(Math.cos(G.t*3 + c.ph))*7 + 1.5;
+    ctx.fillStyle = '#FFD27A'; ctx.beginPath(); ctx.ellipse(c.x, c.y, w, 9, 0, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = '#B8903F'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  // rocks
+  for (const r of G.rocks){
+    if (r.x + r.r < x0 || r.x - r.r > x1) continue;
+    ctx.fillStyle = '#4A3F6B'; ctx.beginPath();
+    r.bumps.forEach((b, i) => { const a = i/9*6.283; ctx.lineTo(r.x + Math.cos(a)*r.r*b, r.y + Math.sin(a)*r.r*b); });
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#6CC08A'; ctx.beginPath(); ctx.ellipse(r.x, r.y - r.r*.72, r.r*.8, r.r*.28, 0, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#3A3158'; ctx.beginPath(); ctx.moveTo(r.x - r.r*.5, r.y + r.r*.6); ctx.lineTo(r.x, r.y + r.r + 4); ctx.lineTo(r.x + r.r*.5, r.y + r.r*.6); ctx.fill();
+  }
+  // anchors
+  const target = G.phase === 'play' && !G.teth ? autoTarget() : null;
+  for (const a of G.anchors){
+    const q = anchorPos(a); if (q.x < x0 || q.x > x1) continue;
+    const reach = inReach(a);
+    if (a.kind === 'balloon'){
+      if (a.pop > .4) continue;
+      const k = a.pop ? 1 + a.pop*3 : 1;
+      ctx.globalAlpha = a.pop ? Math.max(0, 1 - a.pop*2.5) : 1;
+      ctx.strokeStyle = 'rgba(255,246,236,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a.x, a.y + 24); ctx.quadraticCurveTo(a.x + 5, a.y + 30, a.x, q.y); ctx.stroke();
+      ctx.fillStyle = a.col; ctx.beginPath(); ctx.ellipse(a.x, a.y, 20*k, 24*k, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(a.x - 7, a.y - 8, 5, 7, -.4, 0, 6.283); ctx.fill();
+      ctx.fillStyle = a.col; ctx.beginPath(); ctx.moveTo(a.x - 4, a.y + 25); ctx.lineTo(a.x + 4, a.y + 25); ctx.lineTo(a.x, a.y + 20); ctx.fill();
+      if (G.teth && G.teth.a === a){ const warn = Math.max(0, G.teth.t - .8)/.55; if (warn > 0){ ctx.strokeStyle = `rgba(255,111,97,${warn})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(a.x, a.y, 30, -Math.PI/2, -Math.PI/2 + warn*6.283); ctx.stroke(); } }
+      ctx.globalAlpha = 1;
+    } else if (a.kind === 'drone'){
+      ctx.fillStyle = '#2A2750'; ctx.fillRect(a.x - 18, a.y - 14, 36, 10);
+      ctx.strokeStyle = '#C9BFE0'; ctx.lineWidth = 2; const sp2 = Math.sin(G.t*40)*12;
+      ctx.beginPath(); ctx.moveTo(a.x - 22 - sp2*.5, a.y - 18); ctx.lineTo(a.x - 22 + sp2*.5, a.y - 18); ctx.moveTo(a.x + 22 - sp2*.5, a.y - 18); ctx.lineTo(a.x + 22 + sp2*.5, a.y - 18); ctx.stroke();
+      ctx.fillStyle = Math.floor(G.t*3) % 2 ? '#FF6F61' : '#5CE1C6'; ctx.beginPath(); ctx.arc(a.x, a.y - 9, 3, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = '#C9BFE0'; ctx.beginPath(); ctx.moveTo(a.x, a.y - 4); ctx.lineTo(a.x, q.y); ctx.stroke();
+    }
+    // hook ring
+    ctx.strokeStyle = reach ? '#FFF6EC' : 'rgba(255,246,236,.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(q.x, q.y, 6, 0, 6.283); ctx.stroke();
+    if (a === target){ ctx.setLineDash([4, 5]); ctx.strokeStyle = 'rgba(92,225,198,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(q.x, q.y, 16 + Math.sin(G.t*6)*2, 0, 6.283); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  // rope
+  if (G.teth){
+    const q = anchorPos(G.teth.a), d = Math.hypot(p.x - q.x, p.y - q.y), slack = Math.max(0, G.teth.L - d);
+    ctx.strokeStyle = '#FFF6EC'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(q.x, q.y);
+    ctx.quadraticCurveTo((q.x + p.x)/2, (q.y + p.y)/2 + slack*.6, p.x, p.y); ctx.stroke();
+  }
+  // scarf trail
+  const tr = p.trail;
+  if (tr.length > 4){
+    for (let i=2;i<tr.length;i+=2){
+      const f = i/tr.length; ctx.strokeStyle = `rgba(92,225,198,${f})`; ctx.lineWidth = 2 + f*7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(tr[i-2], tr[i-1]); ctx.lineTo(tr[i], tr[i+1]); ctx.stroke();
+    }
+  }
+  // flyer
+  if (G.phase !== 'dead' || G.p.y < SEA){
+    const ang = Math.atan2(p.vy, p.vx);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(G.teth ? ang*.3 : ang*.5);
+    ctx.fillStyle = '#FFF6EC'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#2B2D6E'; ctx.beginPath(); ctx.roundRect(-2, -6, 13, 7, 3); ctx.fill();
+    ctx.fillStyle = '#5CE1C6'; ctx.fillRect(1, -4, 4, 3); ctx.fillRect(6, -4, 4, 3);
+    ctx.fillStyle = '#5CE1C6'; ctx.beginPath(); ctx.arc(-3, 7, 5, 0, Math.PI); ctx.fill();
+    ctx.restore();
+  }
+  // particles
+  for (const q of G.parts){ q.x += q.vx*dt; q.y += q.vy*dt; q.vy += 500*dt; q.life -= dt*1.4; ctx.globalAlpha = Math.max(0, q.life); ctx.fillStyle = q.c; ctx.fillRect(q.x - 3, q.y - 3, 6, 6); }
+  G.parts = G.parts.filter(q => q.life > 0); ctx.globalAlpha = 1;
+  // floats
+  for (let i=G.floats.length-1;i>=0;i--){ const f = G.floats[i]; f.life -= dt; f.y -= dt*40; if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2.5); ctx.font = f.big ? '400 26px "Lilita One", sans-serif' : '800 15px Nunito, sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(30,27,58,.7)'; ctx.strokeText(f.t, f.x, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, f.x, f.y); }
+  ctx.globalAlpha = 1;
+  // the storm wall
+  if (G.stormX > x0 - 300){
+    const sx = G.stormX;
+    const g = ctx.createLinearGradient(sx - 200, 0, sx + 120, 0); g.addColorStop(0, 'rgba(20,18,40,1)'); g.addColorStop(.62, 'rgba(20,18,40,.95)'); g.addColorStop(1, 'rgba(20,18,40,0)');
+    ctx.fillStyle = g; ctx.fillRect(x0 - 400, G.camY - 100, sx + 120 - (x0 - 400), vh + 300);
+    ctx.fillStyle = 'rgba(40,36,80,.9)';
+    for (let y = G.camY - 60; y < G.camY + vh + 60; y += 46){ const w = 30 + Math.sin(y*.05 + G.t*3)*14; ctx.beginPath(); ctx.arc(sx + w*.2, y, w, 0, 6.283); ctx.fill(); }
+    if (Math.sin(G.t*7.3) > .97){ ctx.strokeStyle = 'rgba(255,246,236,.9)'; ctx.lineWidth = 3; ctx.beginPath(); let yy = G.camY + 30, xx = sx - 20; ctx.moveTo(xx, yy); for (let i=0;i<6;i++){ xx += Math.random()*50 - 20; yy += 60; ctx.lineTo(xx, yy); } ctx.stroke(); }
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // speed lines
+  if (sp > 900 && !reduced){ ctx.strokeStyle = `rgba(255,246,236,${Math.min(.35, (sp - 900)/2000)})`; ctx.lineWidth = 1.5; for (let i=0;i<8;i++){ const y = (i*97 + G.t*400) % H, x = (i*173 + G.t*900) % W; ctx.beginPath(); ctx.moveTo(W - x, y); ctx.lineTo(W - x - 60, y); ctx.stroke(); } }
+  // storm proximity warning
+  const gap = (p.x - G.stormX)/UNIT;
+  if (G.phase === 'play' && gap < 10){ const a = (1 - gap/10)*.45; const vg = ctx.createLinearGradient(0, 0, W*.35, 0); vg.addColorStop(0, `rgba(20,18,40,${a + .2})`); vg.addColorStop(1, 'rgba(20,18,40,0)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W*.35, H); }
+  // chain readout
+  if (G.phase === 'play' && G.chain > 1){ ctx.textAlign = 'left'; ctx.font = '400 20px "Lilita One", sans-serif'; ctx.fillStyle = '#FFF6EC'; ctx.fillText('chain ' + G.chain + (mult() > 1 ? '  ×' + mult() : ''), 14, 28); }
+  if (G.phase === 'play' && G.t < 3.5){ ctx.textAlign = 'center'; ctx.font = '800 14px Nunito, sans-serif'; ctx.fillStyle = 'rgba(255,246,236,.85)'; ctx.fillText('hold anywhere to tether · let go to fly', W/2, H - 18); }
+  hud();
+}
+function hud(){
+  $('#hDist').textContent = G.distM.toLocaleString() + 'm';
+  $('#hScore').textContent = score().toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+}
+const score = () => G.distM + G.bonus;
+
+/* ---------- flow ---------- */
+function endRun(){
+  const sc = score(), prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, sc); else P.best = Math.max(P.best, sc);
+  checkMissions({ m:G.distM - G.lastM }); G.lastM = G.distM; save();
+  $('#eTitle').textContent = sc > prev && sc > 0 ? 'New best!' : G.why === 'sea' ? 'Into the sea' : 'Swept away';
+  $('#eDist').textContent = G.distM.toLocaleString();
+  const gap = prev - sc;
+  $('#eMsg').textContent = (G.why === 'sea' ? 'You dropped into the storm sea.' : 'The storm caught up with you.') + (gap > 0 && gap <= Math.max(80, prev*.12) ? ' Only ' + gap + ' points off your best.' : '');
+  $('#eScore').textContent = sc.toLocaleString();
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#ePerf').textContent = G.perfects;
+  $('#eChain').textContent = G.bestChain + ' · ' + Math.floor(G.bestFlight) + ' m';
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const wb = $('#windBtn'); wb.hidden = G.winded; wb.disabled = P.stars < 1;
+  wb.textContent = P.stars < 1 ? 'Second wind · need 1★' : 'Second wind, keep flying · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function secondWind(){
+  if (P.stars < 1 || G.winded) return;
+  P.stars--; save(); G.winded = true;
+  const p = G.p, ahead = G.anchors.filter(a => a.x > p.x - 100 && a.kind !== 'balloon').sort((a, b) => a.x - b.x)[0];
+  const ax = ahead ? ahead.x : p.x + 200, ay = ahead ? anchorPos(ahead).y : 300;
+  p.x = ax - 160; p.y = ay + 60; p.vx = 520; p.vy = -620; p.trail = [];
+  G.stormX = p.x - 1300; G.air = 0; G.phase = 'play'; G.releaseX = null;
+  $('#end').hidden = true;
+  G.floats.push({ t:'second wind', x:p.x, y:p.y - 40, c:'#FFD27A', life:1.2, big:true });
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily sky: the same anchors for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false);
+  G.camX = G.p.x - VW*.36; G.camY = G.p.y - VH*.48;
+}
+function play(daily){
+  $('#ready').hidden = true; $('#end').hidden = true;
+  fresh(daily); G.phase = 'play';
+  const p = G.p; p.x = 0; p.y = 330; p.vx = 420; p.vy = -520;
+  G.camX = p.x - VW*.36; G.camY = p.y - VH*.48;
+}
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#windBtn').addEventListener('click', secondWind);
+addEventListener('resize', resize);
+
+let last = performance.now(), acc = 0;
+function frame(now){
+  let dt = Math.min(.05, (now - last)/1000); last = now;
+  if (G.slow > 0){ G.slow -= dt; dt *= .45; }
+  acc += dt;
+  while (acc >= 1/120){
+    if (G.phase === 'play' || G.phase === 'dead') step(1/120);
+    else if (G.phase === 'ready') idle(1/120);
+    acc -= 1/120;
+  }
+  render(dt);
+  requestAnimationFrame(frame);
+}
+resize(); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

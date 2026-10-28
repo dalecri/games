@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3552">
+<meta name="description" content="A one-thumb orbit game: hold to open a gravity well, swirl stardust around your finger and fling it into a growing star.">
+<title>Gravity Well</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@600;700&family=Overpass+Mono:wght@400;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --plate:#0F3552; --plate-2:#133F61; --ink:#E8EEF2; --dim:#8FB0C8; --line:#2A5A7E;
+  --dust:#F0C75E; --comet:#9FD8FF; --meteor:#FF6B4A; --ok:#8BE0A4;
+  --display:"Cormorant SC", "Didot", Georgia, serif;
+  --mono:"Overpass Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html,body{height:100%}
+body{background:var(--plate); color:var(--ink); font-family:var(--mono); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:700; font-size:28px; line-height:.95; letter-spacing:.04em}
+.brand small{display:block; font-family:var(--mono); font-size:9px; letter-spacing:.2em; color:var(--dim); margin-top:3px}
+.hud{display:flex; gap:14px; text-align:right}
+.hud small{display:block; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+.hud b{font-size:18px; font-weight:600; font-variant-numeric:tabular-nums}
+.bars{display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.bars .t{height:6px; background:var(--plate-2); border-radius:9px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--line)}
+.bars .t i{display:block; height:100%; background:var(--comet); border-radius:inherit}
+.lives{display:flex; gap:5px}
+.lives i{width:11px; height:11px; border-radius:50%; border:1.5px solid var(--ink); box-sizing:border-box}
+.lives i.on{background:var(--ink)}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px var(--line)}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:crosshair}
+.foot{font-size:11px; color:var(--dim); text-align:center} .foot b{color:var(--ink); font-weight:600}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(10,36,56,.7)}
+.card{background:#0C2E48; border:1px solid var(--line); border-radius:4px; padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:11px; box-shadow:0 0 0 4px rgba(232,238,242,.04)}
+.card h2{font-family:var(--display); font-weight:700; font-size:32px; margin:0; line-height:1; letter-spacing:.02em}
+.card p{margin:0; font-size:12px; line-height:1.6; color:#BFD2E0}
+.card p b{color:var(--ink); font-weight:600}
+.big{font-family:var(--display); font-weight:700; font-size:58px; line-height:.9}
+.big small{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:6px; font-weight:400}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:12px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-weight:600; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.btn{font-family:var(--mono); font-weight:600; font-size:13px; border:0; border-radius:3px; padding:12px 10px; background:var(--ink); color:#0C2E48; cursor:pointer; box-shadow:0 3px 0 #7F9BB0}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #7F9BB0}
+.btn.alt{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+.btn.gold{background:var(--dust); color:#2A1D02; box-shadow:0 3px 0 #9C7A26}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--dust); outline-offset:2px}
+.sec{font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:-3px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:11.5px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:var(--plate); border-radius:9px; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--comet)}
+.missions li.done{color:var(--dust)} .missions li.done .mb i{background:var(--dust)}
+.kinds{display:grid; grid-template-columns:16px 1fr; gap:6px 10px; align-items:center; font-size:12px; color:#BFD2E0}
+.kinds i{width:9px; height:9px; border-radius:50%; margin:auto}
+.toast{position:absolute; top:52px; left:50%; transform:translateX(-50%); z-index:9; background:var(--dust); color:#2A1D02; padding:7px 14px; border-radius:99px; font-size:11.5px; font-weight:600; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand">Gravity Well<small id="stageName">YELLOW DWARF · ×1</small></div>
+    <div class="hud">
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="bars">
+    <span>Well</span><div class="t"><i id="eBar"></i></div>
+    <span>Star</span><div class="lives" id="lives" aria-label="Star stability"></div>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A star in the middle. Hold anywhere to make a gravity well, release to fling."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">Gravity Well</h2>
+        <p><b>Hold anywhere</b> to open a gravity well. Nearby debris gets pulled in and starts to orbit your finger. <b>Let go</b> to fling it, and aim for the star.</p>
+        <div class="kinds">
+          <i style="background:var(--dust)"></i><span>stardust: feed it to the star</span>
+          <i style="background:var(--comet); width:12px; height:12px"></i><span>comets: worth more, move fast</span>
+          <i style="background:var(--meteor); border-radius:2px"></i><span>rogue rocks: keep them <b>away</b> from the star</span>
+        </div>
+        <p>Every meal makes the star bigger and its pull stronger. Holding drains your well, and holding <b>inside the dashed ring</b> gets your well swallowed. Three hits to the star's stability and it goes nova.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Begin</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily</button>
+        </div>
+        <p id="dailyInfo" style="font-size:11px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Nova</h2>
+        <div class="big"><span id="eScore">0</span><small>points</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Star reached</dt><dd id="eStage">—</dd>
+          <dt>Fed · comets</dt><dd id="eFed">0</dd>
+          <dt>Rocks deflected</dt><dd id="eDef">0</dd>
+          <dt>Best combo</dt><dd id="eCombo">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn gold" id="stabBtn" type="button">Stabilise · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><b>Hold</b> to pull · <b>release</b> to fling · stay out of the dashed ring</div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0, H=0, dpr=1, S=1, cx=0, cy=0;
+const STAGES = [
+  { m:0,   name:'Yellow dwarf', mult:1,   core:'#FFF4D6', glow:'255,210,120' },
+  { m:2.2, name:'Orange giant', mult:1.5, core:'#FFE0B0', glow:'255,160,80' },
+  { m:4.8, name:'Red giant',    mult:2,   core:'#FFD0B8', glow:'255,110,80' },
+  { m:8.5, name:'Blue supergiant', mult:3, core:'#E6F4FF', glow:'140,200,255' },
+];
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  feed40:{t:'Feed the star 40 times in one run', g:40, run:G=>G.fed},
+  feed100:{t:'Feed the star 100 times in one run', g:100, run:G=>G.fed},
+  st3:   {t:'Grow a red giant', g:3, run:G=>G.stage+1},
+  st4:   {t:'Grow a blue supergiant', g:4, run:G=>G.stage+1},
+  def8:  {t:'Deflect 8 rogue rocks in one run', g:8, run:G=>G.deflected},
+  combo6:{t:'Land a 6-meal combo', g:6, run:G=>G.bestCombo},
+  comet5:{t:'Feed 5 comets in one run', g:5, run:G=>G.comets},
+  tot400:{t:'Feed the star 400 times (total)', g:400, total:'fed'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('gravity-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('gravity-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  if (G.demo) return;
+  let ch = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; ch = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · '+m.t); }
+  });
+  if (ch) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p+' / '+m.g)+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+
+/* ---------- world (units: 1 = the shorter side of the stage) ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; S = Math.min(W,H); cx = W/2/S; cy = H/2/S; }
+const starR = () => Math.min(.15, .042*Math.sqrt(G.m));
+const horizon = () => starR()*2.25 + .02;
+function fresh(daily){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', rs:seed|0, daily:!!daily, key, t:0, m:1, stage:0, lives:3, bodies:[], well:null, energy:1, cool:0,
+        score:0, fed:0, comets:0, deflected:0, combo:0, comboT:0, bestCombo:0, spawnT:.2, floats:[], parts:[], flare:0, doneM:[], stabilised:false, swallowT:0 };
+  resetStars();
+}
+let bgStars = [];
+function resetStars(){ bgStars = Array.from({length:90}, () => ({ x:Math.random(), y:Math.random(), r:Math.random()*1.3 + .2, a:Math.random()*.5 + .2 })); }
+function spawn(kind){
+  kind = kind || pickKind();
+  const ang = rr(0, 6.283), R = Math.hypot(cx, cy) + .05;
+  const x = cx + Math.cos(ang)*R, y = cy + Math.sin(ang)*R;
+  const tan = rand() < .5 ? 1 : -1, sp = kind === 'comet' ? rr(.33,.42) : rr(.17, .26);
+  const inx = (cx - x)/R, iny = (cy - y)/R;
+  const vx = inx*sp*.55 + -iny*tan*sp*.8, vy = iny*sp*.55 + inx*tan*sp*.8;
+  G.bodies.push({ kind, x, y, vx, vy, r: kind === 'comet' ? .016 : kind === 'rock' ? .018 : .009, age:0, trail:[] });
+}
+function pickKind(){
+  const r = rand(), rockP = Math.min(.26, .06 + G.m*.022), cometP = .1;
+  if (G.t > 6 && r < rockP) return 'rock';
+  if (r < rockP + cometP) return 'comet';
+  return 'dust';
+}
+
+/* ---------- input ---------- */
+let pointer = null;
+function toWorld(e){ const r = cv.getBoundingClientRect(); return { x:(e.clientX - r.left)/S, y:(e.clientY - r.top)/S }; }
+cv.addEventListener('pointerdown', e => { if (G.phase !== 'play') return; cv.setPointerCapture(e.pointerId); pointer = { id:e.pointerId, ...toWorld(e) }; });
+cv.addEventListener('pointermove', e => { if (pointer && pointer.id === e.pointerId){ const w = toWorld(e); pointer.x = w.x; pointer.y = w.y; } });
+const up = e => { if (pointer && pointer.id === e.pointerId) pointer = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+
+/* ---------- sim ---------- */
+function step(dt){
+  G.t += dt;
+  G.comboT -= dt; if (G.comboT <= 0) G.combo = 0;
+  G.flare = Math.max(0, G.flare - dt*1.5);
+  G.cool = Math.max(0, G.cool - dt);
+  G.swallowT = Math.max(0, G.swallowT - dt);
+  // well
+  const wantWell = pointer && G.cool <= 0 && G.energy > 0;
+  if (wantWell){
+    const d = Math.hypot(pointer.x - cx, pointer.y - cy);
+    if (d < horizon()){
+      G.lives--; G.cool = 1.4; G.energy = .3; G.well = null; G.swallowT = 1; G.flare = 1;
+      floatText('well swallowed', cx, cy - horizon() - .04, '#FF6B4A'); buzz([40,60,40]);
+      if (G.lives <= 0) return nova('The star swallowed your well.');
+    } else {
+      G.well = { x:pointer.x, y:pointer.y };
+      G.energy -= dt * (.2 + (d < horizon()*1.8 ? .35 : 0));
+      if (G.energy <= 0){ G.energy = 0; G.cool = .8; G.well = null; floatText('well collapsed', pointer.x, pointer.y - .05, '#8FB0C8'); }
+    }
+  } else { G.well = null; G.energy = Math.min(1, G.energy + dt*.32); }
+  // spawn
+  G.spawnT -= dt;
+  if (G.spawnT <= 0 && G.bodies.length < 36){ spawn(); G.spawnT = Math.max(.32, 1.1 - G.t*.004 - G.m*.035) * rr(.6, 1.3); }
+  const sr = starR(), gs = .0065 + .0042*G.m;
+  for (const b of G.bodies){
+    b.age += dt;
+    // star pull
+    let dx = cx - b.x, dy = cy - b.y, d2 = dx*dx + dy*dy, d = Math.sqrt(d2);
+    const a = gs / Math.max(d2, .004);
+    b.vx += dx/d*a*dt; b.vy += dy/d*a*dt;
+    // well pull + swirl
+    if (G.well){
+      const wx = G.well.x - b.x, wy = G.well.y - b.y, wd = Math.hypot(wx, wy), R = .3;
+      if (wd < R && wd > .001){
+        const k = (1 - wd/R), pull = 2.3*k/(wd + .06), swirl = 1.6*k;
+        b.vx += (wx/wd*pull - wy/wd*swirl)*dt; b.vy += (wy/wd*pull + wx/wd*swirl)*dt;
+        const damp = Math.exp(-1.6*k*dt); b.vx *= damp; b.vy *= damp;
+        b.held = true;
+      } else b.held = false;
+    } else b.held = false;
+    const sp = Math.hypot(b.vx, b.vy), cap = 1.4; if (sp > cap){ b.vx *= cap/sp; b.vy *= cap/sp; }
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    if (!reduced && (b.trail.push(b.x, b.y), b.trail.length > 16)) b.trail.splice(0, 2);
+    // eaten
+    if (Math.hypot(b.x - cx, b.y - cy) < sr + b.r*.4){ b.dead = true; eat(b); continue; }
+    // gone
+    const m = .25; if (b.age > 2 && (b.x < -m || b.y < -m || b.x > W/S + m || b.y > H/S + m)){ b.dead = true; if (b.kind === 'rock'){ G.deflected++; const pts = 25*STAGES[G.stage].mult; G.score += pts; floatText('deflected +' + pts, Math.max(.1, Math.min(W/S-.1, b.x)), Math.max(.08, Math.min(H/S-.08, b.y)), '#8BE0A4'); checkMissions({}); } }
+  }
+  G.bodies = G.bodies.filter(b => !b.dead);
+  for (const p of G.parts){ p.x += p.vx*dt; p.y += p.vy*dt; p.life -= dt*1.6; }
+  G.parts = G.parts.filter(p => p.life > 0);
+}
+function eat(b){
+  if (b.kind === 'rock'){
+    G.lives--; G.flare = 1.4; burst(b.x, b.y, '#FF6B4A', 20); buzz([50,40,50]);
+    floatText('stability hit', cx, cy - starR() - .05, '#FF6B4A');
+    if (G.lives <= 0) nova('A rogue rock cracked the star.');
+    return;
+  }
+  const flung = b.age > .8;
+  G.combo = G.comboT > 0 ? G.combo + 1 : 1; G.comboT = 1.8; G.bestCombo = Math.max(G.bestCombo, G.combo);
+  const base = b.kind === 'comet' ? 40 : 10, pts = Math.round(base * STAGES[G.stage].mult * (1 + (G.combo-1)*.25));
+  G.score += pts; G.fed++; if (b.kind === 'comet') G.comets++;
+  G.m += b.kind === 'comet' ? .12 : .045;
+  burst(b.x, b.y, b.kind === 'comet' ? '#9FD8FF' : '#F0C75E', b.kind === 'comet' ? 10 : 4);
+  if (G.combo >= 3 || b.kind === 'comet') floatText('+' + pts + (G.combo > 2 ? ' ×' + G.combo : ''), b.x, b.y - .04, b.kind === 'comet' ? '#9FD8FF' : '#F0C75E');
+  const ns = STAGES.reduce((a, s, i) => G.m >= s.m ? i : a, 0);
+  if (ns > G.stage){ G.stage = ns; G.banner = { t:STAGES[ns].name, s:'points ×' + STAGES[ns].mult + ' · stronger pull, wider danger ring', life:1 }; buzz([20,40,20,40]); }
+  checkMissions({ fed:1 });
+}
+function nova(why){ G.phase = 'nova'; G.why = why; G.well = null; pointer = null; G.novaT = 0; for (let i=0;i<60;i++){ const a = Math.random()*6.283, s = .2 + Math.random()*.8; G.parts.push({ x:cx, y:cy, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:1.4, c: i%2 ? '#FFF4D6' : '#FF6B4A' }); } setTimeout(endRun, 1200); }
+function burst(x, y, c, n){ for (let i=0;i<n;i++){ const a = Math.random()*6.283, s = .05 + Math.random()*.2; G.parts.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:.8, c }); } }
+function floatText(t, x, y, c){ G.floats.push({ t, x, y, c, life:1 }); }
+
+/* ---------- render ---------- */
+function render(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*.7);
+  bg.addColorStop(0, '#154466'); bg.addColorStop(1, '#0B2A42');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  if (!G) return;
+  // background stars and chart rings
+  bgStars.forEach(s => { ctx.fillStyle = `rgba(232,238,242,${s.a})`; ctx.fillRect(s.x*W, s.y*H, s.r, s.r); });
+  const X = x => x*S, Y = y => y*S;
+  ctx.strokeStyle = 'rgba(232,238,242,.07)'; ctx.lineWidth = 1;
+  for (let k=1;k<=5;k++){ ctx.beginPath(); ctx.arc(X(cx), Y(cy), S*k*.14, 0, 6.283); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(X(cx), 0); ctx.lineTo(X(cx), H); ctx.moveTo(0, Y(cy)); ctx.lineTo(W, Y(cy)); ctx.stroke();
+  ctx.fillStyle = 'rgba(143,176,200,.5)'; ctx.font = `10px "Overpass Mono", monospace`; ctx.textAlign = 'left';
+  ['I','II','III','IV'].forEach((n, k) => ctx.fillText(n, X(cx) + S*(k+1)*.14 + 3, Y(cy) - 3));
+
+  // star
+  const st = STAGES[G.stage], sr = starR()*S;
+  if (G.phase !== 'nova' || (G.novaT = (G.novaT||0) + .016) < .2){
+    const glow = ctx.createRadialGradient(X(cx), Y(cy), sr*.3, X(cx), Y(cy), sr*(3.2 + G.flare*2));
+    glow.addColorStop(0, `rgba(${st.glow},.55)`); glow.addColorStop(1, `rgba(${st.glow},0)`);
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(X(cx), Y(cy), sr*(3.2 + G.flare*2), 0, 6.283); ctx.fill();
+    // engraved rays
+    ctx.strokeStyle = `rgba(${st.glow},.5)`; ctx.lineWidth = 1;
+    for (let i=0;i<24;i++){ const a = i/24*6.283 + G.t*.05, r1 = sr*1.15, r2 = sr*(i%2 ? 1.6 : 2); ctx.beginPath(); ctx.moveTo(X(cx) + Math.cos(a)*r1, Y(cy) + Math.sin(a)*r1); ctx.lineTo(X(cx) + Math.cos(a)*r2, Y(cy) + Math.sin(a)*r2); ctx.stroke(); }
+    ctx.fillStyle = G.flare > 0 && Math.floor(G.t*20) % 2 ? '#FF9A80' : st.core; ctx.beginPath(); ctx.arc(X(cx), Y(cy), sr, 0, 6.283); ctx.fill();
+  }
+  // danger ring
+  const hz = horizon()*S;
+  ctx.setLineDash([5,6]); ctx.strokeStyle = G.swallowT > 0 ? 'rgba(255,107,74,.9)' : 'rgba(255,107,74,.45)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(X(cx), Y(cy), hz, G.t*.2, G.t*.2 + 6.283); ctx.stroke(); ctx.setLineDash([]);
+
+  // well
+  if (G.well){
+    const wx = X(G.well.x), wy = Y(G.well.y), R = .3*S, e = G.energy;
+    const g = ctx.createRadialGradient(wx, wy, 0, wx, wy, R); g.addColorStop(0, `rgba(159,216,255,${.22*e + .05})`); g.addColorStop(1, 'rgba(159,216,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(wx, wy, R, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(232,238,242,.45)'; ctx.lineWidth = 1;
+    for (let k=0;k<3;k++){ const rr2 = R*(.25 + k*.22) * (1 - ((G.t*.8 + k/3) % 1)*.25); ctx.beginPath(); ctx.arc(wx, wy, rr2, 0, 6.283); ctx.stroke(); }
+    ctx.fillStyle = '#E8EEF2'; ctx.beginPath(); ctx.arc(wx, wy, 3.5, 0, 6.283); ctx.fill();
+  } else if (pointer && G.cool > 0){ ctx.strokeStyle = 'rgba(255,107,74,.6)'; ctx.beginPath(); ctx.arc(X(pointer.x), Y(pointer.y), 14, 0, 6.283); ctx.stroke(); }
+
+  // bodies
+  for (const b of G.bodies){
+    const col = b.kind === 'dust' ? '#F0C75E' : b.kind === 'comet' ? '#9FD8FF' : '#FF6B4A';
+    if (b.trail.length > 4){ ctx.strokeStyle = col; ctx.globalAlpha = b.kind === 'comet' ? .6 : .3; ctx.lineWidth = b.kind === 'comet' ? 2.5 : 1.2;
+      ctx.beginPath(); for (let i=0;i<b.trail.length;i+=2){ const x = X(b.trail[i]), y = Y(b.trail[i+1]); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); } ctx.lineTo(X(b.x), Y(b.y)); ctx.stroke(); ctx.globalAlpha = 1; }
+    const r = b.r*S;
+    ctx.fillStyle = col;
+    if (b.kind === 'rock'){ ctx.save(); ctx.translate(X(b.x), Y(b.y)); ctx.rotate(b.age*2); ctx.beginPath(); for (let i=0;i<7;i++){ const a = i/7*6.283, rad = r*(i%2 ? .75 : 1.05); ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad); } ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else { ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), r, 0, 6.283); ctx.fill(); }
+    if (b.held){ ctx.strokeStyle = 'rgba(232,238,242,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), r + 3, 0, 6.283); ctx.stroke(); }
+  }
+  // particles
+  for (const p of G.parts){ ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.fillStyle = p.c; ctx.fillRect(X(p.x) - 1.5, Y(p.y) - 1.5, 3, 3); }
+  ctx.globalAlpha = 1;
+  // floats
+  for (let i=G.floats.length-1;i>=0;i--){
+    const f = G.floats[i]; f.life -= .016; f.y -= .0009;
+    if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2); ctx.fillStyle = f.c; ctx.font = `600 13px "Overpass Mono", monospace`; ctx.textAlign='center';
+    ctx.fillText(f.t, Math.max(70, Math.min(W-70, X(f.x))), Y(f.y));
+  }
+  ctx.globalAlpha = 1;
+  if (G.banner){ const b = G.banner; b.life -= .007; if (b.life <= 0) G.banner = null; else {
+    ctx.globalAlpha = Math.min(1, b.life*3); ctx.fillStyle = '#E8EEF2'; ctx.textAlign='center';
+    ctx.font = `700 ${Math.round(S*.075)}px "Cormorant SC", serif`; ctx.fillText(b.t, W/2, H*.18);
+    ctx.fillStyle = '#8FB0C8'; ctx.font = `11px "Overpass Mono", monospace`; ctx.fillText(b.s, W/2, H*.18 + 20); ctx.globalAlpha = 1; } }
+  if (G.phase === 'play' && G.t < 3.5){ ctx.fillStyle = 'rgba(232,238,242,.75)'; ctx.font = `12px "Overpass Mono", monospace`; ctx.textAlign='center'; ctx.fillText('hold near the dust, release toward the star', W/2, H - 16); }
+
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+  $('#stageName').textContent = st.name.toUpperCase() + ' · ×' + st.mult;
+  $('#eBar').style.width = (G.energy*100) + '%';
+  const lv = $('#lives'); const key = String(G.lives);
+  if (lv.dataset.k !== key){ lv.dataset.k = key; lv.innerHTML = [0,1,2].map(i => '<i class="' + (i < G.lives ? 'on' : '') + '"></i>').join(''); }
+}
+
+/* ---------- flow ---------- */
+function endRun(){
+  const prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, G.score); else P.best = Math.max(P.best, G.score);
+  checkMissions({}); save();
+  $('#eTitle').textContent = G.score > prev && G.score > 0 ? 'New best!' : 'Nova';
+  $('#eScore').textContent = G.score.toLocaleString();
+  const gap = prev - G.score;
+  $('#eMsg').textContent = G.why + (gap > 0 && gap <= Math.max(150, prev*.12) ? ' Only ' + gap + ' off your best.' : '');
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#eStage').textContent = STAGES[G.stage].name; $('#eFed').textContent = G.fed + ' · ' + G.comets;
+  $('#eDef').textContent = G.deflected; $('#eCombo').textContent = G.bestCombo;
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const sb = $('#stabBtn'); sb.hidden = G.stabilised; sb.disabled = P.stars < 1;
+  sb.textContent = P.stars < 1 ? 'Stabilise · need 1★' : 'Stabilise the star, keep going · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function stabilise(){
+  if (P.stars < 1 || G.stabilised) return;
+  P.stars--; save(); G.stabilised = true;
+  G.lives = 2; G.bodies = G.bodies.filter(b => b.kind !== 'rock'); G.phase = 'play'; G.novaT = 0; G.energy = 1; G.cool = 0; G.parts = [];
+  G.banner = { t:'Stabilised', s:'two stability left · rocks cleared', life:1 };
+  $('#end').hidden = true;
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily: the same sky for everyone today. Your best today: ' + (P.daily[todayKey()]||0) + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false); G.demo = true;
+  for (let i=0;i<14;i++){ spawn(i%5 === 0 ? 'comet' : 'dust'); }
+  for (let k=0;k<200;k++) step(1/60);
+  G.t = 0; G.score = 0; G.fed = 0; G.comets = 0; G.m = 1; G.stage = 0; G.combo = 0; G.bestCombo = 0; G.floats = []; G.lives = 3; G.banner = null;
+}
+function play(daily){ $('#ready').hidden = true; $('#end').hidden = true; fresh(daily); G.phase = 'play'; }
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#stabBtn').addEventListener('click', stabilise);
+addEventListener('resize', resize);
+
+let last = performance.now(), acc = 0;
+function frame(now){
+  acc += Math.min(.1, (now-last)/1000); last = now;
+  while (acc >= 1/120){ if (G.phase === 'play') step(1/120); else { for (const p of G.parts){ p.x += p.vx/120; p.y += p.vy/120; p.life -= 1.6/120; } G.parts = G.parts.filter(p => p.life > 0); } acc -= 1/120; }
+  render(); requestAnimationFrame(frame);
+}
+resize(); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

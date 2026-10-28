@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF2F1">
+<meta name="description" content="A one-thumb dodge game: every 10-second sheet rewinds and your previous runs come back as echoes you have to avoid.">
+<title>Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: light;
+  --table:#EEF2F1; --table-2:#F9FBFA; --grid:#D9E0E2; --grid-2:#C4CDD1;
+  --ink:#1B1D22; --ink-2:#5A6068; --blue:#3F7FD9; --red:#E0523F; --mark:#F2C230; --card:#FFFFFF;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+html,body{height:100%}
+body{background:var(--table); color:var(--ink); font-family:var(--mono); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px 10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:800; font-size:34px; line-height:1; letter-spacing:.02em}
+.brand span{display:inline-block}
+.brand .o1{text-shadow:-4px 0 0 rgba(224,82,63,.55)}
+.brand .o2{text-shadow:4px 0 0 rgba(63,127,217,.55), 8px 0 0 rgba(63,127,217,.25)}
+.hud{display:flex; gap:16px; text-align:right}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2)}
+.hud b{font-size:20px; font-weight:600; font-variant-numeric:tabular-nums}
+.stage{flex:1; min-height:0; position:relative; touch-action:none}
+canvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:crosshair}
+.tc{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.tc .prog{height:6px; background:var(--grid); border-radius:99px; overflow:hidden}
+.tc .prog i{display:block; height:100%; width:0; background:var(--ink)}
+.pips{display:flex; gap:4px}
+.pips i{width:10px; height:10px; border-radius:50%; border:1.5px solid var(--ink); box-sizing:border-box}
+.pips i.on{background:var(--mark); border-color:var(--ink)}
+.hint{font-size:11px; color:var(--ink-2); text-align:center; line-height:1.4}
+.hint b{color:var(--ink)}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding-block:8px}
+.card{background:var(--card); border:1.5px solid var(--ink); border-radius:6px; padding:18px; width:min(330px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:12px;
+  box-shadow:-6px 6px 0 rgba(224,82,63,.35), 6px 12px 0 rgba(63,127,217,.3)}
+.card h2{font-family:var(--display); font-weight:800; font-size:30px; margin:0; line-height:1; text-wrap:balance}
+.card p{margin:0; font-size:12px; line-height:1.5; color:var(--ink-2)}
+.card p b{color:var(--ink)}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:5px 12px; margin:0; font-size:13px}
+.card dd{margin:0; font-weight:600; text-align:right; font-variant-numeric:tabular-nums}
+.btn{font-family:var(--mono); font-weight:600; font-size:14px; border:0; border-radius:4px; padding:12px; background:var(--ink); color:#fff; cursor:pointer; box-shadow:0 3px 0 #000}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #000}
+.btn:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); margin-bottom:-4px}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:12px}
+.missions li small{color:var(--ink-2); font-variant-numeric:tabular-nums}
+.missions .bar{grid-column:1/-1; height:4px; background:var(--grid); border-radius:99px; overflow:hidden}
+.missions .bar i{display:block; height:100%; background:var(--ink)}
+.missions li.done{color:#2B7A4B} .missions li.done .bar i{background:#2B7A4B}
+.reel{width:min(100%, 210px); margin-inline:auto; aspect-ratio:1; max-width:100%; border:1px solid var(--grid-2); border-radius:4px; background:var(--table-2); display:block}
+.legend{display:flex; gap:12px; font-size:11px; color:var(--ink-2); flex-wrap:wrap}
+.legend span{display:inline-flex; gap:5px; align-items:center}
+.legend i{width:10px; height:10px; border-radius:50%; display:inline-block}
+.toast{position:absolute; top:48px; left:50%; transform:translateX(-50%); z-index:9; background:var(--ink); color:#fff; padding:7px 14px; border-radius:99px; font-size:12px; white-space:nowrap; pointer-events:none}
+.toast b{color:var(--mark)}
+@media (prefers-reduced-motion: reduce){ .toast{animation:none} }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand" aria-label="Loop"><span>L</span><span class="o1">O</span><span class="o2">O</span><span>P</span></div>
+    <div class="hud">
+      <div><small>Sheet</small><b id="hSheet">1</b></div>
+      <div><small>Score</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="Loop play area. Drag anywhere to move."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="readyTitle">
+        <h2 id="readyTitle">Loop</h2>
+        <p>Every sheet lasts <b>10 seconds</b>. Grab the marks to clear it. Then the sheet rewinds and <b>your last run plays back</b> as an echo you have to dodge.</p>
+        <div class="legend">
+          <span><i style="background:var(--ink)"></i>you</span>
+          <span><i style="background:var(--red)"></i><i style="background:var(--blue)"></i>echoes</span>
+          <span><i style="background:var(--mark); border:1.5px solid var(--ink); box-sizing:border-box"></i>mark</span>
+          <span><i style="background:var(--blue); outline:2px dashed var(--blue); outline-offset:1px"></i>rewind</span>
+        </div>
+        <p>Drag anywhere to move (arrow keys work too). Max 6 echoes at a time. A blue <b>rewind mark</b> erases your newest echo.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <button class="btn" id="startBtn" type="button">Roll camera</button>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="endTitle">
+        <h2 id="endTitle">Cut!</h2>
+        <p id="endMsg"></p>
+        <canvas class="reel" id="reel" width="600" height="600" aria-label="Every path you drew this run"></canvas>
+        <dl>
+          <dt>Score</dt><dd id="eScore">0</dd>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Sheets cleared</dt><dd id="eSheets">0</dd>
+          <dt>Marks · quick grabs</dt><dd id="eMarks">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn" id="againBtn" type="button">Roll again</button>
+      </div>
+    </div>
+  </div>
+  <div class="tc">
+    <span id="tcText">FR 0000 / 0600</span>
+    <div class="prog"><i id="tcBar"></i></div>
+    <div class="pips" id="pips" aria-label="Marks needed"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const FPS = 60, LOOP_FRAMES = 600, GRACE = 50, MAX_ECHO = 6, PR = 0.024, SR = 0.03, QUICK = 72;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+let W = 0, H = 0, side = 0, ox = 0, oy = 0, dpr = 1;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  sheet5:  {t:'Clear sheet 5', g:5, run:G=>G.loop-1},
+  sheet8:  {t:'Clear sheet 8', g:8, run:G=>G.loop-1},
+  quick5:  {t:'5 quick grabs in one run', g:5, run:G=>G.quick},
+  score800:{t:'Score 800 in one run', g:800, run:G=>G.score},
+  full6:   {t:'Clear a sheet with 6 echoes', g:1, run:G=>G.fullClear},
+  rewind2: {t:'Use 2 rewind marks (total)', g:2, total:'rewinds'},
+  marks60: {t:'Grab 60 marks (total)', g:60, total:'marks'},
+  close3:  {t:'3 close calls in one run', g:3, run:G=>G.close},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('loop-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, bestSheet:0, stars:0, mission:[], mprog:{}, runs:0 };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+function save(){ try { localStorage.setItem('loop-profile', JSON.stringify(P)); } catch(e){} }
+function refill(){
+  const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id));
+  while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id] = 0; }
+}
+refill(); save();
+function checkMissions(delta){
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    P.mprog[id] = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · <b>+1★</b> · '+m.t); }
+  });
+  save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className = 'done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p+' / '+m.g)+'</small><div class="bar"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+
+/* ---------- game state ---------- */
+let G;
+function freshGame(){
+  G = { phase:'ready', loop:1, frame:0, p:{x:.5,y:.62}, rec:[], echoes:[], spark:null, got:0, score:0, marks:0, quick:0, close:0,
+        rewindUsed:false, betweenT:0, deadT:0, dead:null, parts:[], fullClear:0, doneM:[], closeCd:0, echoN:0 };
+  newSpark();
+}
+function quota(){ return Math.min(7, 3 + Math.floor((G.loop-1)/2)); }
+function echoAt(e, f){ const i = Math.min(f, e.path.length/2 - 1); return { x:e.path[i*2], y:e.path[i*2+1] }; }
+function newSpark(){
+  let best = null, bestScore = -1;
+  for (let a=0; a<40; a++){
+    const x = .08 + Math.random()*.84, y = .08 + Math.random()*.84;
+    const dp = Math.hypot(x-G.p.x, y-G.p.y);
+    if (dp < .22) continue;
+    let de = 1;
+    G.echoes.forEach(e => { for (let k=0;k<=40;k+=10){ const q = echoAt(e, G.frame+k); de = Math.min(de, Math.hypot(x-q.x, y-q.y)); } });
+    const sc = Math.min(de, .2) + Math.min(dp, .5)*.2;
+    if (sc > bestScore){ bestScore = sc; best = {x,y}; }
+    if (de > .15) break;
+  }
+  if (!best) best = { x:.5, y:.3 };
+  const rewind = !G.rewindUsed && G.echoes.length >= 2 && Math.random() < .14;
+  G.spark = { x:best.x, y:best.y, born:G.frame, rewind };
+}
+
+/* ---------- input ---------- */
+let down = null; const keys = {};
+let pdx = 0, pdy = 0;
+cv.addEventListener('pointerdown', e => { down = { id:e.pointerId, x:e.clientX, y:e.clientY }; cv.setPointerCapture(e.pointerId); if (G.phase === 'ready' && $('#ready').hidden) begin(); });
+cv.addEventListener('pointermove', e => { if (!down || e.pointerId !== down.id) return; pdx += e.clientX - down.x; pdy += e.clientY - down.y; down.x = e.clientX; down.y = e.clientY; });
+const up = e => { if (down && e.pointerId === down.id) down = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { keys[e.key] = true; if (e.key.startsWith('Arrow')) e.preventDefault(); });
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* ---------- sim ---------- */
+function step(){
+  if (G.phase === 'between'){
+    G.betweenT++;
+    if (G.betweenT > (reduced ? 40 : 80)){ G.phase = 'play'; G.frame = 0; G.rec = []; G.got = 0; G.rewindUsed = false; newSpark(); }
+    applyInput(); return;
+  }
+  if (G.phase === 'dead'){ G.deadT++; if (G.deadT === 50) endRun(); return; }
+  if (G.phase !== 'play') return;
+
+  applyInput();
+  G.rec.push(G.p.x, G.p.y);
+
+  // echoes
+  if (G.frame > GRACE){
+    for (const e of G.echoes){
+      const q = echoAt(e, G.frame), d = Math.hypot(q.x-G.p.x, q.y-G.p.y);
+      if (d < PR*1.55){ die(q); return; }
+      if (d < PR*3.2 && G.closeCd <= 0){ G.close++; G.closeCd = 40; floatText('close', G.p.x, G.p.y - .05); }
+    }
+  }
+  if (G.closeCd > 0) G.closeCd--;
+
+  // marks
+  const s = G.spark;
+  if (s && Math.hypot(s.x-G.p.x, s.y-G.p.y) < PR + SR){
+    const quick = G.frame - s.born < QUICK;
+    let pts = 10*G.loop + (quick ? 5*G.loop : 0);
+    G.score += pts; G.got++; G.marks++; if (quick) G.quick++;
+    burst(s.x, s.y, s.rewind ? '#3F7FD9' : '#F2C230');
+    let rw = 0;
+    if (s.rewind && G.echoes.length){ G.echoes.pop(); G.rewindUsed = true; rw = 1; floatText('echo erased', s.x, s.y - .05); }
+    else floatText('+'+pts+(quick?' quick':''), s.x, s.y - .05);
+    buzz(10);
+    newSpark();
+    checkMissions({ marks:1, rewinds:rw });
+  }
+
+  G.frame++;
+  if (G.frame >= LOOP_FRAMES) endLoop();
+}
+function applyInput(){
+  let dx = pdx/side, dy = pdy/side; pdx = pdy = 0;
+  const k = .011;
+  if (keys.ArrowLeft) dx -= k; if (keys.ArrowRight) dx += k; if (keys.ArrowUp) dy -= k; if (keys.ArrowDown) dy += k;
+  const m = Math.hypot(dx, dy), cap = .06;
+  if (m > cap){ dx *= cap/m; dy *= cap/m; }
+  G.p.x = Math.min(1-PR, Math.max(PR, G.p.x + dx));
+  G.p.y = Math.min(1-PR, Math.max(PR, G.p.y + dy));
+}
+function endLoop(){
+  if (G.got < quota()){ die(null, 'Missed the marks'); return; }
+  const bonus = 25*G.echoes.length;
+  G.score += bonus;
+  if (G.echoes.length >= MAX_ECHO) G.fullClear = 1;
+  G.echoes.push({ path:G.rec.slice(), n:++G.echoN });
+  if (G.echoes.length > MAX_ECHO) G.echoes.shift();
+  G.loop++;
+  checkMissions({});
+  G.phase = 'between'; G.betweenT = 0; G.spark = null;
+  if (bonus) floatText('sheet clear +'+bonus, .5, .45);
+  buzz([10,30,10]);
+}
+function die(q, why){
+  G.phase = 'dead'; G.deadT = 0; G.dead = { x: q ? q.x : G.p.x, y: q ? q.y : G.p.y, why: why || 'Hit by an echo' };
+  buzz([40,60,60]);
+}
+
+/* ---------- fx ---------- */
+function burst(x, y, c){ for (let i=0;i<10;i++){ const a = Math.random()*6.28, v = .004 + Math.random()*.006; G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,c}); } }
+const floats = [];
+function floatText(t, x, y){ floats.push({ t, x, y, life:1 }); }
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+function toast(html){
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; $('#app').appendChild(t);
+  t.animate([{opacity:0,transform:'translate(-50%,-8px)'},{opacity:1,transform:'translate(-50%,0)',offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish = () => t.remove();
+}
+
+/* ---------- render ---------- */
+function resize(){
+  const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1);
+  W = r.width; H = r.height; cv.width = W*dpr; cv.height = H*dpr;
+  side = Math.max(100, Math.min(W, H)); ox = (W-side)/2; oy = (H-side)/2;
+}
+const X = x => ox + x*side, Y = y => oy + y*side;
+const ECHO_COL = ['224,82,63','63,127,217'];
+function drawArena(c, s, x0, y0){
+  const g = c.createRadialGradient(x0+s/2, y0+s/2, s*.1, x0+s/2, y0+s/2, s*.75);
+  g.addColorStop(0,'#FFFFFF'); g.addColorStop(1,'#EAF0EF');
+  c.fillStyle = g; c.fillRect(x0, y0, s, s);
+  c.lineWidth = 1;
+  for (let i=1;i<10;i++){
+    c.strokeStyle = i === 5 ? '#C4CDD1' : '#DDE3E5';
+    c.beginPath(); c.moveTo(x0+i*s/10, y0); c.lineTo(x0+i*s/10, y0+s); c.stroke();
+    c.beginPath(); c.moveTo(x0, y0+i*s/10); c.lineTo(x0+s, y0+i*s/10); c.stroke();
+  }
+  // peg bar holes, like an animator's sheet
+  c.fillStyle = '#D3DADD';
+  const py = y0 + s*.025, ph = s*.018;
+  [[.3,.07],[.5,.035],[.7,.07]].forEach(([cx,w]) => { const pw = s*w; c.beginPath(); c.roundRect(x0+cx*s-pw/2, py, pw, ph, ph/2); c.fill(); });
+  c.strokeStyle = '#1B1D22'; c.lineWidth = 1.5; c.strokeRect(x0+.75, y0+.75, s-1.5, s-1.5);
+}
+function render(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#EEF2F1'; ctx.fillRect(0,0,W,H);
+  drawArena(ctx, side, ox, oy);
+  const f = G.phase === 'between' ? Math.round(G.betweenT/80 * LOOP_FRAMES) : G.frame;
+  const rr = PR*side;
+
+  // faint full paths so you can read what your echoes will do
+  G.echoes.forEach((e, i) => {
+    const col = ECHO_COL[e.n % 2], age = (G.echoes.length - 1 - i);
+    ctx.strokeStyle = `rgba(${col},${G.phase === 'between' ? .35 : .09})`; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    const L = e.path.length/2, lim = G.phase === 'between' ? Math.min(L, Math.max(1, Math.round(L * G.betweenT/60))) : L;
+    for (let k=0;k<lim;k+=2){ const x = X(e.path[k*2]), y = Y(e.path[k*2+1]); k ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+    ctx.stroke();
+  });
+  if (G.phase === 'play' || G.phase === 'dead'){
+    G.echoes.forEach((e, i) => {
+      const col = ECHO_COL[e.n % 2], age = G.echoes.length - 1 - i, a = 1 - age*.1;
+      ctx.strokeStyle = `rgba(${col},${.45*a})`; ctx.lineWidth = rr*.9; ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let k=Math.max(0,f-30); k<=f; k+=2){ const q = echoAt(e,k); k===Math.max(0,f-30) ? ctx.moveTo(X(q.x),Y(q.y)) : ctx.lineTo(X(q.x),Y(q.y)); }
+      ctx.stroke();
+      const q = echoAt(e, f);
+      ctx.beginPath(); ctx.arc(X(q.x), Y(q.y), rr, 0, 6.283);
+      if (f <= GRACE){ ctx.setLineDash([4,4]); ctx.strokeStyle = `rgba(${col},.9)`; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]); }
+      else { ctx.fillStyle = `rgba(${col},${.85*a})`; ctx.fill(); }
+      ctx.fillStyle = '#fff'; ctx.font = `600 ${Math.round(rr*.9)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (f > GRACE) ctx.fillText(e.n, X(q.x), Y(q.y)+1);
+    });
+  }
+
+  // mark
+  const s = G.spark;
+  if (s && G.phase === 'play'){
+    const t = performance.now()/1000, pul = 1 + Math.sin(t*6)*.08, R = SR*side*pul, x = X(s.x), y = Y(s.y);
+    ctx.beginPath(); ctx.arc(x, y, R, 0, 6.283);
+    ctx.fillStyle = s.rewind ? 'rgba(63,127,217,.25)' : '#F2C230'; ctx.fill();
+    ctx.strokeStyle = s.rewind ? '#3F7FD9' : '#1B1D22'; ctx.lineWidth = 2;
+    if (s.rewind) ctx.setLineDash([5,4]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x-R*1.6,y); ctx.lineTo(x+R*1.6,y); ctx.moveTo(x,y-R*1.6); ctx.lineTo(x,y+R*1.6); ctx.lineWidth = 1.5; ctx.stroke();
+    if (s.rewind){ ctx.fillStyle = '#3F7FD9'; ctx.font = `600 ${Math.round(R)}px "IBM Plex Mono", monospace`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('↺', x, y+1); }
+    // quick-grab ring
+    const qt = 1 - (G.frame - s.born)/QUICK;
+    if (qt > 0){ ctx.beginPath(); ctx.arc(x, y, R*2.1, -1.5708, -1.5708 + qt*6.283); ctx.strokeStyle = 'rgba(27,29,34,.35)'; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+
+  // player
+  const rec = G.rec, n = rec.length/2;
+  if (G.phase === 'play' && n > 2){
+    ctx.strokeStyle = 'rgba(27,29,34,.22)'; ctx.lineWidth = rr*.7; ctx.lineCap = 'round';
+    ctx.beginPath(); for (let k=Math.max(0,n-24); k<n; k++){ const x = X(rec[k*2]), y = Y(rec[k*2+1]); k===Math.max(0,n-24) ? ctx.moveTo(x,y) : ctx.lineTo(x,y); } ctx.stroke();
+  }
+  if (G.phase !== 'dead' || G.deadT % 8 < 5){
+    ctx.beginPath(); ctx.arc(X(G.p.x), Y(G.p.y), rr, 0, 6.283); ctx.fillStyle = '#1B1D22'; ctx.fill();
+    ctx.beginPath(); ctx.arc(X(G.p.x), Y(G.p.y), rr*.32, 0, 6.283); ctx.fillStyle = '#fff'; ctx.fill();
+  }
+  if (G.phase === 'dead' && G.dead){
+    const k = Math.min(1, G.deadT/30);
+    ctx.beginPath(); ctx.arc(X(G.dead.x), Y(G.dead.y), rr*(1.2 + k*4), 0, 6.283);
+    ctx.strokeStyle = `rgba(224,82,63,${1-k})`; ctx.lineWidth = 3; ctx.stroke();
+  }
+
+  // particles + floats
+  G.parts = G.parts.filter(p => p.life > 0);
+  G.parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= .04; ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.c; ctx.fillRect(X(p.x)-2, Y(p.y)-2, 4, 4); });
+  ctx.globalAlpha = 1;
+  for (let i=floats.length-1;i>=0;i--){
+    const fl = floats[i]; fl.life -= .02; fl.y -= .0015;
+    if (fl.life <= 0){ floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, fl.life*2); ctx.fillStyle = '#1B1D22';
+    ctx.font = `800 ${Math.round(side*.042)}px "Bricolage Grotesque", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(fl.t, X(Math.min(.85, Math.max(.15, fl.x))), Y(fl.y));
+  }
+  ctx.globalAlpha = 1;
+
+  // between-sheet card
+  if (G.phase === 'between'){
+    const cx = ox + side/2, cy = oy + side*.5;
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = '#1B1D22'; ctx.lineWidth = 1.5;
+    const w = side*.62, h = side*.2;
+    ctx.beginPath(); ctx.roundRect(cx-w/2, cy-h/2, w, h, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1B1D22'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `800 ${Math.round(side*.075)}px "Bricolage Grotesque", sans-serif`;
+    ctx.fillText('Sheet ' + G.loop, cx, cy - h*.14);
+    ctx.font = `400 ${Math.round(side*.032)}px "IBM Plex Mono", monospace`; ctx.fillStyle = '#5A6068';
+    ctx.fillText('rewinding · ' + G.echoes.length + (G.echoes.length === 1 ? ' echo' : ' echoes') + ' · need ' + quota(), cx, cy + h*.24);
+  }
+  if (G.phase === 'ready' && $('#ready').hidden){
+    ctx.fillStyle = '#1B1D22'; ctx.textAlign = 'center'; ctx.font = `600 ${Math.round(side*.036)}px "IBM Plex Mono", monospace`;
+    ctx.fillText('touch to roll', ox+side/2, oy+side*.78);
+  }
+}
+function hud(){
+  $('#hSheet').textContent = G.loop;
+  $('#hScore').textContent = G.score;
+  $('#hBest').textContent = Math.max(P.best, G.score);
+  const f = G.phase === 'play' ? G.frame : 0;
+  $('#tcText').textContent = 'FR ' + String(f).padStart(4,'0') + ' / ' + LOOP_FRAMES;
+  $('#tcBar').style.width = (f/LOOP_FRAMES*100) + '%';
+  const q = quota(), pips = $('#pips');
+  if (pips.children.length !== q) pips.innerHTML = '<i></i>'.repeat(q);
+  [...pips.children].forEach((p,i) => p.classList.toggle('on', i < G.got));
+}
+
+/* ---------- flow ---------- */
+function begin(){ $('#ready').hidden = true; G.phase = 'play'; G.frame = 0; G.rec = []; newSpark(); }
+function endRun(){
+  const prevBest = P.best;
+  P.best = Math.max(P.best, G.score); P.bestSheet = Math.max(P.bestSheet, G.loop-1); P.runs++;
+  checkMissions({});
+  const cleared = G.loop - 1;
+  $('#endTitle').textContent = G.score > prevBest && G.score > 0 ? 'New best!' : 'Cut!';
+  const gap = prevBest - G.score;
+  let msg = G.dead.why + ' on sheet ' + G.loop + '.';
+  if (G.score > prevBest && prevBest > 0) msg += ' Beat your best by ' + (G.score - prevBest) + '.';
+  else if (gap > 0 && gap <= Math.max(80, prevBest*.15)) msg += ' Only ' + gap + ' off your best.';
+  $('#endMsg').textContent = msg;
+  $('#eScore').textContent = G.score; $('#eBest').textContent = P.best;
+  $('#eSheets').textContent = cleared; $('#eMarks').textContent = G.marks + ' · ' + G.quick;
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  drawReel();
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function drawReel(){
+  const rc = $('#reel'), c = rc.getContext('2d'), s = rc.width;
+  drawArena(c, s, 0, 0);
+  const all = [...G.echoes.map(e => ({ path:e.path, col:ECHO_COL[e.n%2] })), { path:G.rec, col:'27,29,34' }];
+  all.forEach((e, i) => {
+    c.strokeStyle = `rgba(${e.col},${i === all.length-1 ? .9 : .5})`; c.lineWidth = i === all.length-1 ? 4 : 3; c.lineJoin = c.lineCap = 'round';
+    c.beginPath();
+    for (let k=0; k<e.path.length/2; k+=2){ const x = e.path[k*2]*s, y = e.path[k*2+1]*s; k ? c.lineTo(x,y) : c.moveTo(x,y); }
+    c.stroke();
+  });
+  if (G.dead){ c.beginPath(); c.arc(G.dead.x*s, G.dead.y*s, 18, 0, 6.283); c.strokeStyle = '#E0523F'; c.lineWidth = 4; c.stroke(); }
+  c.fillStyle = '#5A6068'; c.font = '600 22px "IBM Plex Mono", monospace'; c.textAlign = 'left';
+  c.fillText('LOOP · sheet ' + G.loop + ' · ' + G.score, 22, s - 22);
+}
+function newRun(){ $('#end').hidden = true; freshGame(); begin(); }
+$('#startBtn').addEventListener('click', begin);
+$('#againBtn').addEventListener('click', newRun);
+addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter'){
+    if (!$('#ready').hidden && document.activeElement !== $('#startBtn')) { begin(); e.preventDefault(); }
+  }
+});
+addEventListener('resize', resize);
+
+let last = performance.now(), acc = 0;
+function frame(now){
+  acc += Math.min(.1, (now - last)/1000); last = now;
+  while (acc >= 1/FPS){ step(); acc -= 1/FPS; }
+  render(); hud();
+  requestAnimationFrame(frame);
+}
+function start(data){
+  resize();
+  if (data && data.G && data.G.phase){ G = data.G; if (G.phase === 'ready') missionList($('#rMissions')); else $('#ready').hidden = true; if (G.phase === 'dead' && G.deadT >= 50) endRun(); }
+  else { freshGame(); missionList($('#rMissions')); }
+  requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+}
+window.claude?.hot?.snapshot?.(() => ({ G: JSON.parse(JSON.stringify(G)) }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>

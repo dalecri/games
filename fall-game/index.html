@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1A24">
+<meta name="description" content="Fall down an impossibly deep shaft. The longer you fall, the more you earn, but you only keep it if you land.">
+<title>Fall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Barlow:wght@400;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+:root{
+  color-scheme: dark;
+  --base:#0F1A24; --wall:#1C2B38; --steel:#3D5366; --text:#E8F1F6; --dim:#8FA6B6; --card:#13212D; --line:#2A3F50;
+  --orange:#FF8A3D; --gold:#FFC857; --red:#FF4D4D; --cyan:#6FE3FF; --ok:#62E3A6;
+  --display:"Chakra Petch", "Arial Narrow", Impact, sans-serif;
+  --body:"Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+html,body{height:100%}
+body{background:var(--base); color:var(--text); font-family:var(--body); overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none}
+.app{height:100%; display:flex; flex-direction:column; gap:8px; padding-inline:16px; padding-block:10px; box-sizing:border-box; max-width:560px; margin:0 auto; position:relative}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.brand{font-family:var(--display); font-weight:700; font-size:36px; line-height:.9; letter-spacing:.08em}
+.brand span{display:inline-block; color:var(--orange)}
+.brand{padding-bottom:10px}
+.brand span:nth-child(1){transform:translateY(-6px)} .brand span:nth-child(2){transform:translateY(-2px)} .brand span:nth-child(3){transform:translateY(3px)} .brand span:nth-child(4){transform:translateY(8px)}
+.hud{display:flex; gap:14px; text-align:right; align-items:flex-end}
+.hud small{display:block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); font-weight:700}
+.hud b{font-family:var(--display); font-weight:700; font-size:21px; font-variant-numeric:tabular-nums}
+.shields{display:flex; gap:4px; padding-bottom:5px}
+.shields i{width:12px; height:14px; clip-path:polygon(50% 0,100% 20%,100% 60%,50% 100%,0 60%,0 20%); background:var(--cyan)}
+.shields i.off{background:#2A3F50}
+.stage{flex:1; min-height:0; position:relative; touch-action:none; border-radius:10px; overflow:hidden; box-shadow:inset 0 0 0 2px var(--line)}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:ew-resize}
+.foot{font-size:12px; color:var(--dim); text-align:center} .foot b{color:var(--text)}
+.btn{font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:.04em; border:0; border-radius:6px; padding:12px 10px; background:var(--orange); color:#221004; cursor:pointer; box-shadow:0 3px 0 #9E4E17}
+.btn:active{transform:translateY(2px); box-shadow:0 1px 0 #9E4E17}
+.btn.alt{background:transparent; color:var(--text); border:1.5px solid var(--line); box-shadow:none}
+.btn.gold{background:var(--cyan); color:#062530; box-shadow:0 3px 0 #2E8FA8}
+.btn[disabled]{opacity:.4; cursor:default}
+.btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+.overlay{position:absolute; inset:0; display:grid; place-items:center; z-index:5; overflow-y:auto; padding:10px 12px; background:rgba(15,26,36,.55)}
+.card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; width:min(340px,100%); box-sizing:border-box; display:flex; flex-direction:column; gap:11px; box-shadow:0 20px 50px rgba(0,0,0,.5); position:relative}
+.card::before{content:""; position:absolute; left:0; right:0; top:0; height:6px; border-radius:10px 10px 0 0; background:repeating-linear-gradient(135deg, var(--orange) 0 10px, #221004 10px 20px)}
+.card h2{font-family:var(--display); font-weight:700; font-size:36px; margin:6px 0 0; line-height:1; letter-spacing:.06em}
+.card p{margin:0; font-size:14px; line-height:1.5; color:#C4D3DC}
+.card p b{color:var(--text)}
+.greed{font-family:var(--display); font-size:16px; color:var(--gold); line-height:1.4}
+.big{font-family:var(--display); font-weight:700; font-size:56px; line-height:.9; color:var(--gold)}
+.big small{display:block; font-family:var(--body); font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-top:6px}
+.card dl{display:grid; grid-template-columns:1fr auto; gap:4px 12px; margin:0; font-size:14px}
+.card dt{color:var(--dim)} .card dd{margin:0; text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.row{display:flex; gap:8px} .row>*{flex:1}
+.sec{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:-3px; font-weight:700}
+.missions{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
+.missions li{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:13px}
+.missions li small{color:var(--dim); font-variant-numeric:tabular-nums}
+.missions .mb{grid-column:1/-1; height:3px; background:#0B141C; overflow:hidden}
+.missions .mb i{display:block; height:100%; background:var(--orange)}
+.missions li.done{color:var(--ok)} .missions li.done .mb i{background:var(--ok)}
+.toast{position:absolute; top:58px; left:50%; transform:translateX(-50%); z-index:9; background:var(--gold); color:#221004; padding:7px 14px; border-radius:6px; font-size:13px; font-weight:700; white-space:nowrap; pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header>
+    <div class="brand" aria-label="Fall"><span>F</span><span>A</span><span>L</span><span>L</span></div>
+    <div class="hud">
+      <div class="shields" id="shields" aria-label="Shields"></div>
+      <div><small>Depth</small><b id="hDepth">0m</b></div>
+      <div><small>Banked</small><b id="hScore">0</b></div>
+      <div><small>Best</small><b id="hBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="A deep shaft. Drag left and right to steer your fall."></canvas>
+    <div class="overlay" id="ready">
+      <div class="card" role="dialog" aria-labelledby="rTitle">
+        <h2 id="rTitle">FALL</h2>
+        <div class="greed">land there safely… or keep falling?</div>
+        <p><b>Drag left and right</b> to steer. The longer you fall without landing, the faster you go and the higher your <b>greed multiplier</b> climbs, up to ×8.</p>
+        <p>Points pile up as an unbanked <b>haul</b>. <b>Land on a platform</b> to bank it. If you land too fast it still banks, but the hard landing costs a shield. Hit machinery mid-fall and you <b>drop the whole haul</b>. Lose all three shields and it's over.</p>
+        <div class="sec">Missions</div>
+        <ul class="missions" id="rMissions"></ul>
+        <div class="row">
+          <button class="btn" id="playBtn" type="button">Jump in</button>
+          <button class="btn alt" id="dailyBtn" type="button">Daily shaft</button>
+        </div>
+        <p id="dailyInfo" style="font-size:12px; color:var(--dim)"></p>
+      </div>
+    </div>
+    <div class="overlay" id="end" hidden>
+      <div class="card" role="dialog" aria-labelledby="eTitle">
+        <h2 id="eTitle">Wrecked</h2>
+        <div class="big"><span id="eScore">0</span><small>points banked</small></div>
+        <p id="eMsg"></p>
+        <dl>
+          <dt>Best</dt><dd id="eBest">0</dd>
+          <dt>Depth reached</dt><dd id="eDepth">0</dd>
+          <dt>Biggest single bank</dt><dd id="eBank">0</dd>
+          <dt>Top greed · longest fall</dt><dd id="eGreed">0</dd>
+        </dl>
+        <div class="sec">Missions · <span id="eStars"></span></div>
+        <ul class="missions" id="eMissions"></ul>
+        <button class="btn gold" id="chuteBtn" type="button">Parachute · 1★</button>
+        <div class="row">
+          <button class="btn" id="againBtn" type="button">Jump again</button>
+          <button class="btn alt" id="menuBtn" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><b>Drag</b> anywhere to steer · arrow keys on desktop · <b>land</b> to bank your haul</div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const WW = 360, R = 12, GRAV = 1100, SAFE = 700, UNIT = 40;
+let W=0, H=0, dpr=1, SC=1, VH=700;
+
+/* ---------- profile ---------- */
+const MISSIONS = {
+  d500:  {t:'Reach 500 m deep', g:500, run:G=>G.depthM},
+  d1500: {t:'Reach 1,500 m deep', g:1500, run:G=>G.depthM},
+  bank2k:{t:'Bank 2,000 in a single landing', g:2000, run:G=>G.bestBank},
+  x8:    {t:'Hit ×8 greed', g:8, run:G=>G.topMult},
+  free10:{t:'Free-fall for 10 seconds straight', g:10, run:G=>Math.floor(G.longest)},
+  land20:{t:'20 safe landings in one run', g:20, run:G=>G.safe},
+  coins60:{t:'Grab 60 coins in one run', g:60, run:G=>G.coinsN},
+  score10k:{t:'Bank 10,000 in one run', g:10000, run:G=>G.score},
+  tot:   {t:'Fall 10,000 m (total)', g:10000, total:'m'},
+};
+let P = null;
+try { P = JSON.parse(localStorage.getItem('fall-profile') || 'null'); } catch(e){}
+if (!P) P = { best:0, stars:1, mission:[], mprog:{}, daily:{} };
+P.mission = P.mission.filter(id => MISSIONS[id]);
+const save = () => { try { localStorage.setItem('fall-profile', JSON.stringify(P)); } catch(e){} };
+function refill(){ const pool = Object.keys(MISSIONS).filter(id => !P.mission.includes(id)); while (P.mission.length < 3 && pool.length){ const id = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; P.mission.push(id); P.mprog[id]=0; } }
+refill(); save();
+function checkMissions(delta){
+  if (!G || G.demo) return;
+  let ch = false;
+  P.mission.forEach(id => {
+    const m = MISSIONS[id]; if ((P.mprog[id]||0) >= m.g) return;
+    const v = m.total ? (P.mprog[id]||0) + (delta[m.total]||0) : Math.max(P.mprog[id]||0, m.run(G));
+    if (v !== P.mprog[id]){ P.mprog[id] = v; ch = true; }
+    if (P.mprog[id] >= m.g){ P.mprog[id] = m.g; P.stars++; G.doneM.push(id); toast('Mission done · +1★ · ' + m.t); }
+  });
+  if (ch) save();
+}
+function missionList(ul, extra){
+  ul.innerHTML = '';
+  [...new Set([...(extra||[]), ...P.mission])].slice(0,4).forEach(id => {
+    const m = MISSIONS[id], p = Math.min(P.mprog[id]||0, m.g), done = p >= m.g;
+    const li = document.createElement('li'); if (done) li.className='done';
+    li.innerHTML = '<span>'+(done?'✓ ':'')+m.t+'</span><small>'+(done?'+1★':p.toLocaleString()+' / '+m.g.toLocaleString())+'</small><div class="mb"><i style="width:'+(p/m.g*100)+'%"></i></div>';
+    ul.appendChild(li);
+  });
+}
+function toast(t){ const el = document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el);
+  el.animate([{opacity:0},{opacity:1,offset:.1},{opacity:1,offset:.85},{opacity:0}],{duration:2200}).onfinish=()=>el.remove(); }
+const todayKey = () => { const x = new Date(); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+function buzz(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+
+/* ---------- rng ---------- */
+let G;
+function rand(){ G.rs=(G.rs+0x6D2B79F5)|0; let t=Math.imul(G.rs^(G.rs>>>15),1|G.rs); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }
+const rr = (a,b) => a + rand()*(b-a);
+
+/* ---------- world ---------- */
+function fresh(daily, demo){
+  const key = todayKey();
+  const seed = daily ? [...key].reduce((a,ch)=>Math.imul(a^ch.charCodeAt(0),16777619),2166136261) : (Math.random()*2**31)|0;
+  G = { phase:'ready', demo:!!demo, rs:seed|0, daily:!!daily, key, t:0, p:{ x:WW/2, y:0, vy:0, tx:WW/2, on:null, inv:0, squash:0 }, plats:[], pipes:[], haz:[], vents:[], coinList:[], cells:[],
+        parts:[], floats:[], nextY:260, rows:0, camY:-200, shields:3, score:0, haul:0, streakT:0, mult:1, topMult:1, longest:0, bestBank:0, safe:0, coinsN:0,
+        depthM:0, lastM:0, lost:0, chuted:false, doneM:[], shake:0, why:'' };
+  G.plats.push({ x0:WW/2 - 70, x1:WW/2 + 70, y:40, kind:'steel' });
+  G.p.y = 40 - R; G.p.on = G.plats[0];
+  gen(1400);
+}
+function gen(limit){
+  while (G.nextY < limit){
+    const y = G.nextY, d = y/UNIT, hard = Math.min(1, d/1400), easy = G.rows < 5 || G.demo;
+    G.rows++;
+    const r = rand();
+    const pick = easy ? (r < .4 ? 'ledgeL' : r < .8 ? 'ledgeR' : 'float') :
+      r < .13 ? 'ledgeL' : r < .26 ? 'ledgeR' : r < .36 ? 'split' : r < .46 ? 'float' : r < .54 ? 'pipe' : r < .66 ? 'saw' : r < .75 ? 'laser' : r < .82 && d > 80 ? 'crusher' : r < .88 ? 'vent' : r < .94 ? 'crumble' : 'bounce';
+    const plat = (x0, x1, kind) => G.plats.push({ x0:Math.max(0, x0), x1:Math.min(WW, x1), y, kind:kind || 'steel', t:0 });
+    if (pick === 'ledgeL') plat(0, rr(110, 230));
+    else if (pick === 'ledgeR') plat(WW - rr(110, 230), WW);
+    else if (pick === 'split'){ const g = rr(80, 120), c = rr(70, WW - 70); plat(0, c - g/2); plat(c + g/2, WW); }
+    else if (pick === 'float'){ const w = rr(70, 130), x = rr(20, WW - 20 - w); plat(x, x + w); }
+    else if (pick === 'crumble'){ const w = rr(80, 140), x = rr(20, WW - 20 - w); plat(x, x + w, 'crumble'); }
+    else if (pick === 'bounce'){ const x = rr(40, WW - 100); plat(x, x + 60, 'bounce'); }
+    else if (pick === 'pipe'){ const x = rr(50, WW - 50); G.pipes.push({ x, y0:y, y1:y + rr(160, 380), w:26 }); }
+    else if (pick === 'saw'){ const x = rr(60, WW - 60); G.haz.push({ kind:'saw', bx:x, x, y, r:rr(20, 28), amp: rand() < .3 + hard*.4 ? rr(40, 110) : 0, ph:rand()*6, spd:rr(1, 2) }); }
+    else if (pick === 'laser'){ const gw = 96 - hard*16, gx = rr(10, WW - gw - 10); G.haz.push({ kind:'laser', y, gx, gw, per: rr(2.2, 3), ph:rand()*3 }); }
+    else if (pick === 'crusher'){ G.haz.push({ kind:'crusher', y, per:rr(1.8, 2.6), ph:rand()*3, h:46 }); }
+    else if (pick === 'vent'){ const w = rr(100, 160), x = rr(10, WW - 10 - w); G.vents.push({ x0:x, x1:x + w, y0:y - 40, y1:y + 200 }); }
+    // coins and the odd shield cell
+    if (rand() < .55){ const cx = rr(30, WW - 30); for (let i=0;i<4;i++) G.coinList.push({ x:cx + Math.sin(i*.9)*16, y:y + 50 + i*28, got:false }); }
+    if (rand() < .04 + (d > 200 ? .02 : 0)) G.cells.push({ x:rr(40, WW - 40), y:y + rr(60, 120), got:false });
+    G.nextY += rr(150, 250) - hard*30;
+  }
+}
+const sawPos = h => ({ x: h.bx + Math.sin(G.t*h.spd + h.ph)*h.amp, y:h.y });
+const laserOn = h => ((G.t + h.ph) % h.per) < h.per*.55;
+const laserWarn = h => { const u = (G.t + h.ph) % h.per; return u > h.per*.82; };
+const crushGap = h => { const u = ((G.t + h.ph) % h.per)/h.per; const c = u < .5 ? 0 : Math.sin((u - .5)/.5*Math.PI); return 230*(1 - c); };
+
+/* ---------- input ---------- */
+let drag = null; const keys = {};
+cv.addEventListener('pointerdown', e => { if (G.phase !== 'play') return; cv.setPointerCapture(e.pointerId); drag = { id:e.pointerId, x:e.clientX }; });
+cv.addEventListener('pointermove', e => { if (!drag || drag.id !== e.pointerId) return; G.p.tx = Math.max(R, Math.min(WW - R, G.p.tx + (e.clientX - drag.x)/SC*1.15)); drag.x = e.clientX; });
+const up = e => { if (drag && drag.id === e.pointerId) drag = null; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+addEventListener('keydown', e => { if (e.key.startsWith('Arrow')){ keys[e.key] = true; e.preventDefault(); } });
+addEventListener('keyup', e => { keys[e.key] = false; });
+
+/* ---------- step ---------- */
+function demoSteer(){
+  const p = G.p; let best = p.x, bs = -1e9;
+  for (let x = 20; x <= WW - 20; x += 14){
+    let s = -Math.abs(x - p.x)*.3;
+    for (const h of G.haz){ if (h.y < p.y || h.y > p.y + 380) continue; if (h.kind === 'saw'){ const q = sawPos(h); s -= Math.max(0, 90 - Math.abs(q.x - x))*3; } if (h.kind === 'laser' && !(x > h.gx + 14 && x < h.gx + h.gw - 14)) s -= 200; if (h.kind === 'crusher' && Math.abs(x - WW/2) > 60) s -= 150; }
+    for (const q of G.pipes){ if (q.y0 > p.y + 400 || q.y1 < p.y) continue; if (Math.abs(q.x - x) < 30) s -= 200; }
+    for (const pl of G.plats){ if (pl.y < p.y + 10 || pl.y > p.y + 260) continue; if (x > pl.x0 - 10 && x < pl.x1 + 10) s -= p.vy > 500 ? 140 : -40; }
+    if (s > bs){ bs = s; best = x; }
+  }
+  p.tx = best;
+}
+function step(dt){
+  const p = G.p;
+  G.t += dt; p.inv = Math.max(0, p.inv - dt); p.squash = Math.max(0, p.squash - dt*4);
+  if (G.demo && !p.on) demoSteer();
+  if (keys.ArrowLeft) p.tx = Math.max(R, p.tx - 420*dt); if (keys.ArrowRight) p.tx = Math.min(WW - R, p.tx + 420*dt);
+  const px = p.x, py = p.y;
+  p.x += (p.tx - p.x)*Math.min(1, dt*16);
+  for (const h of G.haz) if (h.kind === 'saw'){ const q = sawPos(h); h.x = q.x; }
+  if (p.on){
+    const pl = p.on;
+    if (pl.kind === 'crumble'){ pl.t += dt; if (pl.t > .7){ pl.broken = true; debris(pl); } }
+    if (pl.broken || p.x < pl.x0 - R*.4 || p.x > pl.x1 + R*.4 || G.plats.indexOf(pl) < 0){ p.on = null; p.vy = 40; }
+    else { p.y = pl.y - R; p.vy = 0; }
+  }
+  if (!p.on){
+    // greed: the longer you fall, the faster you go and the more each second is worth
+    G.streakT += dt; G.longest = Math.max(G.longest, G.streakT);
+    const term = Math.min(1600, 520 + G.streakT*60);
+    let inVent = false;
+    for (const v of G.vents){ if (p.x > v.x0 && p.x < v.x1 && p.y > v.y0 && p.y < v.y1){ inVent = true; p.vy += (230 - p.vy)*Math.min(1, dt*5); G.streakT = Math.max(0, G.streakT - dt*2); } }
+    if (!inVent) p.vy = Math.min(term, p.vy + GRAV*dt);
+    p.y += p.vy*dt;
+    G.mult = Math.min(8, 1 + Math.floor(G.streakT/2.4)); G.topMult = Math.max(G.topMult, G.mult);
+    if (!G.demo && G.phase === 'play') G.haul += Math.pow(Math.max(0, p.vy)/100, 1.6)*G.mult*dt;
+    // landings
+    for (const pl of G.plats){
+      if (pl.broken) continue;
+      if (py + R <= pl.y + 1 && p.y + R >= pl.y && p.x > pl.x0 - R*.4 && p.x < pl.x1 + R*.4){ land(pl); break; }
+    }
+  }
+  // pipes are solid sideways; their tops can be landed on
+  for (const q of G.pipes){
+    if (p.y + R < q.y0 || p.y - R > q.y1) continue;
+    if (Math.abs(p.x - q.x) < q.w/2 + R){
+      if (py + R <= q.y0 + 1 && !p.on){ land({ x0:q.x - q.w/2, x1:q.x + q.w/2, y:q.y0, kind:'pipe', pipe:true }); continue; }
+      p.x = p.x < q.x ? q.x - q.w/2 - R : q.x + q.w/2 + R; p.tx = p.x;
+    }
+  }
+  // hazards
+  if (p.inv <= 0){
+    for (const h of G.haz){
+      if (h.kind === 'saw'){ const q = sawPos(h); if (Math.hypot(q.x - p.x, q.y - p.y) < h.r + R - 3) { hit('saw'); break; } }
+      if (h.kind === 'laser' && laserOn(h) && Math.abs(p.y - h.y) < R && !(p.x - R > h.gx && p.x + R < h.gx + h.gw)){ hit('laser'); break; }
+      if (h.kind === 'crusher'){ const g = crushGap(h), side = (WW - g)/2; if (Math.abs(p.y - h.y) < h.h/2 + R - 4 && (p.x - R < side || p.x + R > WW - side)){ hit('crusher'); break; } }
+    }
+  }
+  // pickups
+  for (const c of G.coinList){ if (!c.got && Math.abs(c.x - p.x) < 20 && Math.abs(c.y - p.y) < 20){ c.got = true; G.coinsN++; if (!G.demo) G.haul += 10*G.mult; spark(c.x, c.y, '#FFC857', 5); } }
+  for (const c of G.cells){ if (!c.got && Math.abs(c.x - p.x) < 22 && Math.abs(c.y - p.y) < 22){ c.got = true; if (!G.demo){ G.shields = Math.min(3, G.shields + 1); G.floats.push({ t:'+shield', x:p.x, y:p.y - 30, c:'#6FE3FF', life:1 }); } spark(c.x, c.y, '#6FE3FF', 10); } }
+  p.x = Math.max(R, Math.min(WW - R, p.x));
+  if (G.phase === 'play'){ G.depthM = Math.max(G.depthM, Math.floor(p.y/UNIT)); if (G.depthM - G.lastM >= 10){ checkMissions({ m:G.depthM - G.lastM }); G.lastM = G.depthM; } }
+}
+function land(pl){
+  const p = G.p, v = p.vy;
+  if (pl.kind === 'bounce'){ p.vy = -560; p.y = pl.y - R; G.floats.push({ t:'boing', x:p.x, y:p.y - 20, c:'#62E3A6', life:.7 }); spark(p.x, pl.y, '#62E3A6', 8); buzz(8); return; }
+  p.on = pl; p.y = pl.y - R; p.vy = 0; p.squash = Math.min(1, v/900);
+  const haul = Math.floor(G.haul);
+  if (!G.demo && G.phase === 'play'){
+    if (v >= SAFE){ G.shields--; G.shake = .8; p.inv = .8; G.floats.push({ t:'HARD LANDING', x:p.x, y:p.y - 40, c:'#FF4D4D', life:1.1, big:true }); buzz([40,40,60]); spark(p.x, pl.y, '#FF8A3D', 18); }
+    else if (v > 90){ G.safe++; buzz(10); }
+    if (haul > 0){ G.score += haul; G.bestBank = Math.max(G.bestBank, haul); G.floats.push({ t:'+' + haul.toLocaleString() + ' banked', x:p.x, y:p.y - (v >= SAFE ? 70 : 34), c:'#FFC857', life:1.2, big:haul > 800 }); }
+    G.haul = 0;
+    checkMissions({});
+    if (G.shields <= 0) return die('hard');
+  }
+  G.streakT = 0; G.mult = 1;
+  spark(p.x, pl.y, '#8FA6B6', 6);
+}
+function hit(kind){
+  const p = G.p;
+  if (G.demo){ p.inv = 1; return; }
+  G.shields--; p.inv = 1.1; G.shake = 1; p.vy *= .45;
+  const lost = Math.floor(G.haul); G.lost += lost; G.haul = 0; G.streakT = 0; G.mult = 1;
+  G.floats.push({ t: lost ? 'dropped ' + lost.toLocaleString() : 'ouch', x:p.x, y:p.y - 36, c:'#FF4D4D', life:1.2, big:lost > 300 });
+  spark(p.x, p.y, '#FF4D4D', 18); buzz([60,40,60]);
+  if (G.shields <= 0) die(kind);
+}
+function die(why){ if (G.phase !== 'play') return; G.phase = 'dead'; G.why = why; drag = null; setTimeout(endRun, 1000); }
+function spark(x, y, c, n){ for (let i=0;i<n;i++){ const a = Math.random()*6.283, v = 60 + Math.random()*220; G.parts.push({ x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, life:.8, c }); } }
+function debris(pl){ for (let i=0;i<12;i++) G.parts.push({ x:pl.x0 + Math.random()*(pl.x1 - pl.x0), y:pl.y, vx:(Math.random() - .5)*80, vy:Math.random()*120, life:1.2, c:'#5A6E80' }); G.plats.splice(G.plats.indexOf(pl), 1); }
+
+/* ---------- render ---------- */
+function resize(){ const r = stage.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio||1); W = r.width; H = r.height; cv.width = W*dpr; cv.height = H*dpr; SC = W/WW; VH = H/SC; }
+const hex = h => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
+function mix(a, b, f){ const A = hex(a), B = hex(b); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v)*f)).join(',') + ')'; }
+const ZONES = ['#15293A', '#2A1F2E', '#3A1A18', '#1A1238', '#0C1A2A'];
+function zoneCol(y){ const z = y/UNIT/600, i = Math.floor(z) % ZONES.length, f = z - Math.floor(z); return mix(ZONES[i], ZONES[(i + 1) % ZONES.length], Math.max(0, (f - .7)/.3)); }
+function render(dt){
+  const p = G.p, fast = Math.min(1, Math.max(0, (p.vy - 500)/1000));
+  const target = p.y - VH*(.3 - fast*.08);
+  G.camY += (target - G.camY)*Math.min(1, dt*12);
+  gen(G.camY + VH + 900);
+  const cut = G.camY - 300;
+  if (G.rows % 20 === 0){ G.plats = G.plats.filter(q => q.y > cut || q === p.on); G.pipes = G.pipes.filter(q => q.y1 > cut); G.haz = G.haz.filter(h => h.y > cut); G.vents = G.vents.filter(v => v.y1 > cut); G.coinList = G.coinList.filter(c => c.y > cut && !c.got); }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const bg = zoneCol(G.camY + VH/2);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  const sk = G.shake > 0 && !reduced ? G.shake*7 : 0; G.shake = Math.max(0, G.shake - dt*3);
+  ctx.setTransform(dpr*SC, 0, 0, dpr*SC, dpr*(Math.random() - .5)*sk, dpr*(-G.camY*SC + (Math.random() - .5)*sk));
+  // back wall: parallax rivet panels and pipes
+  const par = .55, off = G.camY*(1 - par);
+  ctx.strokeStyle = 'rgba(255,255,255,.04)'; ctx.lineWidth = 1;
+  for (let yy = Math.floor((G.camY - off)/120)*120; yy < G.camY - off + VH + 120; yy += 120){ ctx.beginPath(); ctx.moveTo(0, yy + off); ctx.lineTo(WW, yy + off); ctx.stroke(); for (let xx = 20; xx < WW; xx += 60){ ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fillRect(xx, yy + off + 6, 3, 3); } }
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(60, G.camY - 10, 14, VH + 20); ctx.fillRect(280, G.camY - 10, 22, VH + 20);
+  // passing lights give a sense of speed
+  for (let i=0;i<6;i++){ const ly = ((i*233 - G.camY*.9) % 1400 + 1400) % 1400 + G.camY - 200; ctx.fillStyle = 'rgba(255,138,61,.35)'; ctx.fillRect(i % 2 ? 4 : WW - 10, ly, 6, 24 + fast*80); }
+  // vents
+  for (const v of G.vents){ if (v.y1 < G.camY || v.y0 > G.camY + VH) continue; const g = ctx.createLinearGradient(0, v.y1, 0, v.y0); g.addColorStop(0, 'rgba(111,227,255,.22)'); g.addColorStop(1, 'rgba(111,227,255,0)'); ctx.fillStyle = g; ctx.fillRect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
+    ctx.fillStyle = '#3D5366'; ctx.fillRect(v.x0 - 4, v.y1 - 6, v.x1 - v.x0 + 8, 10);
+    ctx.strokeStyle = 'rgba(111,227,255,.5)'; ctx.lineWidth = 1.5; for (let i=0;i<5;i++){ const yy = v.y1 - ((G.t*260 + i*50) % (v.y1 - v.y0)); ctx.beginPath(); ctx.moveTo(v.x0 + 12 + i*(v.x1 - v.x0 - 24)/4, yy); ctx.lineTo(v.x0 + 12 + i*(v.x1 - v.x0 - 24)/4, yy - 14); ctx.stroke(); } }
+  // side walls
+  ctx.fillStyle = '#1C2B38'; ctx.fillRect(-20, G.camY - 10, 20, VH + 20); ctx.fillRect(WW, G.camY - 10, 20, VH + 20);
+  // pipes
+  for (const q of G.pipes){ if (q.y1 < G.camY || q.y0 > G.camY + VH) continue; const g = ctx.createLinearGradient(q.x - q.w/2, 0, q.x + q.w/2, 0); g.addColorStop(0, '#2E4151'); g.addColorStop(.4, '#5F7A8E'); g.addColorStop(1, '#2A3B49'); ctx.fillStyle = g; ctx.fillRect(q.x - q.w/2, q.y0, q.w, q.y1 - q.y0);
+    ctx.fillStyle = '#3D5366'; for (let yy = q.y0; yy < q.y1; yy += 70) ctx.fillRect(q.x - q.w/2 - 3, yy, q.w + 6, 8); }
+  // platforms
+  for (const pl of G.plats){ if (pl.y < G.camY - 20 || pl.y > G.camY + VH + 20) continue; const w = pl.x1 - pl.x0;
+    const shake = pl.kind === 'crumble' && pl.t > 0 ? (Math.random() - .5)*pl.t*4 : 0;
+    if (pl.kind === 'bounce'){ ctx.fillStyle = '#62E3A6'; ctx.beginPath(); ctx.roundRect(pl.x0, pl.y, w, 10, 5); ctx.fill(); ctx.fillStyle = '#2B6E55'; ctx.fillRect(pl.x0 + 6, pl.y + 10, 4, 10); ctx.fillRect(pl.x1 - 10, pl.y + 10, 4, 10); continue; }
+    ctx.fillStyle = pl.kind === 'crumble' ? '#6B5A4E' : '#3D5366'; ctx.fillRect(pl.x0 + shake, pl.y, w, 14);
+    ctx.fillStyle = pl.kind === 'crumble' ? '#8A7563' : '#5F7A8E'; ctx.fillRect(pl.x0 + shake, pl.y, w, 3);
+    if (pl.kind === 'crumble'){ ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 1; for (let xx = pl.x0 + 14; xx < pl.x1; xx += 22){ ctx.beginPath(); ctx.moveTo(xx + shake, pl.y + 3); ctx.lineTo(xx + 5 + shake, pl.y + 14); ctx.stroke(); } }
+    else { ctx.fillStyle = 'rgba(255,138,61,.9)'; for (let xx = pl.x0 + 4; xx < pl.x1 - 8; xx += 16) ctx.fillRect(xx, pl.y + 7, 8, 3); } }
+  // hazards
+  for (const h of G.haz){
+    if (h.y < G.camY - 60 || h.y > G.camY + VH + 60) continue;
+    if (h.kind === 'saw'){ const q = sawPos(h); ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(G.t*9);
+      ctx.fillStyle = '#B9C6D0'; ctx.beginPath(); for (let i=0;i<16;i++){ const a = i/16*6.283, rad = i % 2 ? h.r*.78 : h.r; ctx.lineTo(Math.cos(a)*rad, Math.sin(a)*rad); } ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#FF4D4D'; ctx.beginPath(); ctx.arc(0, 0, h.r*.3, 0, 6.283); ctx.fill(); ctx.restore();
+      if (h.amp){ ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(h.bx - h.amp, h.y); ctx.lineTo(h.bx + h.amp, h.y); ctx.stroke(); } }
+    if (h.kind === 'laser'){ const on = laserOn(h), warn = !on && laserWarn(h);
+      ctx.fillStyle = '#3D5366'; ctx.fillRect(0, h.y - 8, 10, 16); ctx.fillRect(WW - 10, h.y - 8, 10, 16); ctx.fillRect(h.gx - 8, h.y - 6, 8, 12); ctx.fillRect(h.gx + h.gw, h.y - 6, 8, 12);
+      if (on){ ctx.fillStyle = 'rgba(255,77,77,.35)'; ctx.fillRect(0, h.y - 6, h.gx, 12); ctx.fillRect(h.gx + h.gw, h.y - 6, WW - h.gx - h.gw, 12); ctx.fillStyle = '#FF4D4D'; ctx.fillRect(0, h.y - 2, h.gx, 4); ctx.fillRect(h.gx + h.gw, h.y - 2, WW - h.gx - h.gw, 4); }
+      else if (warn && Math.floor(G.t*14) % 2){ ctx.fillStyle = 'rgba(255,77,77,.4)'; ctx.fillRect(0, h.y - 1, h.gx, 2); ctx.fillRect(h.gx + h.gw, h.y - 1, WW - h.gx - h.gw, 2); } }
+    if (h.kind === 'crusher'){ const g = crushGap(h), side = (WW - g)/2;
+      ctx.fillStyle = '#4A5D6E'; ctx.fillRect(0, h.y - h.h/2, side, h.h); ctx.fillRect(WW - side, h.y - h.h/2, side, h.h);
+      ctx.fillStyle = '#FFC857'; for (let k=0;k<2;k++){ const x0 = k ? WW - side : 0; ctx.save(); ctx.beginPath(); ctx.rect(x0, h.y - h.h/2, side, h.h); ctx.clip(); for (let xx = x0 - 40; xx < x0 + side; xx += 20){ ctx.beginPath(); ctx.moveTo(xx, h.y + h.h/2); ctx.lineTo(xx + 10, h.y + h.h/2); ctx.lineTo(xx + 30, h.y - h.h/2); ctx.lineTo(xx + 20, h.y - h.h/2); ctx.fill(); } ctx.restore(); }
+      ctx.fillStyle = '#1C2B38'; ctx.fillRect(side - 6, h.y - h.h/2, 6, h.h); ctx.fillRect(WW - side, h.y - h.h/2, 6, h.h); }
+  }
+  // pickups
+  for (const c of G.coinList){ if (c.got || c.y < G.camY - 20 || c.y > G.camY + VH + 20) continue; const w = Math.abs(Math.cos(G.t*4 + c.y*.05))*6 + 1.5; ctx.fillStyle = '#FFC857'; ctx.beginPath(); ctx.ellipse(c.x, c.y, w, 8, 0, 0, 6.283); ctx.fill(); }
+  for (const c of G.cells){ if (c.got || c.y < G.camY - 20 || c.y > G.camY + VH + 20) continue; ctx.fillStyle = '#6FE3FF'; ctx.beginPath(); ctx.moveTo(c.x, c.y - 11); ctx.lineTo(c.x + 10, c.y - 5); ctx.lineTo(c.x + 10, c.y + 4); ctx.lineTo(c.x, c.y + 11); ctx.lineTo(c.x - 10, c.y + 4); ctx.lineTo(c.x - 10, c.y - 5); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(111,227,255,.25)'; ctx.beginPath(); ctx.arc(c.x, c.y, 18 + Math.sin(G.t*5)*2, 0, 6.283); ctx.fill(); }
+  // speed streaks behind the diver
+  if (!p.on && p.vy > 400){ ctx.strokeStyle = `rgba(255,255,255,${Math.min(.5, (p.vy - 400)/1500)})`; ctx.lineWidth = 1.5; for (let i=-2;i<=2;i++){ ctx.beginPath(); ctx.moveTo(p.x + i*6, p.y - R - 4); ctx.lineTo(p.x + i*6, p.y - R - 10 - p.vy*.05); ctx.stroke(); } }
+  // headlamp cone below the diver
+  const lg = ctx.createRadialGradient(p.x, p.y + 20, 5, p.x, p.y + 140, 160); lg.addColorStop(0, 'rgba(255,230,180,.12)'); lg.addColorStop(1, 'rgba(255,230,180,0)');
+  ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(p.x - 8, p.y + 6); ctx.lineTo(p.x - 80, p.y + 260); ctx.lineTo(p.x + 80, p.y + 260); ctx.lineTo(p.x + 8, p.y + 6); ctx.fill();
+  // diver
+  if (G.phase !== 'dead' && !(p.inv > 0 && Math.floor(p.inv*12) % 2)){
+    const sq = p.squash, sx = 1 + sq*.35, sy = p.on ? 1 - sq*.3 : 1 + Math.min(.25, p.vy/4000);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(sx, sy);
+    ctx.fillStyle = '#E8F1F6'; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#0F1A24'; ctx.beginPath(); ctx.roundRect(-8, -2, 16, 8, 4); ctx.fill();
+    ctx.fillStyle = G.mult >= 5 ? '#FF4D4D' : G.mult >= 3 ? '#FFC857' : '#6FE3FF'; ctx.fillRect(-5, 0, 10, 3);
+    ctx.fillStyle = '#FF8A3D'; ctx.fillRect(-R, -3, 4, 7); ctx.fillRect(R - 4, -3, 4, 7);
+    ctx.restore();
+  }
+  // particles + floats
+  for (const q of G.parts){ q.x += q.vx*dt; q.y += q.vy*dt; q.vy += 500*dt; q.life -= dt; ctx.globalAlpha = Math.max(0, q.life); ctx.fillStyle = q.c; ctx.fillRect(q.x - 2, q.y - 2, 4, 4); }
+  G.parts = G.parts.filter(q => q.life > 0); ctx.globalAlpha = 1;
+  for (let i=G.floats.length-1;i>=0;i--){ const f = G.floats[i]; f.life -= dt; f.y -= dt*30; if (f.life <= 0){ G.floats.splice(i,1); continue; }
+    ctx.globalAlpha = Math.min(1, f.life*2); ctx.font = f.big ? '700 22px "Chakra Petch", sans-serif' : '700 15px "Chakra Petch", sans-serif'; ctx.textAlign = 'center';
+    const fx = Math.max(70, Math.min(WW - 70, f.x)); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(15,26,36,.85)'; ctx.strokeText(f.t, fx, f.y); ctx.fillStyle = f.c; ctx.fillText(f.t, fx, f.y); }
+  ctx.globalAlpha = 1;
+  // greed readout
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if (G.phase === 'play'){
+    const m = G.mult, pulse = !reduced && m > 1 ? Math.sin(G.t*(4 + m))*.06*m : 0, col = m >= 5 ? '#FF4D4D' : m >= 3 ? '#FFC857' : '#E8F1F6';
+    ctx.save(); ctx.translate(16, 44); ctx.scale(1 + pulse, 1 + pulse);
+    ctx.textAlign = 'left'; ctx.font = `700 ${30 + m*3}px "Chakra Petch", sans-serif`; ctx.fillStyle = col; ctx.fillText('×' + m, 0, 0); ctx.restore();
+    ctx.font = '700 16px "Chakra Petch", sans-serif'; ctx.fillStyle = '#FFC857'; ctx.textAlign = 'left';
+    ctx.fillText('haul ' + Math.floor(G.haul).toLocaleString(), 16, 68);
+    // speed gauge with the safe-landing mark
+    const gh = Math.min(180, H*.3), gx = W - 18, gy = 20, f = Math.min(1, Math.max(0, p.vy)/1600), sf = SAFE/1600;
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(gx, gy, 6, gh);
+    ctx.fillStyle = p.vy >= SAFE ? '#FF4D4D' : '#62E3A6'; ctx.fillRect(gx, gy, 6, gh*f);
+    ctx.fillStyle = '#FFC857'; ctx.fillRect(gx - 6, gy + gh*sf - 1, 18, 2);
+    ctx.font = '700 10px Barlow, sans-serif'; ctx.textAlign = 'right'; ctx.fillStyle = p.vy >= SAFE ? '#FF4D4D' : '#8FA6B6'; ctx.fillText(p.vy >= SAFE ? 'too fast to land' : 'safe to land', gx - 10, gy + gh*sf + 4);
+    if (G.t < 4){ ctx.textAlign = 'center'; ctx.font = '600 14px Barlow, sans-serif'; ctx.fillStyle = 'rgba(232,241,246,.9)'; ctx.fillText('drag to steer · land to bank your haul', W/2, H - 18); }
+  }
+  hud();
+}
+function hud(){
+  $('#hDepth').textContent = G.depthM.toLocaleString() + 'm';
+  $('#hScore').textContent = G.score.toLocaleString();
+  $('#hBest').textContent = (G.daily ? (P.daily[G.key]||0) : P.best).toLocaleString();
+  const el = $('#shields'), k = String(G.shields); if (el.dataset.k !== k){ el.dataset.k = k; el.innerHTML = [0,1,2].map(i => '<i class="' + (i < G.shields ? '' : 'off') + '"></i>').join(''); }
+}
+
+/* ---------- flow ---------- */
+const WHY = { saw:'A saw blade took your last shield.', laser:'A laser took your last shield.', crusher:'The crusher took your last shield.', hard:'One hard landing too many.' };
+function endRun(){
+  const sc = G.score, prev = G.daily ? (P.daily[G.key]||0) : P.best;
+  if (G.daily) P.daily[G.key] = Math.max(prev, sc); else P.best = Math.max(P.best, sc);
+  checkMissions({ m:G.depthM - G.lastM }); G.lastM = G.depthM; save();
+  $('#eTitle').textContent = sc > prev && sc > 0 ? 'New best!' : 'Wrecked';
+  $('#eScore').textContent = sc.toLocaleString();
+  const gap = prev - sc;
+  $('#eMsg').textContent = WHY[G.why] + (G.lost ? ' Greed cost you ' + G.lost.toLocaleString() + ' unbanked points this run.' : '') + (gap > 0 && gap <= Math.max(200, prev*.12) ? ' Only ' + gap.toLocaleString() + ' off your best.' : '');
+  $('#eBest').textContent = (G.daily ? P.daily[G.key] : P.best).toLocaleString();
+  $('#eDepth').textContent = G.depthM.toLocaleString() + ' m';
+  $('#eBank').textContent = G.bestBank.toLocaleString();
+  $('#eGreed').textContent = '×' + G.topMult + ' · ' + G.longest.toFixed(1) + 's';
+  $('#eStars').textContent = '★ ' + P.stars;
+  missionList($('#eMissions'), G.doneM);
+  P.mission = P.mission.filter(id => (P.mprog[id]||0) < MISSIONS[id].g); refill(); save();
+  const cb = $('#chuteBtn'); cb.hidden = G.chuted; cb.disabled = P.stars < 1;
+  cb.textContent = P.stars < 1 ? 'Parachute · need 1★' : 'Parachute, 2 shields, keep falling · 1★ (you have ' + P.stars + ')';
+  $('#end').hidden = false; $('#againBtn').focus();
+}
+function chute(){
+  if (P.stars < 1 || G.chuted) return;
+  P.stars--; save(); G.chuted = true;
+  const p = G.p; G.shields = 2; p.inv = 2; p.vy = 0; G.streakT = 0; G.mult = 1;
+  G.haz = G.haz.filter(h => h.y < p.y - 40 || h.y > p.y + 400);
+  G.phase = 'play'; $('#end').hidden = true;
+  G.floats.push({ t:'parachute', x:p.x, y:p.y - 40, c:'#6FE3FF', life:1.2, big:true });
+}
+function ready(){
+  missionList($('#rMissions'));
+  $('#dailyInfo').textContent = 'Daily shaft: the same drop for everyone today. Your best today: ' + (P.daily[todayKey()]||0).toLocaleString() + ' · ★ ' + P.stars;
+  $('#end').hidden = true; $('#ready').hidden = false;
+  fresh(false, true); G.p.on = null;
+}
+function play(daily){
+  $('#ready').hidden = true; $('#end').hidden = true;
+  fresh(daily, false); G.phase = 'play';
+}
+$('#playBtn').addEventListener('click', () => play(false));
+$('#dailyBtn').addEventListener('click', () => play(true));
+$('#againBtn').addEventListener('click', () => play(G.daily));
+$('#menuBtn').addEventListener('click', ready);
+$('#chuteBtn').addEventListener('click', chute);
+addEventListener('resize', resize);
+
+let last = performance.now(), acc = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  acc += dt;
+  while (acc >= 1/120){ if (G.phase === 'play' || G.demo) step(1/120); acc -= 1/120; }
+  if (G.demo && G.p.on && G.p.on.kind !== 'crumble'){ G.demoWait = (G.demoWait||0) + dt; if (G.demoWait > .6){ G.demoWait = 0; const pl = G.p.on; G.p.tx = (G.p.x - pl.x0 < pl.x1 - G.p.x) ? pl.x0 - 20 : pl.x1 + 20; G.p.tx = Math.max(R, Math.min(WW - R, G.p.tx)); } }
+  if (G.demo && G.p.y > 60000) fresh(false, true);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+resize(); ready();
+requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
