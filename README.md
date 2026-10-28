@@ -1,6 +1,6 @@
 # Quick Play Games
 
-Fifteen tiny browser games in one repo. Every game is a single self-contained HTML file (no build, no dependencies), shelved in its own folder as `index.html` so each one gets a clean URL:
+Seventeen tiny browser games in one repo. Every game is a single self-contained HTML file (no build, no dependencies), shelved in its own folder as `index.html` so each one gets a clean URL:
 
 `heycristobal.com/Quick-Play-Games/<folder>/`
 
@@ -22,6 +22,10 @@ Fifteen tiny browser games in one repo. Every game is a single self-contained HT
 | Tether | [tether-game/](tether-game/) | A one-thumb tether arcade game |
 | Drop | [drop-game/](drop-game/) | Shift gravity and dodge the crusher |
 
+| Cozy 2048 | [cozy-2048/](cozy-2048/) | A cozy retro 2048 with ASCII block-digit tiles. |
+
+| Retro Rubic | [rubics-cube/](rubics-cube/) | A playable Rubik's cube in the browser. |
+
 ## Adding a game
 
 1. Create a folder named for the game and put the game in it as `index.html`.
@@ -30,4 +34,4 @@ Fifteen tiny browser games in one repo. Every game is a single self-contained HT
 
 ## History
 
-Consolidated 2026-10-28 from the single-game repos lassoio, mirror-run, afterimage, Keep-it-alive, fence, lastlight, glide-game, fall-game, skip, Tether-game, loop-game, gravity-well, Drop-game, thread-game, and fold-sheet (each game file moved byte-for-byte, renamed to `index.html`). The separate `thread` repo was empty and held nothing; the playable Thread is `thread-game/`.
+Consolidated 2026-10-28 from the single-game repos (cozy-2048 and rubics-cube added the same day) — originally lassoio, mirror-run, afterimage, Keep-it-alive, fence, lastlight, glide-game, fall-game, skip, Tether-game, loop-game, gravity-well, Drop-game, thread-game, and fold-sheet (each game file moved byte-for-byte, renamed to `index.html`). The separate `thread` repo was empty and held nothing; the playable Thread is `thread-game/`.
