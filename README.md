@@ -1,4 +1,4 @@
-# Quick Play Games
+# Games
 
 Seventeen tiny browser games in one repo. Every game is a single self-contained HTML file (no build, no dependencies), shelved in its own folder as `index.html` so each one gets a clean URL:
 
