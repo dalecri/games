@@ -25,6 +25,7 @@ Seventeen tiny browser games in one repo. Every game is a single self-contained 
 | Cozy 2048 | [cozy-2048/](cozy-2048/) | A cozy retro 2048 with ASCII block-digit tiles. |
 
 | Retro Rubic | [rubics-cube/](rubics-cube/) | A playable Rubik's cube in the browser. |
+| TIDE-AGE | [tide-age/](tide-age/) | A DOS-glyph roguelike in a drowned fen: ten classes, five-day expeditions and daily challenges, and the Drowned Warden who hunts by night. |
 
 ## Adding a game
 
