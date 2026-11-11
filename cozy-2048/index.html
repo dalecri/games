@@ -107,7 +107,7 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 @container pane (max-width:250px) or (max-height:250px){
   .board{--gap:5px}
   .cell,.face,.ice{border-radius:6px}.cell:after{display:none}
-  .face{box-shadow:0 2px 0 var(--edge)}.face img{display:none}
+  .face{box-shadow:0 2px 0 var(--edge)}.face img,.board .face .aa{display:none!important}
   .num{position:static;font-size:calc((100cqw - 3*var(--gap))/4*var(--ns,.15)*2.3)}
   .beam{border-radius:8px}
 }
@@ -141,7 +141,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 button.primary{background:var(--accent);color:var(--void);border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
-.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:min(100%,440px);margin:0 auto}
+.controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:min(100%,440px);margin:0 auto}
 .controls button{padding:0 6px;display:grid;place-items:center}
 .controls svg{width:18px;height:18px;display:block}
 .help{flex:none;width:44px;padding:0;border-radius:12px;font-size:14px;background:var(--surface-2)}
@@ -229,6 +229,28 @@ button[aria-pressed="false"]{color:var(--muted)}
 @media(hover:none){.keys{display:none}}
 .go{display:block;width:100%;margin-top:18px}
 @media(prefers-reduced-motion:reduce){.demo *{animation:none!important}}
+/* ASCII theme. Sprites and symbols both live in the markup; html.ascii swaps which one shows, squares the corners and draws tiles as terminal cells. */
+.aa,.ag,.ga{display:none}
+.aa{margin:0;font:700 var(--as,14px)/1.02 var(--ui);white-space:pre;text-align:center;letter-spacing:0}
+.aa i,.aa u,.ga i,.ga b{font-style:normal;text-decoration:none;font-weight:700}.aa i{color:var(--tc)}.aa u{color:var(--line)}
+.ag{font:700 16px/1 var(--ui);width:18px;text-align:center;flex:none}
+.alm .ag{font-size:22px;width:27px}.swatch .ag{font-size:26px;width:auto}
+.ga{margin:0;font-family:var(--ui);font-size:min(100cqw/24.6,100cqh/13.6);line-height:1;white-space:pre;cursor:pointer;-webkit-user-select:none;user-select:none;outline-offset:6px}
+.ga i{color:var(--gt);opacity:.85}.ga:focus-visible{outline:2px solid var(--accent)}
+.gsheet{container-type:inline-size}
+#isoBigA{font-size:calc(100cqw/24.6);width:max-content;margin:0 auto;padding:14px 0 22px;cursor:default}#isoBigA [data-cat]{cursor:pointer}
+.ascii .aa,.ascii .ga{display:block}.ascii .ag{display:inline-block}
+.ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge{display:none}
+.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.3);margin-top:12%}.ascii .slot .aa{--as:15px;margin-bottom:16%}.ascii .mt .aa{--as:11px;margin-top:8%}.ascii .d-top .mt .aa{--as:6.5px;margin:0}.ascii .pic .aa{--as:13px}.ascii .swatch .aa{--as:11px}
+.ascii .frozen .aa{opacity:.4}
+.ascii .face,.ascii .slot.full,.ascii .mt,.ascii .pic,.ascii .swatch{background:color-mix(in srgb,var(--tc,var(--line)) 10%,#0A080D)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,var(--line)) 62%,transparent)}
+.ascii .night .face{animation:none}
+.ascii .num,.ascii .slot span,.ascii .mt b{color:var(--tc)}
+.ascii .cell{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.ascii .cell:after{content:'.';width:auto;height:auto;margin:0;background:none;transform:translate(-50%,-62%);color:var(--line);font:700 14px/1 var(--ui)}
+.ascii h1{font-family:var(--ui);letter-spacing:0}.ascii .sheet h2,.ascii .how h3,.ascii .toast b,.ascii .ov-total{font-family:var(--ui)}
+.ascii .bpane,.ascii .chip,.ascii .seasons,.ascii button,.ascii .cell,.ascii .face,.ascii .ice,.ascii .beam,.ascii .slot,.ascii .sheet,.ascii .gsheet,.ascii .toast,.ascii .overlay,.ascii .alm,.ascii .entry,.ascii .pic,.ascii .swatch,.ascii .mt,.ascii .mc{border-radius:3px}
+.ascii .how:has(.d-plant){grid-template-columns:minmax(0,1fr)}.ascii .d-plant{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
 </style>
@@ -262,6 +284,7 @@ button[aria-pressed="false"]{color:var(--muted)}
     <div id="basket" class="basket" role="img" aria-label="Harvest so far"></div>
     <section id="paneGarden" class="pane gpane" aria-label="Garden">
       <canvas id="iso" width="232" height="156" tabindex="0" role="button" aria-label="Open the garden"></canvas>
+      <pre id="isoA" class="ga" tabindex="0" role="button" aria-label="Open the garden"></pre>
     </section>
   </div>
   <div class="controls">
@@ -269,6 +292,7 @@ button[aria-pressed="false"]{color:var(--muted)}
     <button id="undo" aria-label="Undo" title="Undo" disabled></button>
     <button id="almanacBtn" aria-label="Almanac" title="Almanac"></button>
     <button id="sound" aria-label="Sound" title="Sound" aria-pressed="true"></button>
+    <button id="theme" aria-label="ASCII theme" title="ASCII theme"></button>
   </div>
 </main>
 <div id="toast" class="toast" hidden role="status"></div>
@@ -284,6 +308,7 @@ button[aria-pressed="false"]{color:var(--muted)}
   <div class="sheet gsheet" role="dialog" aria-modal="true" aria-labelledby="vTitle">
     <div class="sheet-head"><div><h2 id="vTitle">Garden</h2><div class="count" id="vCount"></div></div><button class="close" id="vClose" aria-label="Close garden">✕</button></div>
     <canvas id="isoBig" width="232" height="156" role="img" aria-label="Your garden, large"></canvas>
+    <pre id="isoBigA" class="ga" role="img" aria-label="Your garden, large"></pre>
   </div>
 </div>
 <div id="help" class="scrim" hidden>
@@ -364,12 +389,24 @@ const GLYPH={
  back: ['.........','..x......','.xx......','xxxxxx...','.xx...x..','..x....x.','.......x.','......x..','..xxxx...'],
  book: ['.........','xxxx.xxxx','x...x...x','x...x...x','x...x...x','x...x...x','xxxx.xxxx','...xxx...','.........'],
  sound:['....x....','...xx..x.','xxxxx...x','xxxxx.x.x','xxxxx.x.x','xxxxx...x','...xx..x.','....x....','.........'],
- mute: ['....x....','...xx....','xxxxx.x.x','xxxxx..x.','xxxxx.x.x','xxxxx....','...xx....','....x....','.........']};
+ mute: ['....x....','...xx....','xxxxx.x.x','xxxxx..x.','xxxxx.x.x','xxxxx....','...xx....','....x....','.........'],
+ letter:['.........','..xxxxx..','.xx...xx.','.xx...xx.','.xxxxxxx.','.xx...xx.','.xx...xx.','.xx...xx.','.........'],
+ flower:['...xxx...','...xxx...','xxx.x.xxx','xx.xxx.xx','xxx.x.xxx','...xxx...','...xxx...','....x....','....x....']};
 const glyph=k=>`<svg viewBox="0 0 9 9" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">${GLYPH[k].map((row,r)=>[...row].map((ch,c)=>ch==='x'?`<rect x="${c}" y="${r}" width="1" height="1"/>`:'').join('')).join('')}</svg>`;
+// ASCII theme: every bloom is two lines of three characters, a flower over its stem, each in its own color. Seasons get one character each.
+const ASC={2:['   ',' . ','#D9B38C'],4:['   ',' , ','#9BE08F'],8:['   ','\\|/','#4FD08A'],16:[' o ',' | ','#FF8FB8'],32:[' Y ',' | ','#FF7A59'],64:[' * ',' | ','#FFE56B'],
+ 128:['(^)',' | ','#FF5C6C'],256:['i!i','\\|/','#B48CFF'],512:[' @ ','\\_/','#FF6FA8','#D08A6A'],1024:['&%&',' Y ','#FFB3D1','#A07A62'],2048:['{#}',' H ','#8FE3FF','#A07A62'],4096:[' ) ','* .','#FFF1BF','#FFF1BF']};
+TIERS.forEach(t=>{const[a0,a1,ac,as]=ASC[t.v];t.a0=a0;t.a1=a1;t.ac=ac;t.as=a0.trim()?as||'#5FAE78':ac;t.ag=a0.trim()?a0:a1});
+SEASONS.forEach((s,k)=>s.ch='~*%+'[k]);
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const skin=t=>`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge};--tc:${t.ac}`;
+// Both looks are always in the markup; the theme class decides which one shows.
+const pic=(t,locked)=>`<img alt="" src="${sprite(t,locked)}"><pre class="aa" aria-hidden="true">${locked?'<u> ? </u>\n<u>   </u>':`<i>${esc(t.a0)}</i>\n<u style="color:${t.as}">${esc(t.a1)}</u>`}</pre>`;
+const sic=s=>`<img alt="" src="${icon(s)}"><b class="ag" style="color:${s.c}" aria-hidden="true">${s.ch}</b>`;
 const petalColor=t=>t.p||(t.art==='daisy'?'#FFFFFF':'#86C78A');
 const fmt=n=>n.toLocaleString('en-US');
 const $=id=>document.getElementById(id),board=$('board'),layer=$('tiles'),petals=$('petals'),reduce=matchMedia('(prefers-reduced-motion: reduce)');
-let state={grid:Array(16).fill(0),frozen:[],bonus:0,moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false,focus:'board',guide:false},busy=false,sel=-1,hintIdx=-1,ctx,toastTimer;
+let state={ascii:false,grid:Array(16).fill(0),frozen:[],bonus:0,moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false,focus:'board',guide:false},busy=false,sel=-1,hintIdx=-1,ctx,toastTimer;
 const seasonOf=m=>Math.floor(m/LEN)%4,yearOf=m=>Math.floor(m/(LEN*4))+1;
 const inBeam=(i,b)=>!!b&&(b.t==='row'?Math.floor(i/4)===b.n:i%4===b.n);
 const nbrs=i=>[i%4>0?i-1:-1,i%4<3?i+1:-1,i-4,i+4].filter(j=>j>=0&&j<16);
@@ -400,7 +437,7 @@ function clean(s){if(!s||!validGrid(s.grid))return null;
   beam:s.beam&&(s.beam.t==='row'||s.beam.t==='col')&&[0,1,2,3].includes(s.beam.n)?{t:s.beam.t,n:s.beam.n}:null,done:!!s.done}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY)),run=clean(s);if(run){const u=clean(s.undo);
-   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,guide:!!s.guide,focus:s.focus==='garden'?'garden':'board',
+   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,ascii:!!s.ascii,picked:!!s.picked,guide:!!s.guide,focus:s.focus==='garden'?'garden':'board',
     found:Array.isArray(s.found)?s.found.filter(pow2):[2,4],
     garden:Array.from({length:PLOTS},(_,i)=>Array.isArray(s.garden)&&validItem(s.garden[i])?{v:s.garden[i].v,pts:s.garden[i].pts}:null)};state.done=!canMove();ok=true}}catch(e){}
  // Blooms discovered in the earlier version stay discovered.
@@ -412,21 +449,22 @@ let cell=90,step=100;
 function measure(){const w=board.clientWidth,g=parseFloat(getComputedStyle(board).getPropertyValue('--gap'))||10;cell=(w-3*g)/4;step=cell+g}
 const pos=(el,i)=>el.style.transform=`translate(calc(${i%4}*(100% + var(--gap))),calc(${Math.floor(i/4)}*(100% + var(--gap))))`;
 function tile(v,i,kind){const t=tierOf(v),ice=state.frozen.includes(i),el=document.createElement('div');el.className='tile '+kind+(t.night?' night':'')+(ice?' frozen':'');el.dataset.index=i;el.setAttribute('role','img');el.setAttribute('aria-label',`${t.name}, ${v}${ice?', frozen':''}, row ${Math.floor(i/4)+1} column ${i%4+1}`);
- el.style.cssText+=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge};--ns:${String(v).length>=4?.12:String(v).length===3?.135:.15}`;
- el.innerHTML=`<div class="face"><img alt="" src="${sprite(t)}"><span class="num">${v}</span>${ice?'<i class="ice"></i>':''}</div>`;pos(el,i);return el}
+ el.style.cssText+=`${skin(t)};--ns:${String(v).length>=4?.12:String(v).length===3?.135:.15}`;
+ el.innerHTML=`<div class="face">${pic(t)}<span class="num">${v}</span>${ice?'<i class="ice"></i>':''}</div>`;pos(el,i);return el}
 const biggest=()=>state.grid.reduce((a,v,i)=>v>(state.grid[a]||0)?i:a,0);
 
-const seaEls=SEASONS.map(s=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`<img alt="" src="${icon(s)}"><i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
+const seaEls=SEASONS.map(s=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`${sic(s)}<i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
 function renderSeasons(){const m=state.moves,s=seasonOf(m),sm=m%LEN;$('yr').textContent='Y'+yearOf(m);
  seaEls.forEach((el,k)=>{el.classList.toggle('now',k===s);el.classList.toggle('past',k<s);el.querySelector('.fill').style.width=(k<s?100:k===s?Math.max(5,sm/LEN*100):0)+'%'});
- const root=document.documentElement.style;root.setProperty('--accent',SEASONS[s].c);SEASONS[s].w.forEach((c,k)=>root.setProperty(WORLD[k],c));
- document.querySelector('meta[name=theme-color]').content=SEASONS[s].w[0];
+ // The ASCII theme keeps each season's world but sinks its grounds toward terminal black.
+ const root=document.documentElement.style,w=state.ascii?SEASONS[s].w.map((c,k)=>k<3?mix(c,'#000000',.55):c):SEASONS[s].w;root.setProperty('--accent',SEASONS[s].c);w.forEach((c,k)=>root.setProperty(WORLD[k],c));
+ document.querySelector('meta[name=theme-color]').content=w[0];
  $('seasons').setAttribute('aria-label',`Year ${yearOf(m)}, ${SEASONS[s].name}: ${SEASONS[s].rule}. ${LEN-sm} moves until ${SEASONS[(s+1)%4].name}. Open almanac.`)}
 // The basket is a live preview: the five highest blooms on the board right now, which is what the run is worth if it ended here.
 let lastTop=[];
 function renderBasket(){const box=$('basket'),top=top5();box.replaceChildren();
  for(let k=0;k<SLOTS;k++){const v=top[k],b=document.createElement('div');b.className='slot';
-  if(v){const t=tierOf(v);b.className='slot full'+(v!==lastTop[k]?' landed':'');b.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;b.innerHTML=`<img alt="" src="${sprite(t)}"><span>${fmt(v)}</span>`}
+  if(v){const t=tierOf(v);b.className='slot full'+(v!==lastTop[k]?' landed':'');b.style.cssText=`${skin(t)}`;b.innerHTML=`${pic(t)}<span>${fmt(v)}</span>`}
   box.append(b)}
  lastTop=top;box.setAttribute('aria-label','Harvest so far: '+(top.length?top.map(v=>tierOf(v).name+' '+v).join(', '):'nothing yet')+(state.bonus?`, plus ${state.bonus} autumn bonus`:''))}
 function paintSel(){isoKick(0)}
@@ -434,7 +472,7 @@ function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
  const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b){bm.className='beam '+b.t;bm.style.setProperty('--n',b.n)}
  $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;$('new').disabled=busy||state.done;
- $('sound').innerHTML=glyph(state.mute?'mute':'sound');$('sound').title=state.mute?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(!state.mute));
+ applyTheme();$('sound').innerHTML=glyph(state.mute?'mute':'sound');$('sound').title=state.mute?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(!state.mute));
  $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
 function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
  const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovSub').hidden=!state.bonus;$('ovSub').textContent=`${fmt(t-state.bonus)} + ${fmt(state.bonus)} AUTUMN`;$('ovUndo').hidden=!state.undo;
@@ -442,8 +480,8 @@ function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay'
 function burst(i,v,sun){if(reduce.matches)return;measure();const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2,n=sun?14:7,z=Math.max(3,Math.min(5,cell/14));for(let k=0;k<n;k++){const a=k/n*Math.PI*2+Math.random()*.6,d=cell*((sun?.6:.42)+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-z/2}px;top:${cy-z/2}px;width:${z}px;height:${z}px;--c:${sun&&k%2?'#F2C94C':k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
 function flashPlus(n){const s=document.createElement('div');s.className='plus';s.textContent='+'+fmt(n);$('score').parentNode.append(s);setTimeout(()=>s.remove(),800)}
 function toast(html,ms=2400){const el=$('toast');el.innerHTML=html;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,ms)}
-function discover(v){const t=tierOf(v);toast(`<div class="swatch" style="background:${t.bg}"><img alt="" src="${sprite(t)}"></div><div><small>NEW BLOOM · ${v}</small><b>${t.name}</b></div>`);sound('chime')}
-function announce(s){const S=SEASONS[s];toast(`<div class="swatch"><img alt="" src="${icon(S)}"></div><div><small>YEAR ${yearOf(state.moves)}</small><b>${S.name}</b></div>`,2000);$('live').textContent=`${S.name}. ${S.rule}.`;sound('season',s)}
+function discover(v){const t=tierOf(v);toast(`<div class="swatch" style="background:${t.bg};${skin(t)}">${pic(t)}</div><div><small>NEW BLOOM · ${v}</small><b>${t.name}</b></div>`);sound('chime')}
+function announce(s){const S=SEASONS[s];toast(`<div class="swatch">${sic(S)}</div><div><small>YEAR ${yearOf(state.moves)}</small><b>${S.name}</b></div>`,2000);$('live').textContent=`${S.name}. ${S.rule}.`;sound('season',s)}
 
 // Soft pentatonic plucks that climb with each tier.
 const SCALE=[0,2,4,7,9];
@@ -563,7 +601,23 @@ function drawCat(x,cx,cy,dy,walk,now){const c=catCv(cat.nap&&!walk?'nap':'sit');
  x.globalAlpha=.3;x.fillStyle='#000';x.fillRect(cx-8,cy+1,16,3);x.globalAlpha=1;x.drawImage(c,cx-(c.width>>1),cy+3-c.height+dy);
  if(cat.nap&&!walk){x.globalAlpha=.75;x.fillStyle='#EDE7F2';x.fillRect(cx+9,cy-15,4,1);x.fillRect(cx+11,cy-14,1,1);x.fillRect(cx+10,cy-13,1,1);x.fillRect(cx+9,cy-12,4,1);x.globalAlpha=1}
  const q=(now-cat.pet)/800;if(q>=0&&q<1){const hx=cx-2,hy=cy-24-Math.round(q*8);x.globalAlpha=1-q*q;x.fillStyle='#F29BB7';x.fillRect(hx,hy,2,1);x.fillRect(hx+3,hy,2,1);x.fillRect(hx,hy+1,5,1);x.fillRect(hx+1,hy+2,3,1);x.fillRect(hx+2,hy+3,1,1);x.globalAlpha=1}}
-function isoLoop(now){isoRaf=0;isoDraw(now);if(!$('gview').hidden){bx.clearRect(0,0,PW,PH);bx.drawImage(iso,0,0)}if(now<isoUntil||aloft())isoRaf=requestAnimationFrame(isoLoop)}
+// The ASCII garden is the same island as text: 13 lines, one per diagonal, widest in the middle. Bare ground is punctuation in the season's grass color;
+// butterflies }|{ and fireflies * settle on bare ground and hop on a slow beat; the cat is ^.^ (or -.- asleep).
+let agLast='',agBig='';
+function asciiGarden(now){const s=seasonOf(state.moves),[nb,nf]=flock(),still=reduce.matches,tick=still?0:Math.floor(now/900),over={};
+ const bare=RING.map((_,k)=>k).filter(k=>!state.garden[k]&&k!==cat.k),spot=(i,salt)=>bare.length?bare[(i*17+salt*7+tick*(3+i))%bare.length]:-1;
+ for(let i=0;i<nf;i++)over[spot(i,5)]=`<b style="color:#FFF1BF">${(tick+i)%2?' * ':' . '}</b>`;
+ for(let i=0;i<nb;i++)over[spot(i,1)]=`<b style="color:${WING[i]}">${!still&&(Math.floor(now/300)+i)%2?' | ':'}|{'}</b>`;
+ const lines=[];
+ for(let d=0;d<=2*(G-1);d++){let row=' '.repeat(Math.abs(d-(G-1))*3);
+  for(let gx=Math.max(0,d-(G-1));gx<=Math.min(G-1,d);gx++){const k=(d-gx)*G+gx,it=state.garden[k];
+   row+=(k===cat.k?`<b data-cat style="color:${cat.coat.e==='#F2C94C'?'#F2C94C':cat.coat.k}">${now-cat.pet<800?'^w^':cat.nap?'-.-':'^.^'}</b>`
+    :it?`<b style="color:${tierOf(it.v).ac}">${esc(tierOf(it.v).ag)}</b>`:over[k]||`<i>${[' . ',' , '," ' ",' . ',' " '][(k*7+3)%5]}</i>`)+'   '}
+  lines.push(row.trimEnd())}
+ const html=lines.join('\n'),a=$('isoA'),b=$('isoBigA');a.style.setProperty('--gt',GRASS[s][2]);b.style.setProperty('--gt',GRASS[s][2]);
+ if(html!==agLast){agLast=html;a.innerHTML=html}
+ if(!$('gview').hidden&&html!==agBig){agBig=html;b.innerHTML=html}}
+function isoLoop(now){isoRaf=0;if(state.ascii)asciiGarden(now);else{isoDraw(now);if(!$('gview').hidden){bx.clearRect(0,0,PW,PH);bx.drawImage(iso,0,0)}}if(now<isoUntil||aloft())isoRaf=requestAnimationFrame(isoLoop)}
 document.addEventListener('visibilitychange',()=>isoKick(0));
 function isoKick(ms){isoUntil=Math.max(isoUntil,performance.now()+ms);if(!isoRaf)isoRaf=requestAnimationFrame(isoLoop)}
 function isoMove(){}
@@ -571,8 +625,10 @@ function isoPlant(idx){if(idx.includes(cat.k))catWalk();if(!idx.length||reduce.m
 // Tap the island to open it large, over a dimmed game. In the large view, tap the cat (or right beside it) to pet it.
 const big=$('isoBig'),bx=big.getContext('2d');
 function openGarden(){const n=state.garden.filter(Boolean);$('vCount').textContent=`${n.length} OF ${PLOTS} PLANTED · ${fmt(n.reduce((a,b)=>a+b.pts,0))}`;$('gview').hidden=false;isoKick(0);$('vClose').focus({preventScroll:true})}
-function closeGarden(){$('gview').hidden=true;iso.focus({preventScroll:true})}
-iso.addEventListener('click',openGarden);iso.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openGarden()}});
+function closeGarden(){$('gview').hidden=true;agBig='';(state.ascii?$('isoA'):iso).focus({preventScroll:true})}
+iso.addEventListener('click',openGarden);$('isoA').addEventListener('click',openGarden);$('isoA').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openGarden()}});
+$('isoBigA').addEventListener('click',e=>{if(e.target.closest('[data-cat]'))petCat()});
+iso.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openGarden()}});
 $('vClose').onclick=closeGarden;$('gview').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGarden()});
 let gp=null;big.addEventListener('pointerdown',e=>{if(e.isPrimary)gp={x:e.clientX,y:e.clientY,id:e.pointerId}});
 big.addEventListener('pointerup',e=>{if(!gp||gp.id!==e.pointerId)return;const d=Math.hypot(e.clientX-gp.x,e.clientY-gp.y);gp=null;if(d>10||cat.k<0)return;
@@ -582,19 +638,19 @@ big.addEventListener('pointercancel',()=>gp=null);
 
 function openAlmanac(){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>a+b.pts,0);
  $('gCount').textContent=`${n.length} OF ${PLOTS} PLANTED · ${fmt(sum)}`;
- $('almanac').innerHTML=SEASONS.map(s=>`<div class="alm"><img alt="" src="${icon(s)}"><div><b>${s.name.toUpperCase()}</b><span>${s.rule}</span></div></div>`).join('');
+ $('almanac').innerHTML=SEASONS.map(s=>`<div class="alm">${sic(s)}<div><b>${s.name.toUpperCase()}</b><span>${s.rule}</span></div></div>`).join('');
  const box=$('journal');box.replaceChildren();let got=0;
  TIERS.forEach(t=>{const has=state.found.includes(t.v)||state.found.some(v=>v>4096&&t.v===4096);if(has)got++;const e=document.createElement('div');e.className='entry'+(has?'':' locked');
-  e.innerHTML=`<div class="pic" style="${has?'--bg:'+t.bg:''}"><img alt="" src="${sprite(t,!has)}"></div><b>${has?t.name:t.v}</b>`;box.append(e)});
+  e.innerHTML=`<div class="pic" style="${has?skin(t):''}">${pic(t,!has)}</div><b>${has?t.name:t.v}</b>`;box.append(e)});
  $('jCount').textContent=`${got} OF ${TIERS.length} BLOOMS`;$('scrim').hidden=false;document.querySelector('.sheet').scrollTop=0;$('gClose').focus({preventScroll:true})}
 function closeAlmanac(){$('scrim').hidden=true;board.focus({preventScroll:true});isoKick(0)}
 // How to play. The demos are built once from the real tile sprites; the little garden is redrawn in the current season's grass.
-function miniTile(v,cls){const t=tierOf(v),el=document.createElement('div');el.className='mt '+cls;el.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;el.innerHTML=`<img alt="" src="${sprite(t)}"><b>${v}</b>`;return el}
+function miniTile(v,cls){const t=tierOf(v),el=document.createElement('div');el.className='mt '+cls;el.style.cssText=`${skin(t)}`;el.innerHTML=`${pic(t)}<b>${v}</b>`;return el}
 const cellAt=n=>{const c=document.createElement('i');c.className='mc';c.style.left=n*52+'px';return c};
 function openHelp(){if(!$('dMerge').firstChild){
   $('dMerge').append(cellAt(0),cellAt(1),cellAt(2),miniTile(2,'a'),miniTile(2,'b'),miniTile(4,'c'));
   [64,32,16,8,4].forEach(v=>$('dTop').append(miniTile(v,'')));
-  $('hSeasons').innerHTML=SEASONS.map(s=>`<div class="alm"><img alt="" src="${icon(s)}"><div><b>${s.name.toUpperCase()}</b><span>${s.how}</span></div></div>`).join('')}
+  $('hSeasons').innerHTML=SEASONS.map(s=>`<div class="alm">${sic(s)}<div><b>${s.name.toUpperCase()}</b><span>${s.how}</span></div></div>`).join('')}
  const x=$('dPlant').getContext('2d'),[ga,gb]=GRASS[seasonOf(state.moves)];x.clearRect(0,0,74,46);
  [[21,28,32,gb],[53,28,64,gb],[37,36,16,ga]].forEach(([cx,cy,v,c])=>{diamond(x,cx,cy,c,c);x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7);drawPlant(x,v,cx,cy,0,1,false)});
  $('help').hidden=false;document.querySelector('#help .sheet').scrollTop=0;$('hGo').focus({preventScroll:true})}
@@ -604,11 +660,15 @@ $('helpBtn').onclick=openHelp;$('hClose').onclick=$('hGo').onclick=closeHelp;$('
 $('new').innerHTML=glyph('fresh');$('undo').innerHTML=glyph('back');$('almanacBtn').innerHTML=glyph('book');
 $('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
 $('sound').onclick=()=>{state.mute=!state.mute;unlockAudio();save();render()};
+// Theme toggle: pixel sprites or ASCII symbols. The button shows the look it switches to.
+function applyTheme(){const a=state.ascii,b=$('theme');document.documentElement.classList.toggle('ascii',a);b.innerHTML=glyph(a?'flower':'letter');b.title=a?'Pixel theme':'ASCII theme';b.setAttribute('aria-label',b.title)}
+function toggleTheme(){state.ascii=!state.ascii;save();render();agLast=agBig='';isoKick(0)}
+$('theme').onclick=toggleTheme;
 $('almanacBtn').onclick=openAlmanac;$('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('gview').hidden){if(e.key==='Escape')closeGarden();else if(e.key.toLowerCase()==='c')petCat();return}if(!$('help').hidden){if(e.key==='Escape')closeHelp();return}if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
  const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
- if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}
+ if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}if(k==='t'){toggleTheme();return}
  if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo()});
 let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
 board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,d=Math.max(Math.abs(dx),Math.abs(dy));ptr=null;
