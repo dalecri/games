@@ -174,12 +174,13 @@ button[aria-pressed="false"]{color:var(--muted)}
   .year{position:absolute;top:64px;right:0;z-index:2}
   .seasons{gap:6px;padding:0 10px;min-height:36px}.sea:not(.now){display:flex}.yr i{display:none}
   .help{width:36px;min-height:36px}
-  /* Garden on the left, then the board, with the basket down the right edge under the scores. */
-  .gpane{order:1}.bpane{order:2}.basket{order:3}
-  /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
-  .stage{flex-direction:row;gap:16px;container-type:size}
-  .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
-  .basket{grid-template-columns:58px;grid-template-rows:repeat(5,minmax(0,58px));align-content:center}
+  /* Garden on the left; on the right the board under the scores, with the basket in a row beneath it. */
+  /* The board stays square: as tall as the stage allows once the basket has its row, but never so wide that the garden is squeezed out.
+     A phone on its side is too short for that row, so there the basket stays a column on the right. */
+  .stage{display:grid;grid-template:"garden board" auto "garden basket" auto / minmax(0,1fr) auto;align-content:center;gap:12px 16px;container-type:size}
+  .gpane{grid-area:garden}.bpane{grid-area:board}.basket{grid-area:basket}
+  .bpane{width:min(100cqh - 70px,62cqw);aspect-ratio:1}
+  .basket{grid-template-columns:repeat(5,58px)}
   .scores{position:absolute;top:0;right:0;z-index:2}.chip{min-width:104px;flex:1}.scores{width:var(--side)}
   .badge{display:grid}h1{font-size:30px}
 }
@@ -187,7 +188,7 @@ button[aria-pressed="false"]{color:var(--muted)}
   main{row-gap:8px;--top:46px;--side:200px}
   header{min-height:0;align-self:center}.year{top:5px;right:calc(var(--side) + 8px)}
   .badge{width:36px;height:36px}.badge img{width:24px;height:24px}.badge .aa{--as:5.5px}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}
-  .seasons,button{min-height:36px}.basket{grid-template-columns:40px;grid-template-rows:repeat(5,minmax(0,40px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5px;margin-bottom:24%}
+  .seasons,button{min-height:36px}.stage{grid-template:"garden board basket" minmax(0,1fr) / minmax(0,1fr) auto auto;align-items:center}.gpane{align-self:stretch}.basket{grid-template-columns:40px;grid-template-rows:repeat(5,minmax(0,40px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5px;margin-bottom:24%}
 }
 
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap;pointer-events:none}
