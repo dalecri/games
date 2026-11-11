@@ -39,12 +39,14 @@ body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(i
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
 #weather{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 main{position:relative;z-index:1;margin:0 auto;display:grid;gap:12px;width:min(100%,640px);height:calc(100dvh - 32px);min-height:600px;
-  grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
+  grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) / minmax(0,1fr)}
 header{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.year{grid-area:seasons;display:flex;gap:8px;min-width:0;justify-self:end}.stage{grid-area:stage}.controls{grid-area:controls}
+.year{grid-area:seasons;display:flex;gap:8px;min-width:0;justify-self:end}.stage{grid-area:stage}
 
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
-.badge{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+/* The app icon starts a new run (after asking). */
+.badge{width:44px;height:44px;min-height:0;padding:0;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.badge .aa{--as:7px}
 .badge img{width:30px;height:30px;image-rendering:pixelated}
 h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);letter-spacing:.04em;margin:0;line-height:1;white-space:nowrap}
 .scores{display:flex;gap:8px}
@@ -53,15 +55,18 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 .chip strong{display:block;font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
 .plus{position:absolute;right:10px;top:-6px;font-size:12px;font-weight:700;color:var(--accent);pointer-events:none;animation:rise .8s var(--ease) forwards}
 @keyframes rise{to{opacity:0;transform:translateY(-22px)}}
-@media(max-width:440px){.badge{display:none}}
+/* Upright phones and tablets show the app icon alone; the title stays in the page for screen readers. */
+@media not ((min-width:700px) and (min-aspect-ratio:1/1)){h1{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}}
 
-/* The year, compact in every view: four season icons, and only the current one carries its progress track. It sits right-aligned under the scores. */
-.seasons{display:grid;grid-template-columns:auto repeat(4,auto);justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
+/* The year, compact in every view: four season icons, and only the current one carries its progress track. It sits right-aligned under the scores, with undo, theme and help beside it. */
+.seasons{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
 .yr{font:700 11px var(--ui);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
 .sea{display:flex;align-items:center;gap:7px;min-width:0;opacity:.38;transition:opacity 300ms var(--ease)}
 .sea img{width:18px;height:18px;image-rendering:pixelated;flex:none}
 .sea.now{opacity:1}.sea.past{opacity:.6}
 .track{flex:none;width:30px;height:4px;background:var(--line);display:none;overflow:hidden}.sea.now .track{display:block}
+/* Phones upright show only the season you are in; wider layouts show all four. */
+.sea:not(.now){display:none}
 .fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
 /* Stage: board, basket, garden. Only the board is boxed; the garden is an island floating on the page. */
@@ -141,19 +146,18 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 button.primary{background:var(--accent);color:var(--void);border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
-.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:min(100%,264px);margin:0 auto}
-.controls button{padding:0 6px;display:grid;place-items:center}
-.controls svg{width:18px;height:18px;display:block}
-.help{flex:none;width:44px;padding:0;border-radius:12px;font-size:14px;background:var(--surface-2)}
+/* The small square buttons beside the year: undo, theme, how to play. */
+.help{flex:none;width:44px;padding:0;border-radius:12px;font-size:14px;background:var(--surface-2);display:grid;place-items:center}
+.help svg{width:18px;height:18px;display:block}
 
-/* Landscape: PC, and tablets or phones on their side. Top bar, then controls, board, basket and garden left to right. */
+/* Landscape: PC, and tablets or phones on their side. Top bar, then garden, board and basket left to right. */
 @media(min-width:700px) and (min-aspect-ratio:1/1){
-  /* Title top left. Scores pinned top right with a compact year strip under them, above the board. Below, the stage, then the controls along the bottom as on a phone. */
+  /* Title top left. Scores pinned top right with a compact year strip under them, above the board. Below, the stage. */
   main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:104px;--side:216px;
-    grid-template:"head" minmax(var(--top),auto) "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
+    grid-template:"head" minmax(var(--top),auto) "stage" minmax(0,1fr) / minmax(0,1fr)}
   header{align-self:start;min-height:60px}
-  .year{position:absolute;top:64px;right:0;z-index:2;width:var(--side)}
-  .seasons{gap:6px;padding:0 10px;min-height:36px}
+  .year{position:absolute;top:64px;right:0;z-index:2}
+  .seasons{gap:6px;padding:0 10px;min-height:36px}.sea:not(.now){display:flex}
   .help{width:36px;min-height:36px}
   /* Garden on the left, then the board, with the basket down the right edge under the scores. */
   .gpane{order:1}.bpane{order:2}.basket{order:3}
@@ -165,11 +169,9 @@ button[aria-pressed="false"]{color:var(--muted)}
   .badge{display:grid}h1{font-size:30px}
 }
 @media(min-width:700px) and (min-aspect-ratio:1/1) and (max-height:480px){
-  /* Short screens (a phone on its side) keep the controls as a slim rail on the left, so the board keeps its height. */
-  main{row-gap:8px;--top:46px;--side:200px;grid-template:"head head" minmax(var(--top),auto) "controls stage" minmax(0,1fr) / 44px minmax(0,1fr)}
-  .controls{grid-template-columns:44px;width:44px;margin:0;align-content:center}.controls button{padding:0}
+  main{row-gap:8px;--top:46px;--side:200px}
   header{min-height:0;align-self:center}.year{top:5px;right:calc(var(--side) + 8px)}
-  .badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}.controls{grid-auto-rows:36px}
+  .badge{width:36px;height:36px}.badge img{width:24px;height:24px}.badge .aa{--as:5.5px}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}
   .seasons,button{min-height:36px}.basket{grid-template-columns:40px;grid-template-rows:repeat(5,minmax(0,40px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5px;margin-bottom:24%}
 }
 
@@ -189,6 +191,8 @@ button[aria-pressed="false"]{color:var(--muted)}
 .scrim.mid{align-items:center;padding:16px;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
 .gsheet{width:min(100%,760px,(100dvh - 150px)*232/156);border-radius:22px;border-bottom:1px solid var(--line);padding:20px 18px 12px}
 #isoBig{display:block;width:100%;aspect-ratio:232/156;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+.asksheet{width:min(100%,340px);border-radius:22px;border-bottom:1px solid var(--line);padding:24px 20px 22px;text-align:center}
+.asksheet p{margin:10px 0 20px;font-size:12px;line-height:1.6;color:var(--muted)}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .sheet h2{font:500 26px/1 var(--display);margin:0;letter-spacing:.03em}
 .count{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:6px;font-variant-numeric:tabular-nums}
@@ -243,7 +247,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 .gsheet{container-type:inline-size}
 #isoBigA{font-size:calc(100cqw/24.6);width:max-content;margin:0 auto;padding:14px 0 22px;cursor:default}#isoBigA [data-cat]{cursor:pointer}
 .ascii .aa,.ascii .ga{display:block}.ascii .ag{display:inline-block}
-.ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge{display:none}
+.ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge img{display:none}
 .ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:8px;margin-bottom:20%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
 /* The drawings sway from the soil and their bright spots twinkle. Frost holds a bloom still. */
 .ascii .aa{transform-origin:50% 100%;animation:sway 4s ease-in-out var(--ph,0ms) infinite}
@@ -258,7 +262,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 .ascii .cell{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
 .ascii .cell:after{content:'.';width:auto;height:auto;margin:0;background:none;transform:translate(-50%,-62%);color:var(--line);font:700 14px/1 var(--ui)}
 .ascii h1{font-family:var(--ui);letter-spacing:0}.ascii .sheet h2,.ascii .how h3,.ascii .toast b,.ascii .ov-total{font-family:var(--ui)}
-.ascii .bpane,.ascii .chip,.ascii .seasons,.ascii button,.ascii .cell,.ascii .face,.ascii .ice,.ascii .beam,.ascii .slot,.ascii .sheet,.ascii .gsheet,.ascii .toast,.ascii .overlay,.ascii .alm,.ascii .entry,.ascii .pic,.ascii .swatch,.ascii .mt,.ascii .mc{border-radius:3px}
+.ascii .badge,.ascii .bpane,.ascii .chip,.ascii .seasons,.ascii button,.ascii .cell,.ascii .face,.ascii .ice,.ascii .beam,.ascii .slot,.ascii .sheet,.ascii .gsheet,.ascii .toast,.ascii .overlay,.ascii .alm,.ascii .entry,.ascii .pic,.ascii .swatch,.ascii .mt,.ascii .mc{border-radius:3px}
 .ascii .how:has(.d-plant){grid-template-columns:minmax(0,1fr)}.ascii .d-plant{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
@@ -268,13 +272,13 @@ button[aria-pressed="false"]{color:var(--muted)}
 <canvas id="weather" aria-hidden="true"></canvas>
 <main>
   <header>
-    <div class="brand"><div class="badge"><img id="badge" alt="" width="30" height="30"></div><h1>2048 Bloom</h1></div>
+    <div class="brand"><button class="badge" id="new" aria-label="New run" title="New run"></button><h1>2048 Bloom</h1></div>
     <div class="scores">
       <div class="chip"><span>HARVEST</span><strong id="score">0</strong></div>
       <div class="chip"><span>BEST</span><strong id="best">0</strong></div>
     </div>
   </header>
-  <div class="year"><button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button><button id="helpBtn" class="help" aria-label="How to play">?</button></div>
+  <div class="year"><button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button><button id="undo" class="help" aria-label="Undo" title="Undo" disabled></button><button id="theme" class="help" aria-label="ASCII theme" title="ASCII theme"></button><button id="helpBtn" class="help" aria-label="How to play" title="How to play">?</button></div>
   <div class="stage" id="stage">
     <section id="paneBoard" class="pane bpane" aria-label="Number board">
       <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. U to undo, question mark for how to play.">
@@ -296,11 +300,6 @@ button[aria-pressed="false"]{color:var(--muted)}
       <pre id="isoA" class="ga" tabindex="0" role="button" aria-label="Open the garden"></pre>
     </section>
   </div>
-  <div class="controls">
-    <button id="new" aria-label="New run" title="New run"></button>
-    <button id="undo" aria-label="Undo" title="Undo" disabled></button>
-    <button id="theme" aria-label="ASCII theme" title="ASCII theme"></button>
-  </div>
 </main>
 <div id="toast" class="toast" hidden role="status"></div>
 <div id="scrim" class="scrim" hidden>
@@ -316,6 +315,13 @@ button[aria-pressed="false"]{color:var(--muted)}
     <div class="sheet-head"><div><h2 id="vTitle">Garden</h2><div class="count" id="vCount"></div></div><button class="close" id="vClose" aria-label="Close garden">✕</button></div>
     <canvas id="isoBig" width="232" height="156" role="img" aria-label="Your garden, large"></canvas>
     <pre id="isoBigA" class="ga" role="img" aria-label="Your garden, large"></pre>
+  </div>
+</div>
+<div id="ask" class="scrim mid" hidden>
+  <div class="sheet asksheet" role="alertdialog" aria-modal="true" aria-labelledby="askT" aria-describedby="askP">
+    <h2 id="askT">Start a new run?</h2>
+    <p id="askP">This run's garden and harvest will be cleared.</p>
+    <div class="row"><button id="askYes" class="primary">New run</button><button id="askNo">Keep playing</button></div>
   </div>
 </div>
 <div id="help" class="scrim" hidden>
@@ -392,7 +398,6 @@ function icon(s){if(s.url)return s.url;const c=document.createElement('canvas');
  ICON[s.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=ch==='X'?dark:s.c;x.fillRect(col,r,1,1)}));return s.url=c.toDataURL()}
 // Control icons: 9×9 pixel glyphs drawn as SVG in the button's own text color, so they follow the season and the disabled state.
 const GLYPH={
- fresh:['...xxx.x.','..x...xx.','.x...xxx.','.x.......','.x.....x.','.x.....x.','..x...x..','...xxx...','.........'],
  back: ['.........','..x......','.xx......','xxxxxx...','.xx...x..','..x....x.','.......x.','......x..','..xxxx...'],
  letter:['.........','..xxxxx..','.xx...xx.','.xx...xx.','.xxxxxxx.','.xx...xx.','.xx...xx.','.xx...xx.','.........'],
  flower:['...xxx...','...xxx...','xxx.x.xxx','xx.xxx.xx','xxx.x.xxx','...xxx...','...xxx...','....x....','....x....']};
@@ -492,9 +497,9 @@ function paintSel(){isoKick(0)}
 function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
  const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b){bm.className='beam '+b.t;bm.style.setProperty('--n',b.n)}
- $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;$('new').disabled=busy||state.done;
+ $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;
  applyTheme();
- $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
+ $('new').innerHTML=pic(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
 function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
  const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovSub').hidden=!state.bonus;$('ovSub').textContent=`${fmt(t-state.bonus)} + ${fmt(state.bonus)} AUTUMN`;$('ovUndo').hidden=!state.undo;
  if(was){$('live').textContent=`No moves left. Harvest ${t}.`;$('plant').focus()}}
@@ -540,7 +545,7 @@ function move(dir){if(busy||state.done)return false;sel=-1;const nx=plan(state.g
  const gain=was===2?nx.merged.reduce((a,i)=>a+nx.grid[i],0):0;state.bonus+=gain;if(!canMove())state.done=true;
  const sown=tend(nx),p0=Math.max(...old),p1=peak();isoPlant(sown);
  if(p0<32&&p1>=32){catArrive();$('live').textContent='A cat has moved into the garden.'}else if(p0<128&&p1>=128)$('live').textContent='Butterflies have found the garden.';else if(p0<512&&p1>=512)$('live').textContent='Fireflies have come to the garden.';
- catTick();save();busy=true;$('undo').disabled=$('new').disabled=true;
+ catTick();save();busy=true;$('undo').disabled=true;
  nx.motions.forEach(({from,to})=>{const el=layer.querySelector(`[data-index="${from}"]`);if(el)pos(el,to)});
  isoMove(old,nx,walls,sp);
  const top=Math.max(2,...nx.merged.map(i=>nx.grid[i]));sound(nx.sunny.length?'sun':nx.merged.length?'merge':'slide',top);if(nx.merged.length)buzz(8);
@@ -678,8 +683,12 @@ function openHelp(){if(!$('dMerge').firstChild){
 function closeHelp(){$('help').hidden=true;if(!state.guide){state.guide=true;save()}board.focus({preventScroll:true});isoKick(0)}
 $('helpBtn').onclick=openHelp;$('hClose').onclick=$('hGo').onclick=closeHelp;$('help').addEventListener('click',e=>{if(e.target===e.currentTarget)closeHelp()});
 
-$('new').innerHTML=glyph('fresh');$('undo').innerHTML=glyph('back');
-$('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
+$('undo').innerHTML=glyph('back');
+// The app icon starts a new run. Mid-run it asks first; a finished run or an untouched one has nothing to lose.
+function askNew(){if(busy)return;if(state.done)return plant();if(!state.moves)return;$('ask').hidden=false;$('askNo').focus({preventScroll:true})}
+function closeAsk(){$('ask').hidden=true;board.focus({preventScroll:true})}
+$('new').onclick=askNew;$('askYes').onclick=()=>{closeAsk();newGame()};$('askNo').onclick=closeAsk;$('ask').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAsk()});
+$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
 // Sound has no button; M mutes and unmutes from a keyboard.
 function toggleMute(){state.mute=!state.mute;unlockAudio();save();$('live').textContent=state.mute?'Sound off.':'Sound on.';if(!state.mute)sound('select')}
 // Theme toggle: pixel sprites or ASCII symbols. The button shows the look it switches to.
@@ -688,7 +697,7 @@ function toggleTheme(){state.ascii=!state.ascii;save();render();agLast=agBig='';
 $('theme').onclick=toggleTheme;
 $('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('gview').hidden){if(e.key==='Escape')closeGarden();else if(e.key.toLowerCase()==='c')petCat();return}if(!$('help').hidden){if(e.key==='Escape')closeHelp();return}if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('ask').hidden){if(e.key==='Escape')closeAsk();return}if(!$('gview').hidden){if(e.key==='Escape')closeGarden();else if(e.key.toLowerCase()==='c')petCat();return}if(!$('help').hidden){if(e.key==='Escape')closeHelp();return}if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
  const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
  if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}if(k==='t'){toggleTheme();return}if(k==='m'){toggleMute();return}
  if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo()});
