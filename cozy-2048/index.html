@@ -68,7 +68,7 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 .stage{position:relative;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;container-type:size}
 .pane{position:relative;flex:1 1 0;min-width:0;min-height:0;container:pane/size;display:grid;place-items:center;transition:flex-grow 420ms var(--ease)}
 /* The board's box hugs the board: a square as wide as the stage, or shorter when the basket and garden need the room. */
-.bpane{flex:none;align-self:center;width:min(100cqw,100cqh - 184px);aspect-ratio:1;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
+.bpane{flex:none;align-self:center;width:min(100cqw,100cqh - 177px);aspect-ratio:1;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
 .gpane{min-height:84px}
 .board{position:relative;width:min(100cqw,100cqh);aspect-ratio:1;container:board/inline-size;--gap:10px;touch-action:none}
 .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);height:100%}
@@ -120,7 +120,7 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
 /* The basket: five picks a year, and only what is picked counts */
-.basket{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,72px));justify-content:center;gap:8px}
+.basket{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,65px));justify-content:center;gap:8px}
 .slot{aspect-ratio:1;min-height:0;padding:0;border-radius:12px;border:1px dashed var(--line);background:transparent;position:relative;display:grid;place-items:center;overflow:hidden;color:var(--muted)}
 .slot:disabled{opacity:1}
 .slot.next{border:1px solid var(--accent);background:var(--surface-2);cursor:pointer}
@@ -160,7 +160,7 @@ button[aria-pressed="false"]{color:var(--muted)}
   /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
   .stage{flex-direction:row;gap:16px;container-type:size}
   .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
-  .basket{grid-template-columns:64px;grid-template-rows:repeat(5,minmax(0,64px));align-content:center}
+  .basket{grid-template-columns:58px;grid-template-rows:repeat(5,minmax(0,58px));align-content:center}
   .scores{position:absolute;top:0;right:0;z-index:2}.chip{min-width:104px;flex:1}.scores{width:var(--side)}
   .badge{display:grid}h1{font-size:30px}
 }
@@ -170,7 +170,7 @@ button[aria-pressed="false"]{color:var(--muted)}
   .controls{grid-template-columns:44px;width:44px;margin:0;align-content:center}.controls button{padding:0}
   header{min-height:0;align-self:center}.year{top:5px;right:calc(var(--side) + 8px)}
   .badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}.controls{grid-auto-rows:36px}
-  .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5.5px;margin-bottom:24%}
+  .seasons,button{min-height:36px}.basket{grid-template-columns:40px;grid-template-rows:repeat(5,minmax(0,40px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5px;margin-bottom:24%}
 }
 
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap;pointer-events:none}
@@ -244,7 +244,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 #isoBigA{font-size:calc(100cqw/24.6);width:max-content;margin:0 auto;padding:14px 0 22px;cursor:default}#isoBigA [data-cat]{cursor:pointer}
 .ascii .aa,.ascii .ga{display:block}.ascii .ag{display:inline-block}
 .ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge{display:none}
-.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:9px;margin-bottom:20%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
+.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:8px;margin-bottom:20%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
 /* The drawings sway from the soil and their bright spots twinkle. Frost holds a bloom still. */
 .ascii .aa{transform-origin:50% 100%;animation:sway 4s ease-in-out var(--ph,0ms) infinite}
 .ascii .aa .tw{animation:tw 1.6s steps(1) var(--ph,0ms) infinite}
