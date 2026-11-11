@@ -10,9 +10,20 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
 <style>
 @font-face{font-family:'Alpha Lyrae';font-style:normal;font-weight:500;font-display:swap;src:url('https://heycristobal.com/my-style-guide/assets/fonts/AlphaLyrae-Medium.woff2') format('woff2')}
+@property --void{syntax:'<color>';inherits:true;initial-value:#1E1826}
+@property --surface{syntax:'<color>';inherits:true;initial-value:#2A2233}
+@property --surface-2{syntax:'<color>';inherits:true;initial-value:#251F2D}
+@property --line{syntax:'<color>';inherits:true;initial-value:#3D3448}
+@property --text{syntax:'<color>';inherits:true;initial-value:#EDE7F2}
+@property --muted{syntax:'<color>';inherits:true;initial-value:#9B8FA8}
+@property --accent{syntax:'<color>';inherits:true;initial-value:#7FB8D9}
+/* Each season owns a whole Quiet Pixel world, not only the accent: dawn night (spring), sun dusk (summer), lamp (autumn), moon (winter).
+   The seven colors are registered above so the page can fade from one world to the next. */
+html.live{transition:--void 900ms,--surface 900ms,--surface-2 900ms,--line 900ms,--text 900ms,--muted 900ms,--accent 900ms}
 /* Quiet Pixel v3 night ground. The one accent follows the season: dawn (spring), sun (summer), lamp (autumn), moon (winter).
-   Layout: two panes share one stage, the number board and the live isometric garden. Whichever you touch grows, the other goes compact.
-   Portrait (phones, upright tablets) stacks them; landscape (PC, tablets on their side) puts them side by side beside a control rail. */
+   Layout: the screen reads as the game loop. The board is where you play, the basket holds your picks, the garden keeps every harvest.
+   Portrait (phones, upright tablets) stacks them top to bottom; landscape (PC, tablets on their side) runs them left to right beside a control rail.
+   Nothing swaps places. The garden starts each run bare and fills in as the board climbs; tap it for a large view. */
 :root{
   color-scheme:dark;
   --void:#1E1826;--surface:#2A2233;--surface-2:#251F2D;--line:#3D3448;
@@ -28,9 +39,9 @@ body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(i
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
 #weather{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 main{position:relative;z-index:1;margin:0 auto;display:grid;gap:12px;width:min(100%,640px);height:calc(100dvh - 32px);min-height:600px;
-  grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) "basket" auto "controls" auto / minmax(0,1fr)}
+  grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
 header{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.seasons{grid-area:seasons}.stage{grid-area:stage}.basket{grid-area:basket}.controls{grid-area:controls}
+.year{grid-area:seasons;display:flex;gap:8px;min-width:0}.stage{grid-area:stage}.controls{grid-area:controls}
 
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .badge{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
@@ -45,7 +56,7 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 @media(max-width:440px){.badge{display:none}}
 
 /* The year: four seasons, the current one filling as moves pass */
-.seasons{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
+.seasons{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
 .yr{font:700 11px var(--ui);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
 .sea{display:flex;align-items:center;gap:7px;min-width:0;opacity:.38;transition:opacity 300ms var(--ease)}
 .sea img{width:18px;height:18px;image-rendering:pixelated;flex:none}
@@ -53,18 +64,15 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 .track{flex:1;height:4px;background:var(--line);display:block;overflow:hidden}
 .fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
-/* Stage: the pane with .on takes two thirds, the other one third */
+/* Stage: board, basket, garden. Only the board is boxed; the garden is an island floating on the page. */
 .stage{position:relative;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
-.pane{flex:1 1 0;min-width:0;min-height:0;container:pane/size;display:grid;place-items:center;padding:8px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer;
-  transition:flex-grow 420ms var(--ease),background 300ms var(--ease),box-shadow 300ms var(--ease)}
-.pane:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
-.pane.on{flex-grow:2;padding:12px;background:var(--surface);box-shadow:0 18px 48px #0005;cursor:default;border-color:var(--line)}
-.pane:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.pane{position:relative;flex:1 1 0;min-width:0;min-height:0;container:pane/size;display:grid;place-items:center;transition:flex-grow 420ms var(--ease)}
+.bpane{flex-grow:2.4;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
+.gpane{min-height:84px}
 .board{position:relative;width:min(100cqw,100cqh);aspect-ratio:1;container:board/inline-size;--gap:10px;touch-action:none}
 .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);height:100%}
-.cell{border-radius:11px;background:color-mix(in srgb,var(--accent) 5%,var(--surface-2));box-shadow:inset 0 2px 0 #0002;position:relative;transition:background 600ms var(--ease)}
-.pane:not(.on) .cell{background:color-mix(in srgb,var(--accent) 5%,var(--void))}
-.cell:after{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;background:var(--line)}
+.cell{border-radius:11px;background:color-mix(in srgb,#5A453D 46%,var(--surface-2));box-shadow:inset 0 2px 0 #0002;position:relative;transition:background 600ms var(--ease)}
+.cell:after{content:'';position:absolute;left:50%;top:50%;width:10px;height:2px;margin:-1px -5px;background:#0003}
 #tiles,#petals{position:absolute;inset:0;pointer-events:none}
 .tile{position:absolute;top:0;left:0;width:calc((100% - 3*var(--gap))/4);height:calc((100% - 3*var(--gap))/4);transition:transform 110ms var(--ease);will-change:transform;z-index:1}
 .face{position:relative;height:100%;border-radius:11px;background:var(--bg);box-shadow:0 3px 0 var(--edge),0 6px 14px #0003;display:grid;place-items:center;overflow:hidden;transition:transform 140ms var(--ease)}
@@ -102,15 +110,16 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
   .num{position:static;font-size:calc((100cqw - 3*var(--gap))/4*var(--ns,.15)*2.3)}
   .beam{border-radius:8px}
 }
-#iso{display:block;width:min(100cqw,calc(100cqh*264/180));aspect-ratio:264/180;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;outline:none}
+#iso{display:block;width:min(100cqw,calc(100cqh*232/156));aspect-ratio:232/156;cursor:pointer;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;outline:none}
 
-.overlay{position:absolute;inset:0;z-index:5;border-radius:20px;background:#251f2ded;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:sheetIn 280ms var(--ease)}
+.overlay{position:absolute;inset:0;z-index:5;border-radius:19px;background:color-mix(in srgb,var(--surface-2) 93%,transparent);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:sheetIn 320ms var(--ease) 500ms backwards}
 .ov-label{font-size:11px;letter-spacing:.2em;color:var(--accent)}
+.ov-sub{font-size:11px;letter-spacing:.14em;color:var(--muted);margin:-14px 0 14px;font-variant-numeric:tabular-nums}
 .ov-total{font:500 clamp(48px,17vw,84px)/1 var(--display);letter-spacing:.02em;font-variant-numeric:tabular-nums;margin-bottom:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
 /* The basket: five picks a year, and only what is picked counts */
-.basket{display:grid;grid-template-columns:repeat(5,minmax(0,72px));justify-content:center;gap:8px}
+.basket{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,72px));justify-content:center;gap:8px}
 .slot{aspect-ratio:1;min-height:0;padding:0;border-radius:12px;border:1px dashed var(--line);background:transparent;position:relative;display:grid;place-items:center;overflow:hidden;color:var(--muted)}
 .slot:disabled{opacity:1}
 .slot.next{border:1px solid var(--accent);background:var(--surface-2);cursor:pointer}
@@ -128,23 +137,27 @@ button{font:700 11px var(--ui);letter-spacing:.06em;color:var(--text);background
 button:hover{border-color:var(--accent)}
 button:active{transform:scale(.96)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-button.primary{background:var(--accent);color:#1E1826;border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--void);border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
 .controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:min(100%,440px);margin:0 auto}
 .controls button{padding:0 6px}
+.help{flex:none;width:44px;padding:0;border-radius:12px;font-size:14px;background:var(--surface-2)}
 
-/* Landscape: PC, and tablets or phones on their side. A control rail on the left, both panes side by side. */
+/* Landscape: PC, and tablets or phones on their side. Control rail, then board, basket and garden left to right. */
 @media(min-width:700px) and (min-aspect-ratio:1/1){
   main{width:min(100%,1280px);min-height:340px;column-gap:20px;
-    grid-template:"head stage" auto "seasons stage" auto "basket stage" auto ". stage" minmax(0,1fr) "controls stage" auto / 300px minmax(0,1fr)}
-  .stage{flex-direction:row}.pane.on{flex-grow:1.6}
+    grid-template:"head stage" auto "seasons stage" auto ". stage" minmax(0,1fr) "controls stage" auto / 300px minmax(0,1fr)}
+  /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
+  .stage{flex-direction:row;gap:16px;container-type:size}
+  .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
+  .basket{grid-template-columns:64px;grid-template-rows:repeat(5,minmax(0,64px));align-content:center}
   header{flex-wrap:wrap}.scores{width:100%}.chip{flex:1}
   .badge{display:grid}h1{font-size:30px}
 }
 @media(min-width:700px) and (min-aspect-ratio:1/1) and (max-height:480px){
   main{row-gap:8px}.badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}
-  .seasons,button{min-height:36px}.basket{grid-template-columns:repeat(5,minmax(0,48px))}.slot.full span,.slot.next span{font-size:9px}
+  .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}
 }
 
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap;pointer-events:none}
@@ -156,10 +169,13 @@ button[aria-pressed="false"]{color:var(--muted)}
 @keyframes sheetIn{from{opacity:0;transform:translateY(16px)}}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{transform:translate(-50%,0)}}
 
-.scrim{position:fixed;inset:0;z-index:30;background:#120e18b3;display:flex;align-items:flex-end;justify-content:center;animation:fade 280ms var(--ease)}
+.scrim{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,color-mix(in srgb,var(--void),#000 40%) 72%,transparent);display:flex;align-items:flex-end;justify-content:center;animation:fade 280ms var(--ease)}
 @keyframes fade{from{opacity:0}}
 .sheet{width:min(100%,520px);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));animation:sheetIn 280ms var(--ease)}
 @media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;border-bottom:1px solid var(--line)}}
+.scrim.mid{align-items:center;padding:16px;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.gsheet{width:min(100%,760px,(100dvh - 150px)*232/156);border-radius:22px;border-bottom:1px solid var(--line);padding:20px 18px 12px}
+#isoBig{display:block;width:100%;aspect-ratio:232/156;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .sheet h2{font:500 26px/1 var(--display);margin:0;letter-spacing:.03em}
 .count{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:6px;font-variant-numeric:tabular-nums}
@@ -176,6 +192,33 @@ button[aria-pressed="false"]{color:var(--muted)}
 .entry .pic img{width:62%;image-rendering:pixelated}
 .entry b{font-size:10px;line-height:1.25;overflow-wrap:anywhere}
 .entry.locked b{color:var(--muted)}
+/* How to play: four short rules, each with a looping demo built from the real tiles */
+.how{display:grid;grid-template-columns:148px minmax(0,1fr);gap:16px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.how:first-child{border-top:0;padding-top:0}
+.how.wide{grid-template-columns:minmax(0,1fr)}
+.how h3{font:500 19px/1.1 var(--display);letter-spacing:.03em;margin:0 0 6px}
+.how p{margin:0;font-size:12px;line-height:1.6;color:color-mix(in srgb,var(--text) 80%,var(--surface));max-width:46ch}
+.how .almanac{margin:12px 0 0}
+@media(max-width:460px){.how{grid-template-columns:minmax(0,1fr);gap:12px}}
+.demo{position:relative;width:148px;height:52px}
+.demo.d-plant{height:92px}
+.demo canvas{display:block;width:148px;height:92px;image-rendering:pixelated;image-rendering:crisp-edges}
+.mc,.mt{position:absolute;top:4px;left:0;width:44px;height:44px;border-radius:9px}
+.mc{background:color-mix(in srgb,var(--accent) 7%,var(--void))}
+.mt{background:var(--bg);box-shadow:0 3px 0 var(--edge);display:grid;place-items:center}
+.mt img{width:66%;margin-top:9%;image-rendering:pixelated;image-rendering:crisp-edges}
+.mt b{position:absolute;left:4px;top:4px;font:700 8px/1 var(--ui);color:var(--ink)}
+.mt.b{transform:translateX(52px)}.mt.c{transform:translateX(104px)}
+.d-top{display:flex;gap:4px;align-items:center}.d-top .mt{position:static;flex:1;width:auto;height:auto;aspect-ratio:1;border-radius:6px;box-shadow:0 2px 0 var(--edge)}.d-top .mt b{display:none}
+.d-merge .a{animation:dA 3.4s var(--ease) infinite}.d-merge .b{animation:dB 3.4s var(--ease) infinite}.d-merge .c{animation:dC 3.4s var(--ease) infinite}
+@keyframes dA{0%{opacity:0}8%,45%{opacity:1}46%,100%{opacity:0}}
+@keyframes dB{0%{transform:translateX(104px);opacity:0}8%,25%{transform:translateX(104px);opacity:1}45%{transform:translateX(0);opacity:1}46%,100%{transform:translateX(0);opacity:0}}
+@keyframes dC{0%,45%{transform:translateX(0) scale(.8);opacity:0}50%{transform:translateX(0) scale(1.14);opacity:1}56%,92%{transform:translateX(0) scale(1);opacity:1}100%{transform:translateX(0) scale(1);opacity:0}}
+.keys{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:14px 0 0;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.keys kbd{font:700 10px var(--ui);color:var(--text);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin-right:5px}
+@media(hover:none){.keys{display:none}}
+.go{display:block;width:100%;margin-top:18px}
+@media(prefers-reduced-motion:reduce){.demo *{animation:none!important}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
 </style>
@@ -190,26 +233,27 @@ button[aria-pressed="false"]{color:var(--muted)}
       <div class="chip"><span>BEST</span><strong id="best">0</strong></div>
     </div>
   </header>
-  <button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button>
-  <div class="stage">
-    <section id="paneBoard" class="pane on" aria-label="Number board">
-      <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. H to choose a bloom for the basket, U to undo, G to swap the large view.">
+  <div class="year"><button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button><button id="helpBtn" class="help" aria-label="How to play">?</button></div>
+  <div class="stage" id="stage">
+    <section id="paneBoard" class="pane bpane" aria-label="Number board">
+      <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. U to undo, question mark for how to play.">
         <div class="cells" aria-hidden="true"></div>
         <div id="tiles"></div>
         <div id="beam" class="beam" hidden aria-hidden="true"></div>
         <div id="petals" aria-hidden="true"></div>
       </div>
+      <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovLabel">
+        <div class="ov-label" id="ovLabel"></div>
+        <div class="ov-total" id="ovTotal"></div>
+        <div class="ov-sub" id="ovSub" hidden></div>
+        <div class="row"><button id="plant" class="primary">New run</button><button id="ovUndo">Undo</button></div>
+      </div>
     </section>
-    <section id="paneGarden" class="pane" aria-label="Garden">
-      <canvas id="iso" width="264" height="180" tabindex="0" role="img" aria-label="Your garden"></canvas>
+    <div id="basket" class="basket" role="img" aria-label="Harvest so far"></div>
+    <section id="paneGarden" class="pane gpane" aria-label="Garden">
+      <canvas id="iso" width="232" height="156" tabindex="0" role="button" aria-label="Open the garden"></canvas>
     </section>
-    <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovLabel">
-      <div class="ov-label" id="ovLabel"></div>
-      <div class="ov-total" id="ovTotal"></div>
-      <div class="row"><button id="plant" class="primary">Plant</button><button id="ovUndo">Undo</button></div>
-    </div>
   </div>
-  <div id="basket" class="basket" role="group" aria-label="Basket"></div>
   <div class="controls">
     <button id="new">New</button>
     <button id="undo" disabled>Undo</button>
@@ -226,17 +270,35 @@ button[aria-pressed="false"]{color:var(--muted)}
     <div class="journal" id="journal"></div>
   </div>
 </div>
+<div id="gview" class="scrim mid" hidden>
+  <div class="sheet gsheet" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <div class="sheet-head"><div><h2 id="vTitle">Garden</h2><div class="count" id="vCount"></div></div><button class="close" id="vClose" aria-label="Close garden">✕</button></div>
+    <canvas id="isoBig" width="232" height="156" role="img" aria-label="Your garden, large"></canvas>
+  </div>
+</div>
+<div id="help" class="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hTitle">
+    <div class="sheet-head"><h2 id="hTitle">How to play</h2><button class="close" id="hClose" aria-label="Close how to play">✕</button></div>
+    <section class="how"><div class="demo d-merge" id="dMerge" aria-hidden="true"></div><div><h3>Slide and merge</h3><p>Swipe, or use the arrow keys. Blooms slide as far as they can, and two of a kind grow into the next one.</p></div></section>
+    <section class="how"><div class="demo d-top" id="dTop" aria-hidden="true"></div><div><h3>Play until you are stuck</h3><p>The run ends when no move is left. Your harvest is the five highest blooms on the board, added up. The basket shows them as you go.</p></div></section>
+    <section class="how wide"><div><h3>Watch the seasons</h3><p>The season turns every 20 moves and bends one rule.</p><div class="almanac" id="hSeasons"></div></div></section>
+    <section class="how"><div class="demo d-plant" aria-hidden="true"><canvas id="dPlant" width="74" height="46"></canvas></div><div><h3>Watch the garden grow</h3><p>The island starts each run bare. Every bloom you make takes root there, and visitors turn up as you climb higher. Tap it for a closer look.</p></div></section>
+    <p class="keys"><span><kbd>← ↑ ↓ →</kbd>move</span><span><kbd>U</kbd>undo</span><span><kbd>?</kbd>this guide</span></p>
+    <button class="primary go" id="hGo">Play</button>
+  </div>
+</div>
 <div id="live" class="sr" aria-live="polite"></div>
 <script>
 'use strict';
-const KEY='bloom2048.v2',LEN=20,SLOTS=5,PLOTS=48;
+const KEY='bloom2048.v2',LEN=20,SLOTS=5,PLOTS=49;
 // A year is four seasons of LEN moves. Each season bends one rule.
 const SEASONS=[
- {name:'Spring',c:'#7FB8D9',art:'drop',rule:'Frost thaws'},
- {name:'Summer',c:'#F2C94C',art:'sun', rule:'Sunlit merges grow twice'},
- {name:'Autumn',c:'#E8873A',art:'leaf',rule:'Picks count double'},
- {name:'Winter',c:'#B9A9D9',art:'snow',rule:'Frost pins blooms'}
+ {name:'Spring',c:'#7FB8D9',art:'drop',rule:'Frost thaws',how:'All frost melts.',w:['#16202A','#1F2D3A','#1B2733','#314556','#E4EEF5','#8AA3B5']},
+ {name:'Summer',c:'#F2C94C',art:'sun', rule:'Sunlit merges grow twice',how:'A sunbeam crosses the board. Merges inside it grow two stages.',w:['#211D12','#2E2819','#282316','#4A4026','#F3ECD8','#B0A27A']},
+ {name:'Autumn',c:'#E8873A',art:'leaf',rule:'Merges bank a bonus',how:'Every merge banks its value as a bonus on top of your harvest.',w:['#1F150E','#2A1E14','#251A11','#4A3521','#F2E6D6','#B99B7C']},
+ {name:'Winter',c:'#B9A9D9',art:'snow',rule:'Frost pins blooms',how:'Frost pins blooms in place. Merge beside one to free it.',w:['#1E1826','#2A2233','#251F2D','#3D3448','#EDE7F2','#9B8FA8']}
 ];
+const WORLD=['--void','--surface','--surface-2','--line','--text','--muted'];
 const ICON={
  drop:['....x....','....x....','...xxx...','...xxx...','..xxxxx..','.xxxxxxx.','.xXxxxxx.','.xxxxxxx.','..xxxxx..'],
  sun: ['....x....','.x.....x.','...xxx...','..xxxxx..','x.xxxxx.x','..xxxxx..','...xxx...','.x.....x.','....x....'],
@@ -289,7 +351,7 @@ function icon(s){if(s.url)return s.url;const c=document.createElement('canvas');
 const petalColor=t=>t.p||(t.art==='daisy'?'#FFFFFF':'#86C78A');
 const fmt=n=>n.toLocaleString('en-US');
 const $=id=>document.getElementById(id),board=$('board'),layer=$('tiles'),petals=$('petals'),reduce=matchMedia('(prefers-reduced-motion: reduce)');
-let state={grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false,focus:'board'},busy=false,sel=-1,hintIdx=-1,ctx,toastTimer;
+let state={grid:Array(16).fill(0),frozen:[],bonus:0,moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false,focus:'board',guide:false},busy=false,sel=-1,hintIdx=-1,ctx,toastTimer;
 const seasonOf=m=>Math.floor(m/LEN)%4,yearOf=m=>Math.floor(m/(LEN*4))+1;
 const inBeam=(i,b)=>!!b&&(b.t==='row'?Math.floor(i/4)===b.n:i%4===b.n);
 const nbrs=i=>[i%4>0?i-1:-1,i%4<3?i+1:-1,i-4,i+4].filter(j=>j>=0&&j<16);
@@ -306,21 +368,23 @@ const canMove=()=>['left','right','up','down'].some(d=>plan(state.grid,d,state.f
 function spawn(g){const e=g.map((v,i)=>v?-1:i).filter(i=>i>=0);if(!e.length)return -1;const i=e[Math.floor(Math.random()*e.length)];g[i]=Math.random()<.9?2:4;return i}
 function rollBeam(){let b;do{b={t:Math.random()<.5?'row':'col',n:Math.floor(Math.random()*4)}}while(state.beam&&b.t===state.beam.t&&b.n===state.beam.n);state.beam=b}
 function freeze(){const c=state.grid.map((v,i)=>v&&!state.frozen.includes(i)?i:-1).filter(i=>i>=0);if(!c.length)return -1;const i=c[Math.floor(Math.random()*c.length)];state.frozen.push(i);return i}
-const total=()=>state.basket.reduce((a,b)=>a+b.pts,0);
-const snap=()=>({grid:state.grid.slice(),frozen:state.frozen.slice(),basket:state.basket.map(b=>({...b})),moves:state.moves,beam:state.beam&&{...state.beam},done:state.done});
+// The harvest: the five highest blooms on the board, plus whatever autumn merges have banked.
+const top5=()=>state.grid.filter(Boolean).sort((a,b)=>b-a).slice(0,SLOTS);
+const total=()=>top5().reduce((a,b)=>a+b,0)+state.bonus;
+const snap=()=>({grid:state.grid.slice(),frozen:state.frozen.slice(),bonus:state.bonus,moves:state.moves,beam:state.beam&&{...state.beam},done:state.done});
 
 const pow2=v=>Number.isSafeInteger(v)&&v>=2&&Number.isInteger(Math.log2(v));
 const validGrid=g=>Array.isArray(g)&&g.length===16&&g.every(v=>v===0||pow2(v));
 const validItem=b=>b&&pow2(b.v)&&Number.isSafeInteger(b.pts)&&b.pts>=b.v;
 function clean(s){if(!s||!validGrid(s.grid))return null;
  return{grid:s.grid,frozen:(Array.isArray(s.frozen)?s.frozen:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<16&&s.grid[i]),
-  basket:(Array.isArray(s.basket)?s.basket:[]).filter(validItem).slice(0,SLOTS),moves:Number.isSafeInteger(s.moves)&&s.moves>=0?s.moves:0,
+  bonus:Number.isSafeInteger(s.bonus)&&s.bonus>=0?s.bonus:(Array.isArray(s.basket)?s.basket:[]).filter(validItem).slice(0,SLOTS).reduce((a,b)=>a+b.pts,0),moves:Number.isSafeInteger(s.moves)&&s.moves>=0?s.moves:0,
   beam:s.beam&&(s.beam.t==='row'||s.beam.t==='col')&&[0,1,2,3].includes(s.beam.n)?{t:s.beam.t,n:s.beam.n}:null,done:!!s.done}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
-function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY)),run=clean(s);if(run){run.done=run.basket.length>=SLOTS;const u=clean(s.undo);
-   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,focus:s.focus==='garden'?'garden':'board',
+function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY)),run=clean(s);if(run){const u=clean(s.undo);
+   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,guide:!!s.guide,focus:s.focus==='garden'?'garden':'board',
     found:Array.isArray(s.found)?s.found.filter(pow2):[2,4],
-    garden:Array.from({length:PLOTS},(_,i)=>Array.isArray(s.garden)&&validItem(s.garden[i])?{v:s.garden[i].v,pts:s.garden[i].pts}:null)};ok=true}}catch(e){}
+    garden:Array.from({length:PLOTS},(_,i)=>Array.isArray(s.garden)&&validItem(s.garden[i])?{v:s.garden[i].v,pts:s.garden[i].pts}:null)};state.done=!canMove();ok=true}}catch(e){}
  // Blooms discovered in the earlier version stay discovered.
  if(!ok)try{const o=JSON.parse(localStorage.getItem('bloom2048.v1')||'null');if(o&&Array.isArray(o.found))state.found=[...new Set([2,4,...o.found.filter(pow2)])];if(o)state.mute=!!o.mute}catch(e){}
  return ok}
@@ -337,20 +401,17 @@ const biggest=()=>state.grid.reduce((a,v,i)=>v>(state.grid[a]||0)?i:a,0);
 const seaEls=SEASONS.map(s=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`<img alt="" src="${icon(s)}"><i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
 function renderSeasons(){const m=state.moves,s=seasonOf(m),sm=m%LEN;$('yr').textContent='Y'+yearOf(m);
  seaEls.forEach((el,k)=>{el.classList.toggle('now',k===s);el.classList.toggle('past',k<s);el.querySelector('.fill').style.width=(k<s?100:k===s?Math.max(5,sm/LEN*100):0)+'%'});
- document.documentElement.style.setProperty('--accent',SEASONS[s].c);
+ const root=document.documentElement.style;root.setProperty('--accent',SEASONS[s].c);SEASONS[s].w.forEach((c,k)=>root.setProperty(WORLD[k],c));
+ document.querySelector('meta[name=theme-color]').content=SEASONS[s].w[0];
  $('seasons').setAttribute('aria-label',`Year ${yearOf(m)}, ${SEASONS[s].name}: ${SEASONS[s].rule}. ${LEN-sm} moves until ${SEASONS[(s+1)%4].name}. Open almanac.`)}
-function renderBasket(){const box=$('basket'),n=state.basket.length;box.replaceChildren();
- for(let k=0;k<SLOTS;k++){const it=state.basket[k],b=document.createElement(it?'div':'button');
-  if(it){const t=tierOf(it.v);b.className='slot full';b.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;b.innerHTML=`<img alt="" src="${sprite(t)}"><span>${fmt(it.pts)}</span>`;b.setAttribute('role','img');b.setAttribute('aria-label',`${t.name}, ${it.pts} points`)}
-  else{b.type='button';b.className='slot'+(k===n?' next':'');b.disabled=k!==n||state.done;b.setAttribute('aria-label',k===n?'Pick a bloom for the basket':'Empty basket slot');if(k===n)b.onclick=slotTap}
-  box.append(b)}}
-// Selection + hint paint without rebuilding tiles.
-function paintSel(){const room=!state.done&&state.basket.length<SLOTS;if(!room||!state.grid[sel])sel=-1;
- const jam=room&&!canMove(),big=biggest();hintIdx=room&&sel<0&&(jam||(!state.picked&&state.grid[big]>=32))?big:-1;
- layer.querySelectorAll('.tile').forEach(el=>{const i=+el.dataset.index;el.classList.toggle('sel',i===sel);el.classList.toggle('hint',i===hintIdx)});
- const next=$('basket').querySelector('.next');if(next){const autumn=seasonOf(state.moves)===2;next.classList.toggle('pulse',hintIdx>=0);
-  if(sel>=0){const v=state.grid[sel];next.innerHTML=`<img alt="" src="${sprite(tierOf(v))}"><span>+${fmt(v*(autumn?2:1))}</span>`}else next.innerHTML=autumn?'<em>×2</em>':''}
- if(jam&&sel<0)$('live').textContent='No moves left. Pick a bloom for the basket.';isoKick(0)}
+// The basket is a live preview: the five highest blooms on the board right now, which is what the run is worth if it ended here.
+let lastTop=[];
+function renderBasket(){const box=$('basket'),top=top5();box.replaceChildren();
+ for(let k=0;k<SLOTS;k++){const v=top[k],b=document.createElement('div');b.className='slot';
+  if(v){const t=tierOf(v);b.className='slot full'+(v!==lastTop[k]?' landed':'');b.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;b.innerHTML=`<img alt="" src="${sprite(t)}"><span>${fmt(v)}</span>`}
+  box.append(b)}
+ lastTop=top;box.setAttribute('aria-label','Harvest so far: '+(top.length?top.map(v=>tierOf(v).name+' '+v).join(', '):'nothing yet')+(state.bonus?`, plus ${state.bonus} autumn bonus`:''))}
+function paintSel(){isoKick(0)}
 function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
  const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b){bm.className='beam '+b.t;bm.style.setProperty('--n',b.n)}
@@ -358,8 +419,8 @@ function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  $('sound').textContent=state.mute?'Muted':'Sound';$('sound').setAttribute('aria-pressed',String(!state.mute));
  $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
 function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
- const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovUndo').hidden=!state.undo;
- if(was){$('live').textContent=`Basket full. Harvest ${t}.`;$('plant').focus()}}
+ const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovSub').hidden=!state.bonus;$('ovSub').textContent=`${fmt(t-state.bonus)} + ${fmt(state.bonus)} AUTUMN`;$('ovUndo').hidden=!state.undo;
+ if(was){$('live').textContent=`No moves left. Harvest ${t}.`;$('plant').focus()}}
 function burst(i,v,sun){if(reduce.matches)return;measure();const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2,n=sun?14:7,z=Math.max(3,Math.min(5,cell/14));for(let k=0;k<n;k++){const a=k/n*Math.PI*2+Math.random()*.6,d=cell*((sun?.6:.42)+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-z/2}px;top:${cy-z/2}px;width:${z}px;height:${z}px;--c:${sun&&k%2?'#F2C94C':k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
 function flashPlus(n){const s=document.createElement('div');s.className='plus';s.textContent='+'+fmt(n);$('score').parentNode.append(s);setTimeout(()=>s.remove(),800)}
 function toast(html,ms=2400){const el=$('toast');el.innerHTML=html;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,ms)}
@@ -379,6 +440,8 @@ function sound(kind,tier=2){if(state.mute)return;const n=Math.log2(tier)-1;
  if(kind==='chime')[0,2,4,5].forEach((k,i)=>tone(note(5+k),.12+i*.08,.5,.022,'sine'));
  if(kind==='season')MOTIF[tier].forEach((k,i)=>tone(note(5+k),i*.14,.7,.024,'sine'));
  if(kind==='frost'){tone(1760,0,.12,.014,'sine');tone(2349,.07,.18,.01,'sine')}
+ if(kind==='over')[9,7,4,2,0].forEach((k,i)=>tone(note(5+k),.3+i*.13,.7,.024,'sine'));
+ if(kind==='purr')for(let i=0;i<9;i++)tone(62+(i%2)*7,i*.05,.055,.03,'sawtooth');
  if(kind==='select')tone(392,0,.06,.014,'sine');
  if(kind==='swap')tone(523,0,.07,.012,'sine');
  if(kind==='pick'){tone(note(n+2),0,.25);tone(note(n+4),.08,.3,.024,'sine');tone(note(n+7),.16,.45,.02,'sine')}
@@ -394,51 +457,41 @@ function move(dir){if(busy||state.done)return false;sel=-1;const nx=plan(state.g
  if(turned){if(s===0)state.frozen=[];if(s!==1)state.beam=null}
  if(s===1&&sm%5===0)rollBeam();
  if(s===3&&sm%6===0&&state.frozen.length<3)iced=freeze();
- save();busy=true;$('undo').disabled=$('new').disabled=true;
+ // Frost never ends a run on its own: if the new ice would leave no move, it does not form.
+ if(iced>=0&&!canMove()){state.frozen.pop();if(canMove())iced=-1;else state.frozen.push(iced)}
+ // Autumn merges bank their value. The run ends when nothing can move.
+ const gain=was===2?nx.merged.reduce((a,i)=>a+nx.grid[i],0):0;state.bonus+=gain;if(!canMove())state.done=true;
+ const sown=tend(nx),p0=Math.max(...old),p1=peak();isoPlant(sown);
+ if(p0<32&&p1>=32){catArrive();$('live').textContent='A cat has moved into the garden.'}else if(p0<128&&p1>=128)$('live').textContent='Butterflies have found the garden.';else if(p0<512&&p1>=512)$('live').textContent='Fireflies have come to the garden.';
+ catTick();save();busy=true;$('undo').disabled=$('new').disabled=true;
  nx.motions.forEach(({from,to})=>{const el=layer.querySelector(`[data-index="${from}"]`);if(el)pos(el,to)});
  isoMove(old,nx,walls,sp);
  const top=Math.max(2,...nx.merged.map(i=>nx.grid[i]));sound(nx.sunny.length?'sun':nx.merged.length?'merge':'slide',top);if(nx.merged.length)buzz(8);
  const finish=()=>{busy=false;render(sp,nx.merged,nx.sunny,iced);nx.merged.forEach(i=>burst(i,nx.grid[i],nx.sunny.includes(i)));
-  if(iced>=0)sound('frost');if(turned)announce(s);else if(news.length)discover(Math.max(...news))};
+  if(gain)flashPlus(gain);if(state.done)sound('over');if(iced>=0)sound('frost');if(turned)announce(s);else if(news.length)discover(Math.max(...news))};
  if(reduce.matches)finish();else setTimeout(finish,115);return true}
-// Pick a bloom off the board into the basket. Only picked blooms score; autumn doubles them.
-function harvest(i){if(busy||state.done||!state.grid[i]||state.basket.length>=SLOTS)return;unlockAudio();
- const v=state.grid[i],pts=v*(seasonOf(state.moves)===2?2:1),el=layer.querySelector(`[data-index="${i}"]`),r0=el&&el.getBoundingClientRect();
- state.undo=snap();state.basket.push({v,pts});state.grid[i]=0;state.frozen=state.frozen.filter(j=>j!==i);state.picked=true;sel=-1;mv=null;
- if(state.grid.every(x=>!x)){spawn(state.grid);spawn(state.grid)}
- if(state.basket.length>=SLOTS)state.done=true;save();
- const fly=el&&!reduce.matches?el.cloneNode(true):null;render();sound('pick',v);buzz(12);flashPlus(pts);
- const slot=$('basket').children[state.basket.length-1];
- if(fly&&slot){const r1=slot.getBoundingClientRect();fly.className='tile fly';fly.style.cssText+=`;left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px;transform:none`;document.body.append(fly);slot.classList.add('incoming');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>fly.style.transform=`translate(${r1.left-r0.left}px,${r1.top-r0.top}px) scale(${r1.width/r0.width})`));
-  setTimeout(()=>{fly.remove();const s2=$('basket').children[state.basket.length-1];if(s2){s2.classList.remove('incoming');s2.classList.add('landed')}},350)}
- if(!state.done)$('live').textContent=`Picked ${tierOf(v).name} for ${pts}. ${SLOTS-state.basket.length} basket slots left.`}
-// A tap chooses a bloom; a second tap on it (or on the basket) picks it. Shared by the board and the garden.
-function tapCell(i){if(busy||state.done)return;if(i<0||!state.grid[i]||state.basket.length>=SLOTS){sel=-1;paintSel()}else if(sel===i)harvest(i);else{sel=i;unlockAudio();sound('select');paintSel()}}
-function slotTap(){if(sel>=0)harvest(sel);else{sel=biggest();if(!state.grid[sel])sel=-1;sound('select');paintSel()}}
-// The basket goes into the garden: fill empty plots first, then outgrow the smallest plant.
+// The garden follows the run. Every bloom type on the board grows there at least once, and every third move that merges adds one more of what was just made.
+// Once all the plots are taken, a new bloom outgrows the lowest plant that is a duplicate or has left the board.
 const ORDER=(()=>{const a=[...Array(PLOTS).keys()];let r=7;for(let i=PLOTS-1;i>0;i--){r=(r*1103515245+12345)&0x7fffffff;const j=r%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a})();
-function commit(){const placed=[],t=total();state.basket.forEach(it=>{let k=ORDER.find(p=>!state.garden[p]);
-  if(k===undefined){const min=ORDER.reduce((a,p)=>state.garden[p].pts<state.garden[a].pts?p:a,ORDER[0]);if(it.pts>state.garden[min].pts)k=min}
-  if(k!==undefined){state.garden[k]={v:it.v,pts:it.pts};placed.push(k)}});state.best=Math.max(state.best,t);return placed}
-function startRun(){state={...state,grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false};sel=-1;mv=null;spawn(state.grid);spawn(state.grid);save();render()}
-function newGame(){if(busy)return;const placed=state.basket.length?commit():[];startRun();isoPlant(placed);board.focus({preventScroll:true})}
-function plant(){if(busy||!state.done)return;unlockAudio();const placed=commit();startRun();sound('plant');setFocus('garden');isoPlant(placed);$('iso').focus({preventScroll:true})}
-function undo(){if(busy||!state.undo)return;Object.assign(state,state.undo,{undo:null});sel=-1;mv=null;save();render()}
+const peak=()=>Math.max(0,...state.grid);
+function sow(v,force){let k=ORDER.find(p=>!state.garden[p]);
+ if(k===undefined){const count={};state.garden.forEach(g=>count[g.v]=(count[g.v]||0)+1);
+  const spare=ORDER.filter(p=>{const g=state.garden[p].v;return count[g]>1||!state.grid.includes(g)});if(!spare.length)return -1;
+  k=spare.reduce((a,p)=>state.garden[p].v<state.garden[a].v?p:a,spare[0]);if(!force&&state.garden[k].v>=v)return -1}
+ state.garden[k]={v,pts:v};return k}
+function tend(nx){const sown=[];
+ [...new Set(state.grid.filter(Boolean))].sort((a,b)=>a-b).forEach(v=>{if(!state.garden.some(g=>g&&g.v===v)){const k=sow(v,true);if(k>=0)sown.push(k)}});
+ if(nx.merged.length&&state.moves%3===0){const k=sow(Math.max(...nx.merged.map(i=>nx.grid[i])),false);if(k>=0)sown.push(k)}
+ return sown}
+function startRun(){state={...state,grid:Array(16).fill(0),frozen:[],bonus:0,moves:0,beam:null,undo:null,done:false,garden:Array(PLOTS).fill(null)};sel=-1;mv=null;grow=null;cat.k=cat.from=-1;spawn(state.grid);spawn(state.grid);save();render()}
+function newGame(){if(busy)return;startRun();board.focus({preventScroll:true})}
+function plant(){if(busy||!state.done)return;unlockAudio();state.best=Math.max(state.best,total());startRun();sound('plant');board.focus({preventScroll:true})}
 
-// Which pane is large. Touching a compact pane only brings it forward; the gesture itself is not played.
-function applyFocus(){const g=state.focus==='garden';$('paneBoard').classList.toggle('on',!g);$('paneGarden').classList.toggle('on',g)}
-function setFocus(f){if(state.focus===f)return;state.focus=f;applyFocus();unlockAudio();sound('swap');save()}
-$('paneBoard').addEventListener('pointerdown',()=>setFocus('board'));
-$('paneGarden').addEventListener('pointerdown',()=>setFocus('garden'));
-
-// Live isometric garden. An 8×8 island on a 264×180 canvas: the middle 4×4 bed is this year's board, mirrored move for move;
-// the 48 plots around it keep every harvest. Pixel-stepped 2:1 diamonds, plants at 2× their tile sprite.
-const G=8,B0=2,TW=32,TH=16,DEPTH=9,PW=264,PH=180,TOP=36;
+// Isometric garden. A 7×7 island on a 232×156 canvas, one plot per cell: 49 plots keep every harvest. Pixel-stepped 2:1 diamonds, plants at 2× their tile sprite.
+const G=7,TW=32,TH=16,DEPTH=9,PW=232,PH=156,TOP=30;
 const iso=$('iso'),ix=iso.getContext('2d'),gnd=document.createElement('canvas');gnd.width=PW;gnd.height=PH;
-const cellXY=(gx,gy)=>[PW/2+(gx-gy)*TW/2,TOP+(gx+gy)*TH/2+TH/2],bedXY=i=>cellXY(B0+i%4,B0+Math.floor(i/4));
-const inBed=(gx,gy)=>gx>=B0&&gx<B0+4&&gy>=B0&&gy<B0+4;
-const RING=[];for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++)if(!inBed(gx,gy))RING.push([gx,gy]);
+const cellXY=(gx,gy)=>[PW/2+(gx-gy)*TW/2,TOP+(gx+gy)*TH/2+TH/2];
+const RING=[];for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++)RING.push([gx,gy]);
 // Grass per season: two checker tones and a tuft color.
 const GRASS=[['#3B5C48','#365441','#4F7A62'],['#47683F','#41603A','#6A9152'],['#5C5838','#545033','#8A7240'],['#4E5969','#475262','#DCE6EE']];
 let gndKey='',mv=null,grow=null,isoUntil=0,isoRaf=0;
@@ -446,37 +499,68 @@ function diamond(x,cx,cy,l,r){for(let k=0;k<TH;k++){const h=(k<TH/2?k+1:TH-k)*2;
 function drawGround(){const s=seasonOf(state.moves),key=s+'|'+state.garden.map(g=>g?1:0).join('');if(key===gndKey)return;gndKey=key;const x=gnd.getContext('2d'),[ga,gb,gt]=GRASS[s];x.clearRect(0,0,PW,PH);
  for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++){if(gx!==G-1&&gy!==G-1)continue;const[cx,cy]=cellXY(gx,gy);for(let d=DEPTH;d>0;d--)diamond(x,cx,cy+d,d>DEPTH-2?'#2C2030':'#3D2C32',d>DEPTH-2?'#35273A':'#4B363A')}
  for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++){const[cx,cy]=cellXY(gx,gy),alt=(gx+gy)%2,p=gy*G+gx;
-  if(inBed(gx,gy)){const c=alt?'#5A453D':'#503D36';diamond(x,cx,cy,c,c);x.fillStyle='#3F302B';x.fillRect(cx-4,cy,8,1)}
-  else{const c=alt?ga:gb;diamond(x,cx,cy,c,c);x.fillStyle=gt;x.fillRect(cx-6+(p*7)%9,cy-1+(p*3)%3,1,2);x.fillRect(cx+2-(p*5)%7,cy+1-(p%2),1,2)}}
+  {const c=alt?ga:gb;diamond(x,cx,cy,c,c);x.fillStyle=gt;x.fillRect(cx-6+(p*7)%9,cy-1+(p*3)%3,1,2);x.fillRect(cx+2-(p*5)%7,cy+1-(p%2),1,2)}}
  state.garden.forEach((it,k)=>{if(!it)return;const[cx,cy]=cellXY(...RING[k]);x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7)})}
 const plantCache={};
 function plantCv(t,ice){const k=t.v+(ice?'i':'');if(plantCache[k])return plantCache[k];const c=document.createElement('canvas');c.width=c.height=24;const x=c.getContext('2d');let last=0;
  ART[t.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.'||ch==='d')return;last=r;const ink=inkOf(t,ch);x.fillStyle=ice?mix(ink,'#D6EEFA',.6):ink;x.fillRect(col*2,r*2,2,2)}));
  return plantCache[k]={c,last,float:t.art==='moonrise'}}
 function drawPlant(x,v,cx,cy,dy,a,ice){const p=plantCv(tierOf(v),ice);cx=Math.round(cx);cy=Math.round(cy);x.globalAlpha=a*.3;x.fillStyle='#000';x.fillRect(cx-7,cy+1,14,3);x.globalAlpha=a;x.drawImage(p.c,cx-12,cy+(p.float?-6:3)-(p.last+1)*2+dy);x.globalAlpha=1}
-function isoDraw(now){drawGround();const x=ix,acc=SEASONS[seasonOf(state.moves)].c;x.clearRect(0,0,PW,PH);x.drawImage(gnd,0,0);
- if(state.beam)for(let i=0;i<16;i++)if(inBeam(i,state.beam)){const[cx,cy]=bedXY(i);x.globalAlpha=.34;diamond(x,cx,cy,'#F2C94C','#F2C94C');x.globalAlpha=1}
- const mark=sel>=0?sel:hintIdx;if(mark>=0&&state.grid[mark]){const[cx,cy]=bedXY(mark);x.globalAlpha=sel>=0?.8:.4+.25*Math.sin(now/240);diamond(x,cx,cy,acc,acc);x.globalAlpha=1}
+function isoDraw(now){drawGround();const x=ix;x.clearRect(0,0,PW,PH);x.drawImage(gnd,0,0);
  const list=[];
  state.garden.forEach((it,k)=>{if(!it)return;const[cx,cy]=cellXY(...RING[k]);let dy=0,a=1;const n=grow?grow.idx.indexOf(k):-1;
   if(n>=0){const q=(now-grow.t0-250-n*150)/380;if(q<0)return;if(q<1){a=Math.min(1,q*3);dy=-Math.round(Math.sin(q*Math.PI)*8+(1-q)*6)}}list.push([cy,cx,it.v,dy,a,false])});
- const q=mv?(now-mv.t0)/mv.dur:2;
- if(mv&&q<1){const e=q*q*(3-2*q);mv.list.forEach(m=>{const a=bedXY(m.from),b=bedXY(m.to);list.push([a[1]+(b[1]-a[1])*e,a[0]+(b[0]-a[0])*e,mv.old[m.from],0,1,m.ice])})}
- else state.grid.forEach((v,i)=>{if(!v)return;const[cx,cy]=bedXY(i);let dy=0,a=1;
-  if(mv){const k=(now-mv.t0-mv.dur)/260;if(k<1){if(mv.merged.includes(i))dy=-Math.round(Math.sin(k*Math.PI)*(mv.sunny.includes(i)?10:5));else if(i===mv.sp)a=Math.min(1,.1+k*1.8)}}
-  list.push([cy,cx,v,dy,a,state.frozen.includes(i)])});
- list.sort((a,b)=>a[0]-b[0]).forEach(p=>drawPlant(x,p[2],p[1],p[0],p[3],p[4],p[5]))}
-function isoLoop(now){isoRaf=0;isoDraw(now);if(now<isoUntil||(hintIdx>=0&&sel<0&&!reduce.matches&&$('scrim').hidden))isoRaf=requestAnimationFrame(isoLoop)}
+ if(cat.k>=0){const walk=cat.from>=0&&now-cat.t0<CATWALK;let[cx,cy]=cellXY(...RING[cat.k]),dy=0;
+  if(walk){const q=(now-cat.t0)/CATWALK,e=q*q*(3-2*q),a=cellXY(...RING[cat.from]);cx=a[0]+(cx-a[0])*e;cy=a[1]+(cy-a[1])*e;dy=-Math.round(Math.abs(Math.sin(q*Math.PI*4))*3)}
+  list.push([cy+.5,cx,'cat',dy,walk])}
+ list.sort((a,b)=>a[0]-b[0]).forEach(p=>p[2]==='cat'?drawCat(x,p[1],p[0],p[3],p[4],now):drawPlant(x,p[2],p[1],p[0],p[3],p[4],p[5]));
+ drawLife(x,now)}
+// Visitors arrive as the run climbs: the cat at the first Tulip (32), butterflies at the first Toadstool (128), fireflies at the first Potted rose (512).
+// Butterflies sit out the winter. While anything is flying, the garden keeps animating between moves.
+const WING=['#F29BB7','#F2C94C','#9CC9E8','#FFFFFF'];
+const flock=()=>{const p=peak();return[seasonOf(state.moves)===3?0:p>=512?4:p>=256?3:p>=128?2:0,p>=2048?10:p>=512?6:0]};
+const aloft=()=>!reduce.matches&&!document.hidden&&flock().some(Boolean);
+function drawLife(x,now){const[nb,nf]=flock(),t=reduce.matches?0:now/1000;
+ for(let i=0;i<nb;i++){const X=Math.round(PW/2+Math.sin(t*(.23+i*.05)+i*2.1)*74),Y=Math.round(TOP+38+Math.sin(t*(.31+i*.04)+i*1.3)*30+Math.sin(t*3+i)*2),open=Math.sin(t*14+i)>0;
+  x.fillStyle=WING[i];if(open){x.fillRect(X-2,Y-1,2,2);x.fillRect(X+1,Y-1,2,2)}else{x.fillRect(X-1,Y-1,1,2);x.fillRect(X+1,Y-1,1,2)}x.fillStyle='#2B2238';x.fillRect(X,Y-1,1,2)}
+ for(let i=0;i<nf;i++){const a=.5+.5*Math.sin(t*1.7+i*2.4);x.globalAlpha=a*a;x.fillStyle='#FFF1BF';x.fillRect(Math.round(PW/2+Math.sin(t*.11+i*1.9)*(34+i*7)),Math.round(TOP+42+Math.cos(t*.13+i*2.7)*32),2,2)}
+ x.globalAlpha=1}
+function catArrive(){cat.k=PLOTS-1;catWalk()}
+// The garden cat. It strolls between free plots every few moves, naps through winter, and likes a pet.
+const CATWALK=800,CAT={
+ sit:['K.......K..','kK.....Kk..','kkkkkkkkk..','kkekkkekk..','kkkknkkkk..','.kkkkkkk...','.kBwwwkk...','.kkwwwkk..K','.kkwwwkkkK.','.kk.w.kkk..'],
+ nap:['.K...K.......','.kkkkkkkkBk..','kekkekkkkkkk.','kkknkkkkkkkkK','.kkkkkkkkkKK.']},
+ COATS=[{k:'#F4ECDF',K:'#E39A5C',B:'#3A3340',w:'#FFFFFF',e:'#2B2238',n:'#E88FA8'},{k:'#A99DB0',K:'#74687F',B:'#74687F',w:'#EFE9F2',e:'#2B2238',n:'#E88FA8'},
+  {k:'#39313F',K:'#2A2430',B:'#39313F',w:'#39313F',e:'#F2C94C',n:'#8A7A92'},{k:'#DDAE66',K:'#8F5E2E',B:'#8F5E2E',w:'#F5E6C6',e:'#2B2238',n:'#E88FA8'}],
+ cat={k:-1,from:-1,t0:0,nap:false,pet:-1e9,next:6,coat:COATS[Math.floor(Math.random()*COATS.length)]},catCache={};
+function catCv(pose){if(catCache[pose])return catCache[pose];const a=CAT[pose],c=document.createElement('canvas');c.width=a[0].length*2;c.height=a.length*2;const x=c.getContext('2d');
+ a.forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=cat.coat[ch];x.fillRect(col*2,r*2,2,2)}));return catCache[pose]=c}
+function catSpot(){const all=RING.map((_,k)=>k).filter(k=>k!==cat.k),free=all.filter(k=>!state.garden[k]);let pool=free.length?free:all;
+ if(cat.k>=0){const[x0,y0]=RING[cat.k],near=pool.filter(k=>Math.abs(RING[k][0]-x0)+Math.abs(RING[k][1]-y0)<=3);if(near.length)pool=near}
+ return pool[Math.floor(Math.random()*pool.length)]}
+function catWalk(){cat.from=reduce.matches?-1:cat.k;cat.k=catSpot();cat.t0=performance.now();cat.nap=seasonOf(state.moves)===3||Math.random()<.3;cat.next=5+Math.floor(Math.random()*6);isoKick(CATWALK+200)}
+function catTick(){if(cat.k>=0&&--cat.next<=0)catWalk()}
+function petCat(){if(cat.k<0)return;cat.nap=false;cat.pet=performance.now();unlockAudio();sound('purr');buzz(10);$('live').textContent='The cat purrs.';isoKick(900)}
+function drawCat(x,cx,cy,dy,walk,now){const c=catCv(cat.nap&&!walk?'nap':'sit');cx=Math.round(cx);cy=Math.round(cy);
+ x.globalAlpha=.3;x.fillStyle='#000';x.fillRect(cx-8,cy+1,16,3);x.globalAlpha=1;x.drawImage(c,cx-(c.width>>1),cy+3-c.height+dy);
+ if(cat.nap&&!walk){x.globalAlpha=.75;x.fillStyle='#EDE7F2';x.fillRect(cx+9,cy-15,4,1);x.fillRect(cx+11,cy-14,1,1);x.fillRect(cx+10,cy-13,1,1);x.fillRect(cx+9,cy-12,4,1);x.globalAlpha=1}
+ const q=(now-cat.pet)/800;if(q>=0&&q<1){const hx=cx-2,hy=cy-24-Math.round(q*8);x.globalAlpha=1-q*q;x.fillStyle='#F29BB7';x.fillRect(hx,hy,2,1);x.fillRect(hx+3,hy,2,1);x.fillRect(hx,hy+1,5,1);x.fillRect(hx+1,hy+2,3,1);x.fillRect(hx+2,hy+3,1,1);x.globalAlpha=1}}
+function isoLoop(now){isoRaf=0;isoDraw(now);if(!$('gview').hidden){bx.clearRect(0,0,PW,PH);bx.drawImage(iso,0,0)}if(now<isoUntil||aloft())isoRaf=requestAnimationFrame(isoLoop)}
+document.addEventListener('visibilitychange',()=>isoKick(0));
 function isoKick(ms){isoUntil=Math.max(isoUntil,performance.now()+ms);if(!isoRaf)isoRaf=requestAnimationFrame(isoLoop)}
-function isoMove(old,nx,walls,sp){if(reduce.matches){mv=null;return}mv={old,list:[...nx.motions.map(m=>({...m,ice:false})),...walls.map(i=>({from:i,to:i,ice:true}))],merged:nx.merged,sunny:nx.sunny,sp,t0:performance.now(),dur:120};isoKick(420)}
-function isoPlant(idx){if(!idx.length||reduce.matches){grow=null;isoKick(0);return}grow={idx,t0:performance.now()};isoKick(700+idx.length*150)}
-// The garden plays too. Its grid is turned 45°, so swipes run along the diagonals: up-right is the board's up, down-right its right.
-let gp=null;iso.addEventListener('pointerdown',e=>{if(!e.isPrimary||state.focus!=='garden')return;gp={x:e.clientX,y:e.clientY,id:e.pointerId};try{iso.setPointerCapture(e.pointerId)}catch(_){}});
-iso.addEventListener('pointerup',e=>{if(!gp||gp.id!==e.pointerId)return;const dx=e.clientX-gp.x,dy=e.clientY-gp.y,d=Math.hypot(dx,dy);gp=null;
- if(d>=22)return void move(dx>0?(dy<0?'up':'right'):(dy>0?'down':'left'));if(d>8)return;
- const r=iso.getBoundingClientRect(),lx=(e.clientX-r.left)/r.width*PW,ly=(e.clientY-r.top)/r.height*PH+11,u=(lx-PW/2)/(TW/2),w=(ly-TOP)/(TH/2),gx=Math.floor((u+w)/2),gy=Math.floor((w-u)/2);
- tapCell(inBed(gx,gy)?(gy-B0)*4+gx-B0:-1)});
-iso.addEventListener('pointercancel',()=>gp=null);
+function isoMove(){}
+function isoPlant(idx){if(idx.includes(cat.k))catWalk();if(!idx.length||reduce.matches){grow=null;isoKick(0);return}grow={idx,t0:performance.now()};isoKick(700+idx.length*150)}
+// Tap the island to open it large, over a dimmed game. In the large view, tap the cat (or right beside it) to pet it.
+const big=$('isoBig'),bx=big.getContext('2d');
+function openGarden(){const n=state.garden.filter(Boolean);$('vCount').textContent=`${n.length} OF ${PLOTS} PLANTED · ${fmt(n.reduce((a,b)=>a+b.pts,0))}`;$('gview').hidden=false;isoKick(0);$('vClose').focus({preventScroll:true})}
+function closeGarden(){$('gview').hidden=true;iso.focus({preventScroll:true})}
+iso.addEventListener('click',openGarden);iso.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openGarden()}});
+$('vClose').onclick=closeGarden;$('gview').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGarden()});
+let gp=null;big.addEventListener('pointerdown',e=>{if(e.isPrimary)gp={x:e.clientX,y:e.clientY,id:e.pointerId}});
+big.addEventListener('pointerup',e=>{if(!gp||gp.id!==e.pointerId)return;const d=Math.hypot(e.clientX-gp.x,e.clientY-gp.y);gp=null;if(d>10||cat.k<0)return;
+ const r=big.getBoundingClientRect(),lx=(e.clientX-r.left)/r.width*PW,ly=(e.clientY-r.top)/r.height*PH+11,u=(lx-PW/2)/(TW/2),w=(ly-TOP)/(TH/2),gx=Math.floor((u+w)/2),gy=Math.floor((w-u)/2);
+ if(Math.abs(RING[cat.k][0]-gx)+Math.abs(RING[cat.k][1]-gy)<=1)petCat()});
+big.addEventListener('pointercancel',()=>gp=null);
 
 function openAlmanac(){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>a+b.pts,0);
  $('gCount').textContent=`${n.length} OF ${PLOTS} PLANTED · ${fmt(sum)}`;
@@ -486,22 +570,30 @@ function openAlmanac(){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>
   e.innerHTML=`<div class="pic" style="${has?'--bg:'+t.bg:''}"><img alt="" src="${sprite(t,!has)}"></div><b>${has?t.name:t.v}</b>`;box.append(e)});
  $('jCount').textContent=`${got} OF ${TIERS.length} BLOOMS`;$('scrim').hidden=false;document.querySelector('.sheet').scrollTop=0;$('gClose').focus({preventScroll:true})}
 function closeAlmanac(){$('scrim').hidden=true;board.focus({preventScroll:true});isoKick(0)}
+// How to play. The demos are built once from the real tile sprites; the little garden is redrawn in the current season's grass.
+function miniTile(v,cls){const t=tierOf(v),el=document.createElement('div');el.className='mt '+cls;el.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;el.innerHTML=`<img alt="" src="${sprite(t)}"><b>${v}</b>`;return el}
+const cellAt=n=>{const c=document.createElement('i');c.className='mc';c.style.left=n*52+'px';return c};
+function openHelp(){if(!$('dMerge').firstChild){
+  $('dMerge').append(cellAt(0),cellAt(1),cellAt(2),miniTile(2,'a'),miniTile(2,'b'),miniTile(4,'c'));
+  [64,32,16,8,4].forEach(v=>$('dTop').append(miniTile(v,'')));
+  $('hSeasons').innerHTML=SEASONS.map(s=>`<div class="alm"><img alt="" src="${icon(s)}"><div><b>${s.name.toUpperCase()}</b><span>${s.how}</span></div></div>`).join('')}
+ const x=$('dPlant').getContext('2d'),[ga,gb]=GRASS[seasonOf(state.moves)];x.clearRect(0,0,74,46);
+ [[21,28,32,gb],[53,28,64,gb],[37,36,16,ga]].forEach(([cx,cy,v,c])=>{diamond(x,cx,cy,c,c);x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7);drawPlant(x,v,cx,cy,0,1,false)});
+ $('help').hidden=false;document.querySelector('#help .sheet').scrollTop=0;$('hGo').focus({preventScroll:true})}
+function closeHelp(){$('help').hidden=true;if(!state.guide){state.guide=true;save()}board.focus({preventScroll:true});isoKick(0)}
+$('helpBtn').onclick=openHelp;$('hClose').onclick=$('hGo').onclick=closeHelp;$('help').addEventListener('click',e=>{if(e.target===e.currentTarget)closeHelp()});
 
 $('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
 $('sound').onclick=()=>{state.mute=!state.mute;unlockAudio();save();render()};
 $('almanacBtn').onclick=openAlmanac;$('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
-// With a bloom chosen, arrows walk the choice between blooms instead of sliding the board.
-function walk(dir){const c=sel%4,r=Math.floor(sel/4);let best=-1,bd=99;state.grid.forEach((v,i)=>{if(!v||i===sel)return;const dc=i%4-c,dr=Math.floor(i/4)-r,along=dir==='left'?-dc:dir==='right'?dc:dir==='up'?-dr:dr,across=dir==='left'||dir==='right'?Math.abs(dr):Math.abs(dc);if(along<=0)return;const d=along+across*2;if(d<bd){bd=d;best=i}});if(best>=0){sel=best;sound('select');paintSel()}}
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('gview').hidden){if(e.key==='Escape')closeGarden();else if(e.key.toLowerCase()==='c')petCat();return}if(!$('help').hidden){if(e.key==='Escape')closeHelp();return}if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
  const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
- if(k==='g'){setFocus(state.focus==='garden'?'board':'garden');return}
- if(sel>=0){if(keys[k]){e.preventDefault();walk(keys[k])}else if((k==='Enter'||k===' ')&&!onBtn){e.preventDefault();harvest(sel)}else if(k==='Escape'||k==='h'){sel=-1;paintSel()}return}
- if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo();else if((k==='h'||k==='Enter')&&!onBtn&&!state.done){e.preventDefault();slotTap()}});
-let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary||state.focus!=='board')return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
+ if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}
+ if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo()});
+let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
 board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,d=Math.max(Math.abs(dx),Math.abs(dy));ptr=null;
- if(d>=22)return void move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));if(d>8)return;
- measure();const r=board.getBoundingClientRect();tapCell(Math.min(3,Math.max(0,Math.floor((e.clientY-r.top)/step)))*4+Math.min(3,Math.max(0,Math.floor((e.clientX-r.left)/step))))});
+ if(d>=22)return void move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'))});
 board.addEventListener('pointercancel',()=>ptr=null);
 for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';document.querySelector('.cells').append(c)}
 
@@ -520,7 +612,9 @@ for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';d
  size();addEventListener('resize',size);requestAnimationFrame(draw)})();
 
 if(load())render();else startRun();
-applyFocus();
+if(peak()>=32)cat.k=catSpot();cat.nap=seasonOf(state.moves)===3;isoKick(0);
+requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.add('live')));
+if(!state.guide)openHelp();
 </script>
 </body>
 </html>
