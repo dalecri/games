@@ -41,7 +41,7 @@ body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(i
 main{position:relative;z-index:1;margin:0 auto;display:grid;gap:12px;width:min(100%,640px);height:calc(100dvh - 32px);min-height:600px;
   grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
 header{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.year{grid-area:seasons;display:flex;gap:8px;min-width:0}.stage{grid-area:stage}.controls{grid-area:controls}
+.year{grid-area:seasons;display:flex;gap:8px;min-width:0;justify-self:end}.stage{grid-area:stage}.controls{grid-area:controls}
 
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .badge{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
@@ -55,13 +55,13 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 @keyframes rise{to{opacity:0;transform:translateY(-22px)}}
 @media(max-width:440px){.badge{display:none}}
 
-/* The year: four seasons, the current one filling as moves pass */
-.seasons{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
+/* The year, compact in every view: four season icons, and only the current one carries its progress track. It sits right-aligned under the scores. */
+.seasons{display:grid;grid-template-columns:auto repeat(4,auto);justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
 .yr{font:700 11px var(--ui);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
 .sea{display:flex;align-items:center;gap:7px;min-width:0;opacity:.38;transition:opacity 300ms var(--ease)}
 .sea img{width:18px;height:18px;image-rendering:pixelated;flex:none}
 .sea.now{opacity:1}.sea.past{opacity:.6}
-.track{flex:1;height:4px;background:var(--line);display:block;overflow:hidden}
+.track{flex:none;width:30px;height:4px;background:var(--line);display:none;overflow:hidden}.sea.now .track{display:block}
 .fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
 /* Stage: board, basket, garden. Only the board is boxed; the garden is an island floating on the page. */
@@ -152,10 +152,8 @@ button[aria-pressed="false"]{color:var(--muted)}
   main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:104px;--side:216px;
     grid-template:"head" minmax(var(--top),auto) "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
   header{align-self:start;min-height:60px}
-  /* Compact year: four season icons, and only the current one carries its progress track. */
   .year{position:absolute;top:64px;right:0;z-index:2;width:var(--side)}
-  .seasons{grid-template-columns:auto repeat(4,auto);justify-content:space-between;gap:6px;padding:0 10px;min-height:36px}
-  .sea .track{display:none}.sea.now .track{display:block;flex:none;width:30px}
+  .seasons{gap:6px;padding:0 10px;min-height:36px}
   .help{width:36px;min-height:36px}
   /* Garden on the left, then the board, with the basket down the right edge under the scores. */
   .gpane{order:1}.bpane{order:2}.basket{order:3}
