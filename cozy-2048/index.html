@@ -167,7 +167,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 }
 @media(min-width:700px) and (min-aspect-ratio:1/1) and (max-height:480px){
   main{row-gap:8px;--top:46px;--side:200px}.badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}.controls{grid-auto-rows:36px}
-  .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}
+  .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5.5px;margin-bottom:24%}
 }
 
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap;pointer-events:none}
@@ -232,7 +232,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 /* ASCII theme. Sprites and symbols both live in the markup; html.ascii swaps which one shows, squares the corners and draws tiles as terminal cells. */
 .aa,.ag,.ga{display:none}
 .aa{margin:0;font:700 var(--as,14px)/1.02 var(--ui);white-space:pre;text-align:center;letter-spacing:0}
-.aa i,.aa u,.ga i,.ga b{font-style:normal;text-decoration:none;font-weight:700}.aa i{color:var(--tc)}.aa u{color:var(--line)}
+.aa b,.aa u,.ga i,.ga b{font-style:normal;text-decoration:none;font-weight:700}.aa u{color:var(--line)}
 .ag{font:700 16px/1 var(--ui);width:18px;text-align:center;flex:none}
 .alm .ag{font-size:22px;width:27px}.swatch .ag{font-size:26px;width:auto}
 .ga{margin:0;font-family:var(--ui);font-size:min(100cqw/24.6,100cqh/13.6);line-height:1;white-space:pre;cursor:pointer;-webkit-user-select:none;user-select:none;outline-offset:6px}
@@ -241,8 +241,14 @@ button[aria-pressed="false"]{color:var(--muted)}
 #isoBigA{font-size:calc(100cqw/24.6);width:max-content;margin:0 auto;padding:14px 0 22px;cursor:default}#isoBigA [data-cat]{cursor:pointer}
 .ascii .aa,.ascii .ga{display:block}.ascii .ag{display:inline-block}
 .ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge{display:none}
-.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.3);margin-top:12%}.ascii .slot .aa{--as:15px;margin-bottom:16%}.ascii .mt .aa{--as:11px;margin-top:8%}.ascii .d-top .mt .aa{--as:6.5px;margin:0}.ascii .pic .aa{--as:13px}.ascii .swatch .aa{--as:11px}
-.ascii .frozen .aa{opacity:.4}
+.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:10px;margin-bottom:22%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
+/* The drawings sway from the soil and their bright spots twinkle. Frost holds a bloom still. */
+.ascii .aa{transform-origin:50% 100%;animation:sway 4s ease-in-out var(--ph,0ms) infinite}
+.ascii .aa .tw{animation:tw 1.6s steps(1) var(--ph,0ms) infinite}
+@keyframes sway{0%,100%{transform:skewX(-3deg)}50%{transform:skewX(3deg)}}
+@keyframes tw{50%{opacity:.3}}
+.ascii .frozen .aa{opacity:.4;animation-play-state:paused}.ascii .frozen .aa .tw{animation:none}
+@media(prefers-reduced-motion:reduce){.ascii .aa,.ascii .aa .tw{animation:none!important}}
 .ascii .face,.ascii .slot.full,.ascii .mt,.ascii .pic,.ascii .swatch{background:color-mix(in srgb,var(--tc,var(--line)) 10%,#0A080D)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,var(--line)) 62%,transparent)}
 .ascii .night .face{animation:none}
 .ascii .num,.ascii .slot span,.ascii .mt b{color:var(--tc)}
@@ -393,15 +399,32 @@ const GLYPH={
  letter:['.........','..xxxxx..','.xx...xx.','.xx...xx.','.xxxxxxx.','.xx...xx.','.xx...xx.','.xx...xx.','.........'],
  flower:['...xxx...','...xxx...','xxx.x.xxx','xx.xxx.xx','xxx.x.xxx','...xxx...','...xxx...','....x....','....x....']};
 const glyph=k=>`<svg viewBox="0 0 9 9" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">${GLYPH[k].map((row,r)=>[...row].map((ch,c)=>ch==='x'?`<rect x="${c}" y="${r}" width="1" height="1"/>`:'').join('')).join('')}</svg>`;
-// ASCII theme: every bloom is two lines of three characters, a flower over its stem, each in its own color. Seasons get one character each.
-const ASC={2:['   ',' . ','#D9B38C'],4:['   ',' , ','#9BE08F'],8:['   ','\\|/','#4FD08A'],16:[' o ',' | ','#FF8FB8'],32:[' Y ',' | ','#FF7A59'],64:[' * ',' | ','#FFE56B'],
- 128:['(^)',' | ','#FF5C6C'],256:['i!i','\\|/','#B48CFF'],512:[' @ ','\\_/','#FF6FA8','#D08A6A'],1024:['&%&',' Y ','#FFB3D1','#A07A62'],2048:['{#}',' H ','#8FE3FF','#A07A62'],4096:[' ) ','* .','#FFF1BF','#FFF1BF']};
-TIERS.forEach(t=>{const[a0,a1,ac,as]=ASC[t.v];t.a0=a0;t.a1=a1;t.ac=ac;t.as=a0.trim()?as||'#5FAE78':ac;t.ag=a0.trim()?a0:a1});
+// ASCII theme: every bloom is a 5×4 character drawing with a matching color map, one letter per character:
+// p/q the bloom's own two colors, g stem, l leaf, s soil, y yellow, w white, c cream, b bark, o pot, m moonlight. A capital letter twinkles.
+// g3 is the three-character version the garden uses.
+const PAL={g:'#5FAE78',l:'#9BE08F',s:'#8A6455',y:'#FFE56B',w:'#FFFFFF',c:'#F5EBDD',b:'#A07A62',o:'#D08A6A',m:'#FFF1BF'};
+const ASC={
+ 2:   {c:'#D9B38C',g3:' . ',a:['     ','     ','  o  ',' ~~~ '],m:['     ','     ','  p  ',' sss ']},
+ 4:   {c:'#9BE08F',g3:' , ',a:['     ','  ,  ','  |  ',' ~~~ '],m:['     ','  l  ','  g  ',' sss ']},
+ 8:   {c:'#4FD08A',g3:'\\|/',a:['     ',' \\|/ ','  |  ',' ~~~ '],m:['     ',' lgl ','  g  ',' sss ']},
+ 16:  {c:'#FF8FB8',g3:' o ',a:['  _  ',' (o) ',' \\|/ ',' ~~~ '],m:['  p  ',' pYp ',' lgl ',' sss ']},
+ 32:  {c:'#FF7A59',q:'#FFC24D',g3:' Y ',a:[' \\V/ ',' (_) ',' \\|/ ',' ~~~ '],m:[' pqp ',' ppp ',' lgl ',' sss ']},
+ 64:  {c:'#FFE56B',g3:' * ',a:[' \\|/ ','-(O)-',' /|\\ ','  |  '],m:[' www ','wwYww',' www ','  g  ']},
+ 128: {c:'#FF5C6C',g3:'(^)',a:[' ,-, ','(.:.)','  U  ',' ~~~ '],m:[' ppp ','pWpWp','  c  ',' sss ']},
+ 256: {c:'#B48CFF',q:'#E2D4FF',g3:'i!i',a:[' i i ','i!i!i',' \\|/ ',' ~~~ '],m:[' p p ','pQpQp',' lgl ',' sss ']},
+ 512: {c:'#FF6FA8',q:'#FF2F78',g3:' @ ',a:[' (@) ',' \\|/ ','[___]',' \\_/ '],m:[' pQp ',' lgl ','ooooo',' ooo ']},
+ 1024:{c:'#FFB3D1',g3:'&%&',a:['o*o*o','*o*o*',' \\Y/ ','  |  '],m:['pWpWp','WpWpW',' bbb ','  b  ']},
+ 2048:{c:'#8FE3FF',q:'#D6F6FF',g3:'{#}',a:[' *.* ','{###}','{###}','  H  '],m:[' MmM ','pqQqp','pQqQp','  b  ']},
+ 4096:{c:'#FFF1BF',g3:' ) ',a:['  ,-.',' ( ( ',"  `-'",'*  . '],m:['  mmm',' m m ','  mmm','W  W ']}};
+TIERS.forEach(t=>{const A=ASC[t.v];t.ac=A.c;t.aq=A.q||A.c;t.ag=A.g3;t.asc=A.a;t.amap=A.m});
+// One line of a drawing as colored runs.
+function artRow(t,r){let h='',run='',key='';const flush=()=>{if(!run)return;const k=key.toLowerCase();h+=key===' '?run:`<b${key!==k?' class="tw"':''} style="color:${k==='p'?t.ac:k==='q'?t.aq:PAL[k]}">${esc(run)}</b>`;run=''};
+ [...t.asc[r]].forEach((ch,c)=>{const k=ch===' '?' ':t.amap[r][c];if(k!==key){flush();key=k}run+=ch});flush();return h}
 SEASONS.forEach((s,k)=>s.ch='~*%+'[k]);
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const skin=t=>`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge};--tc:${t.ac}`;
-// Both looks are always in the markup; the theme class decides which one shows.
-const pic=(t,locked)=>`<img alt="" src="${sprite(t,locked)}"><pre class="aa" aria-hidden="true">${locked?'<u> ? </u>\n<u>   </u>':`<i>${esc(t.a0)}</i>\n<u style="color:${t.as}">${esc(t.a1)}</u>`}</pre>`;
+// Both looks are always in the markup; the theme class decides which one shows. --ph keeps the sway in step across re-renders.
+const pic=(t,locked)=>`<img alt="" src="${sprite(t,locked)}"><pre class="aa" style="--ph:-${Math.floor(performance.now()%4000)}ms" aria-hidden="true">${locked?'     \n<u>  ?  </u>\n     \n     ':t.asc.map((_,r)=>artRow(t,r)).join('\n')}</pre>`;
 const sic=s=>`<img alt="" src="${icon(s)}"><b class="ag" style="color:${s.c}" aria-hidden="true">${s.ch}</b>`;
 const petalColor=t=>t.p||(t.art==='daisy'?'#FFFFFF':'#86C78A');
 const fmt=n=>n.toLocaleString('en-US');
