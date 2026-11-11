@@ -148,15 +148,17 @@ button[aria-pressed="false"]{color:var(--muted)}
 
 /* Landscape: PC, and tablets or phones on their side. Top bar, then controls, board, basket and garden left to right. */
 @media(min-width:700px) and (min-aspect-ratio:1/1){
-  /* Title top left. Scores pinned top right with a compact year strip under them, above the garden. Below, the stage, then the controls along the bottom as on a phone. */
-  main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:60px;--side:216px;
+  /* Title top left. Scores pinned top right with a compact year strip under them, above the board. Below, the stage, then the controls along the bottom as on a phone. */
+  main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:104px;--side:216px;
     grid-template:"head" minmax(var(--top),auto) "stage" minmax(0,1fr) "controls" auto / minmax(0,1fr)}
-  header{align-self:center}
+  header{align-self:start;min-height:60px}
   /* Compact year: four season icons, and only the current one carries its progress track. */
-  .year{position:absolute;top:calc(var(--top) + 4px);right:0;z-index:2;width:var(--side)}
+  .year{position:absolute;top:64px;right:0;z-index:2;width:var(--side)}
   .seasons{grid-template-columns:auto repeat(4,auto);justify-content:space-between;gap:6px;padding:0 10px;min-height:36px}
   .sea .track{display:none}.sea.now .track{display:block;flex:none;width:30px}
-  .help{width:36px;min-height:36px}.gpane{padding-top:40px}
+  .help{width:36px;min-height:36px}
+  /* Garden on the left, then the basket, then the board on the right under the scores. */
+  .gpane{order:1}.basket{order:2}.bpane{order:3}
   /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
   .stage{flex-direction:row;gap:16px;container-type:size}
   .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
@@ -168,6 +170,7 @@ button[aria-pressed="false"]{color:var(--muted)}
   /* Short screens (a phone on its side) keep the controls as a slim rail on the left, so the board keeps its height. */
   main{row-gap:8px;--top:46px;--side:200px;grid-template:"head head" minmax(var(--top),auto) "controls stage" minmax(0,1fr) / 44px minmax(0,1fr)}
   .controls{grid-template-columns:44px;width:44px;margin:0;align-content:center}.controls button{padding:0}
+  header{min-height:0;align-self:center}.year{top:5px;right:calc(var(--side) + 8px)}
   .badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}.controls{grid-auto-rows:36px}
   .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}.ascii .basket .slot .aa{--as:5.5px;margin-bottom:24%}
 }
