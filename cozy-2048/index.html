@@ -65,9 +65,10 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);let
 .fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
 /* Stage: board, basket, garden. Only the board is boxed; the garden is an island floating on the page. */
-.stage{position:relative;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.stage{position:relative;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;container-type:size}
 .pane{position:relative;flex:1 1 0;min-width:0;min-height:0;container:pane/size;display:grid;place-items:center;transition:flex-grow 420ms var(--ease)}
-.bpane{flex-grow:2.4;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
+/* The board's box hugs the board: a square as wide as the stage, or shorter when the basket and garden need the room. */
+.bpane{flex:none;align-self:center;width:min(100cqw,100cqh - 184px);aspect-ratio:1;padding:10px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
 .gpane{min-height:84px}
 .board{position:relative;width:min(100cqw,100cqh);aspect-ratio:1;container:board/inline-size;--gap:10px;touch-action:none}
 .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);height:100%}
