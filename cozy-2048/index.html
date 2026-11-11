@@ -10,7 +10,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
 <style>
 @font-face{font-family:'Alpha Lyrae';font-style:normal;font-weight:500;font-display:swap;src:url('https://heycristobal.com/my-style-guide/assets/fonts/AlphaLyrae-Medium.woff2') format('woff2')}
-/* Quiet Pixel v3 night ground. The one accent follows the season: dawn (spring), sun (summer), lamp (autumn), moon (winter). */
+/* Quiet Pixel v3 night ground. The one accent follows the season: dawn (spring), sun (summer), lamp (autumn), moon (winter).
+   Layout: two panes share one stage, the number board and the live isometric garden. Whichever you touch grows, the other goes compact.
+   Portrait (phones, upright tablets) stacks them; landscape (PC, tablets on their side) puts them side by side beside a control rail. */
 :root{
   color-scheme:dark;
   --void:#1E1826;--surface:#2A2233;--surface-2:#251F2D;--line:#3D3448;
@@ -18,31 +20,32 @@
   --display:'Alpha Lyrae','Space Mono',ui-monospace,monospace;
   --ui:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --ease:cubic-bezier(.4,0,.2,1);
-  --gap:10px;
 }
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),var(--void);color:var(--text);font-family:var(--ui);
   -webkit-user-select:none;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
 #weather{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
-main{position:relative;z-index:1;width:min(100%,440px,max(280px,calc(100dvh - 318px)));margin:0 auto;display:flex;flex-direction:column;gap:14px}
+main{position:relative;z-index:1;margin:0 auto;display:grid;gap:12px;width:min(100%,640px);height:calc(100dvh - 32px);min-height:600px;
+  grid-template:"head" auto "seasons" auto "stage" minmax(0,1fr) "basket" auto "controls" auto / minmax(0,1fr)}
+header{grid-area:head;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.seasons{grid-area:seasons}.stage{grid-area:stage}.basket{grid-area:basket}.controls{grid-area:controls}
 
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .badge{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
 .badge img{width:30px;height:30px;image-rendering:pixelated}
-h1{font-family:var(--display);font-weight:500;font-size:clamp(24px,7vw,34px);letter-spacing:.04em;margin:0;line-height:1;text-wrap:balance}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(20px,6vw,32px);letter-spacing:.04em;margin:0;line-height:1;white-space:nowrap}
 .scores{display:flex;gap:8px}
-.chip{min-width:80px;padding:7px 12px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;text-align:center;position:relative}
+.chip{min-width:74px;padding:7px 10px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;text-align:center;position:relative}
 .chip span{display:block;color:var(--muted);font-size:10px;letter-spacing:.18em}
 .chip strong{display:block;font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
 .plus{position:absolute;right:10px;top:-6px;font-size:12px;font-weight:700;color:var(--accent);pointer-events:none;animation:rise .8s var(--ease) forwards}
 @keyframes rise{to{opacity:0;transform:translateY(-22px)}}
+@media(max-width:440px){.badge{display:none}}
 
 /* The year: four seasons, the current one filling as moves pass */
 .seasons{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
-.seasons:hover{border-color:var(--line)}
 .yr{font:700 11px var(--ui);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
 .sea{display:flex;align-items:center;gap:7px;min-width:0;opacity:.38;transition:opacity 300ms var(--ease)}
 .sea img{width:18px;height:18px;image-rendering:pixelated;flex:none}
@@ -50,17 +53,23 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(24px,7vw,34px);let
 .track{flex:1;height:4px;background:var(--line);display:block;overflow:hidden}
 .fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
-.panel{position:relative;padding:12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
-.board{position:relative;aspect-ratio:1;max-width:100%;touch-action:none;outline:none}
-.board:focus-visible{outline:2px solid var(--accent);outline-offset:6px;border-radius:10px}
+/* Stage: the pane with .on takes two thirds, the other one third */
+.stage{position:relative;display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.pane{flex:1 1 0;min-width:0;min-height:0;container:pane/size;display:grid;place-items:center;padding:8px;border-radius:20px;background:var(--surface-2);border:1px solid var(--line);cursor:pointer;
+  transition:flex-grow 420ms var(--ease),background 300ms var(--ease),box-shadow 300ms var(--ease)}
+.pane:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.pane.on{flex-grow:2;padding:12px;background:var(--surface);box-shadow:0 18px 48px #0005;cursor:default;border-color:var(--line)}
+.pane:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.board{position:relative;width:min(100cqw,100cqh);aspect-ratio:1;container:board/inline-size;--gap:10px;touch-action:none}
 .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);height:100%}
 .cell{border-radius:11px;background:color-mix(in srgb,var(--accent) 5%,var(--surface-2));box-shadow:inset 0 2px 0 #0002;position:relative;transition:background 600ms var(--ease)}
+.pane:not(.on) .cell{background:color-mix(in srgb,var(--accent) 5%,var(--void))}
 .cell:after{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;background:var(--line)}
 #tiles,#petals{position:absolute;inset:0;pointer-events:none}
 .tile{position:absolute;top:0;left:0;width:calc((100% - 3*var(--gap))/4);height:calc((100% - 3*var(--gap))/4);transition:transform 110ms var(--ease);will-change:transform;z-index:1}
 .face{position:relative;height:100%;border-radius:11px;background:var(--bg);box-shadow:0 3px 0 var(--edge),0 6px 14px #0003;display:grid;place-items:center;overflow:hidden;transition:transform 140ms var(--ease)}
 .face img{width:66%;height:66%;margin-top:9%;image-rendering:pixelated;image-rendering:crisp-edges}
-.num{position:absolute;left:8%;top:6%;font-weight:700;color:var(--ink);font-size:calc(var(--cell,90px)*var(--ns,.15));line-height:1;font-variant-numeric:tabular-nums}
+.num{position:absolute;left:8%;top:6%;font-weight:700;color:var(--ink);font-size:calc((100cqw - 3*var(--gap))/4*var(--ns,.15));line-height:1;font-variant-numeric:tabular-nums}
 .spawn .face{animation:spawn 180ms var(--ease)}
 .merge .face{animation:merge 200ms var(--ease)}
 .sunny .face{animation:sunny 420ms var(--ease)}
@@ -69,30 +78,39 @@ h1{font-family:var(--display);font-weight:500;font-size:clamp(24px,7vw,34px);let
 @keyframes merge{50%{transform:scale(1.12)}}
 @keyframes sunny{35%{transform:scale(1.24);filter:brightness(1.35)}70%{transform:scale(.97)}}
 @keyframes glow{50%{box-shadow:0 3px 0 var(--edge),0 0 26px #b9a9d980}}
-/* Chosen for the basket, or suggested */
 .tile.sel{z-index:3}
-.sel .face{transform:translateY(-6px);box-shadow:0 0 0 3px var(--accent),0 12px 20px #0007;animation:none}
+.sel .face{transform:translateY(-6%);box-shadow:0 0 0 3px var(--accent),0 12px 20px #0007;animation:none}
 .hint .face{animation:ring 1.5s var(--ease) infinite}
 @keyframes ring{0%{box-shadow:0 3px 0 var(--edge),0 0 0 0 var(--accent)}70%,100%{box-shadow:0 3px 0 var(--edge),0 0 0 9px transparent}}
-/* Winter frost pins a bloom in place */
 .frozen .face img{filter:saturate(.35) brightness(1.08)}
 .ice{position:absolute;inset:0;border-radius:11px;border:2px solid #D6EEFA;background:linear-gradient(135deg,#e6f5fdb0 0 16%,#bfe2f560 16% 21%,#e6f5fd45 21% 54%,#bfe2f570 54% 59%,#e6f5fd60 59%)}
 .newice .ice{animation:frost 420ms var(--ease)}
 @keyframes frost{from{opacity:0;transform:scale(1.25)}}
-/* Summer sunbeam: merges landing here grow twice */
-.beam{position:absolute;z-index:2;pointer-events:none;border-radius:13px;background:linear-gradient(120deg,#f2c94c3d,#f2c94c1a 50%,#f2c94c3d);box-shadow:0 0 0 2px #f2c94ca6,0 0 22px #f2c94c40;animation:shimmer 2.4s ease-in-out infinite;transition:top 260ms var(--ease),left 260ms var(--ease),width 260ms var(--ease),height 260ms var(--ease)}
+.beam{position:absolute;z-index:2;pointer-events:none;border-radius:13px;background:linear-gradient(120deg,#f2c94c3d,#f2c94c1a 50%,#f2c94c3d);box-shadow:0 0 0 2px #f2c94ca6,0 0 22px #f2c94c40;animation:shimmer 2.4s ease-in-out infinite}
+.beam.row{left:-3px;width:calc(100% + 6px);top:calc(var(--n)*(25% + var(--gap)/4) - 3px);height:calc((100% - 3*var(--gap))/4 + 6px)}
+.beam.col{top:-3px;height:calc(100% + 6px);left:calc(var(--n)*(25% + var(--gap)/4) - 3px);width:calc((100% - 3*var(--gap))/4 + 6px)}
 @keyframes shimmer{50%{opacity:.62}}
 .petal{position:absolute;width:5px;height:5px;background:var(--c);animation:burst 520ms var(--ease) forwards}
 @keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(90deg);opacity:0}}
-.fly{position:fixed!important;z-index:40;transform-origin:0 0;transition:transform 340ms var(--ease)!important;pointer-events:none}
+.fly{position:fixed!important;z-index:40;transform-origin:0 0;transition:transform 340ms var(--ease)!important;pointer-events:none;container-type:normal}
+.fly .num{font-size:12px}
+/* Compact board: a number minimap. Sprites step aside, the numbers stay readable. */
+@container pane (max-width:250px) or (max-height:250px){
+  .board{--gap:5px}
+  .cell,.face,.ice{border-radius:6px}.cell:after{display:none}
+  .face{box-shadow:0 2px 0 var(--edge)}.face img{display:none}
+  .num{position:static;font-size:calc((100cqw - 3*var(--gap))/4*var(--ns,.15)*2.3)}
+  .beam{border-radius:8px}
+}
+#iso{display:block;width:min(100cqw,calc(100cqh*264/180));aspect-ratio:264/180;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;outline:none}
 
-.overlay{position:absolute;inset:0;z-index:5;border-radius:19px;background:#251f2ded;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:sheetIn 280ms var(--ease)}
+.overlay{position:absolute;inset:0;z-index:5;border-radius:20px;background:#251f2ded;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:sheetIn 280ms var(--ease)}
 .ov-label{font-size:11px;letter-spacing:.2em;color:var(--accent)}
-.ov-total{font:500 clamp(48px,17vw,76px)/1 var(--display);letter-spacing:.02em;font-variant-numeric:tabular-nums;margin-bottom:14px}
+.ov-total{font:500 clamp(48px,17vw,84px)/1 var(--display);letter-spacing:.02em;font-variant-numeric:tabular-nums;margin-bottom:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
 /* The basket: five picks a year, and only what is picked counts */
-.basket{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.basket{display:grid;grid-template-columns:repeat(5,minmax(0,72px));justify-content:center;gap:8px}
 .slot{aspect-ratio:1;min-height:0;padding:0;border-radius:12px;border:1px dashed var(--line);background:transparent;position:relative;display:grid;place-items:center;overflow:hidden;color:var(--muted)}
 .slot:disabled{opacity:1}
 .slot.next{border:1px solid var(--accent);background:var(--surface-2);cursor:pointer}
@@ -113,10 +131,23 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 button.primary{background:var(--accent);color:#1E1826;border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
-.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-@media(max-width:440px){.badge{display:none}h1{font-size:clamp(20px,6vw,26px)}.chip{min-width:70px;padding-inline:10px}header{flex-wrap:nowrap}.controls button{padding:0 6px}}
+.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:min(100%,440px);margin:0 auto}
+.controls button{padding:0 6px}
 
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap}
+/* Landscape: PC, and tablets or phones on their side. A control rail on the left, both panes side by side. */
+@media(min-width:700px) and (min-aspect-ratio:1/1){
+  main{width:min(100%,1280px);min-height:340px;column-gap:20px;
+    grid-template:"head stage" auto "seasons stage" auto "basket stage" auto ". stage" minmax(0,1fr) "controls stage" auto / 300px minmax(0,1fr)}
+  .stage{flex-direction:row}.pane.on{flex-grow:1.6}
+  header{flex-wrap:wrap}.scores{width:100%}.chip{flex:1}
+  .badge{display:grid}h1{font-size:30px}
+}
+@media(min-width:700px) and (min-aspect-ratio:1/1) and (max-height:480px){
+  main{row-gap:8px}.badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}
+  .seasons,button{min-height:36px}.basket{grid-template-columns:repeat(5,minmax(0,48px))}.slot.full span,.slot.next span{font-size:9px}
+}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap;pointer-events:none}
 .toast .swatch{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface-2)}
 .toast .swatch img{width:32px;height:32px;image-rendering:pixelated}
 .toast small{display:block;font-size:10px;letter-spacing:.18em;color:var(--accent)}
@@ -129,11 +160,10 @@ button[aria-pressed="false"]{color:var(--muted)}
 @keyframes fade{from{opacity:0}}
 .sheet{width:min(100%,520px);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));animation:sheetIn 280ms var(--ease)}
 @media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;border-bottom:1px solid var(--line)}}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .sheet h2{font:500 26px/1 var(--display);margin:0;letter-spacing:.03em}
 .count{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:6px;font-variant-numeric:tabular-nums}
 .close{width:44px;padding:0;font-size:16px}
-.plot{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;margin:4px 0 14px}
 .almanac{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
 .alm{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
 .alm img{width:27px;height:27px;image-rendering:pixelated;flex:none}
@@ -161,32 +191,36 @@ button[aria-pressed="false"]{color:var(--muted)}
     </div>
   </header>
   <button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button>
-  <section class="panel" aria-label="Game board">
-    <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. H to choose a bloom for the basket, U to undo.">
-      <div class="cells" aria-hidden="true"></div>
-      <div id="tiles"></div>
-      <div id="beam" class="beam" hidden aria-hidden="true"></div>
-      <div id="petals" aria-hidden="true"></div>
-    </div>
+  <div class="stage">
+    <section id="paneBoard" class="pane on" aria-label="Number board">
+      <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. H to choose a bloom for the basket, U to undo, G to swap the large view.">
+        <div class="cells" aria-hidden="true"></div>
+        <div id="tiles"></div>
+        <div id="beam" class="beam" hidden aria-hidden="true"></div>
+        <div id="petals" aria-hidden="true"></div>
+      </div>
+    </section>
+    <section id="paneGarden" class="pane" aria-label="Garden">
+      <canvas id="iso" width="264" height="180" tabindex="0" role="img" aria-label="Your garden"></canvas>
+    </section>
     <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovLabel">
       <div class="ov-label" id="ovLabel"></div>
       <div class="ov-total" id="ovTotal"></div>
       <div class="row"><button id="plant" class="primary">Plant</button><button id="ovUndo">Undo</button></div>
     </div>
-  </section>
+  </div>
   <div id="basket" class="basket" role="group" aria-label="Basket"></div>
   <div class="controls">
     <button id="new">New</button>
     <button id="undo" disabled>Undo</button>
-    <button id="gardenBtn">Garden</button>
+    <button id="almanacBtn">Almanac</button>
     <button id="sound" aria-pressed="true">Sound</button>
   </div>
 </main>
 <div id="toast" class="toast" hidden role="status"></div>
 <div id="scrim" class="scrim" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gTitle">
-    <div class="sheet-head"><div><h2 id="gTitle">Garden</h2><div class="count" id="gCount"></div></div><button class="close" id="gClose" aria-label="Close garden">✕</button></div>
-    <canvas id="plot" class="plot" width="200" height="146" role="img" aria-label="Your garden"></canvas>
+    <div class="sheet-head"><div><h2 id="gTitle">Almanac</h2><div class="count" id="gCount"></div></div><button class="close" id="gClose" aria-label="Close almanac">✕</button></div>
     <div class="almanac" id="almanac"></div>
     <div class="count" id="jCount"></div>
     <div class="journal" id="journal"></div>
@@ -195,7 +229,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 <div id="live" class="sr" aria-live="polite"></div>
 <script>
 'use strict';
-const KEY='bloom2048.v2',LEN=20,SLOTS=5,PLOTS=36;
+const KEY='bloom2048.v2',LEN=20,SLOTS=5,PLOTS=48;
 // A year is four seasons of LEN moves. Each season bends one rule.
 const SEASONS=[
  {name:'Spring',c:'#7FB8D9',art:'drop',rule:'Frost thaws'},
@@ -254,9 +288,8 @@ function icon(s){if(s.url)return s.url;const c=document.createElement('canvas');
  ICON[s.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=ch==='X'?dark:s.c;x.fillRect(col,r,1,1)}));return s.url=c.toDataURL()}
 const petalColor=t=>t.p||(t.art==='daisy'?'#FFFFFF':'#86C78A');
 const fmt=n=>n.toLocaleString('en-US');
-
 const $=id=>document.getElementById(id),board=$('board'),layer=$('tiles'),petals=$('petals'),reduce=matchMedia('(prefers-reduced-motion: reduce)');
-let state={grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false},busy=false,sel=-1,ctx,toastTimer;
+let state={grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false,focus:'board'},busy=false,sel=-1,hintIdx=-1,ctx,toastTimer;
 const seasonOf=m=>Math.floor(m/LEN)%4,yearOf=m=>Math.floor(m/(LEN*4))+1;
 const inBeam=(i,b)=>!!b&&(b.t==='row'?Math.floor(i/4)===b.n:i%4===b.n);
 const nbrs=i=>[i%4>0?i-1:-1,i%4<3?i+1:-1,i-4,i+4].filter(j=>j>=0&&j<16);
@@ -285,22 +318,23 @@ function clean(s){if(!s||!validGrid(s.grid))return null;
   beam:s.beam&&(s.beam.t==='row'||s.beam.t==='col')&&[0,1,2,3].includes(s.beam.n)?{t:s.beam.t,n:s.beam.n}:null,done:!!s.done}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY)),run=clean(s);if(run){run.done=run.basket.length>=SLOTS;const u=clean(s.undo);
-   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,
+   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,focus:s.focus==='garden'?'garden':'board',
     found:Array.isArray(s.found)?s.found.filter(pow2):[2,4],
     garden:Array.from({length:PLOTS},(_,i)=>Array.isArray(s.garden)&&validItem(s.garden[i])?{v:s.garden[i].v,pts:s.garden[i].pts}:null)};ok=true}}catch(e){}
  // Blooms discovered in the earlier version stay discovered.
  if(!ok)try{const o=JSON.parse(localStorage.getItem('bloom2048.v1')||'null');if(o&&Array.isArray(o.found))state.found=[...new Set([2,4,...o.found.filter(pow2)])];if(o)state.mute=!!o.mute}catch(e){}
  return ok}
 
+// Tiles sit in percentages of their own size, so the board can resize mid-transition without a rebuild.
 let cell=90,step=100;
-function measure(){const w=board.clientWidth,g=parseFloat(getComputedStyle(board).getPropertyValue('--gap'))||10;cell=(w-3*g)/4;step=cell+g;board.style.setProperty('--cell',cell+'px')}
-const pos=(el,i)=>el.style.transform=`translate(${(i%4)*step}px,${Math.floor(i/4)*step}px)`;
+function measure(){const w=board.clientWidth,g=parseFloat(getComputedStyle(board).getPropertyValue('--gap'))||10;cell=(w-3*g)/4;step=cell+g}
+const pos=(el,i)=>el.style.transform=`translate(calc(${i%4}*(100% + var(--gap))),calc(${Math.floor(i/4)}*(100% + var(--gap))))`;
 function tile(v,i,kind){const t=tierOf(v),ice=state.frozen.includes(i),el=document.createElement('div');el.className='tile '+kind+(t.night?' night':'')+(ice?' frozen':'');el.dataset.index=i;el.setAttribute('role','img');el.setAttribute('aria-label',`${t.name}, ${v}${ice?', frozen':''}, row ${Math.floor(i/4)+1} column ${i%4+1}`);
  el.style.cssText+=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge};--ns:${String(v).length>=4?.12:String(v).length===3?.135:.15}`;
  el.innerHTML=`<div class="face"><img alt="" src="${sprite(t)}"><span class="num">${v}</span>${ice?'<i class="ice"></i>':''}</div>`;pos(el,i);return el}
 const biggest=()=>state.grid.reduce((a,v,i)=>v>(state.grid[a]||0)?i:a,0);
 
-const seaEls=SEASONS.map((s,k)=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`<img alt="" src="${icon(s)}"><i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
+const seaEls=SEASONS.map(s=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`<img alt="" src="${icon(s)}"><i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
 function renderSeasons(){const m=state.moves,s=seasonOf(m),sm=m%LEN;$('yr').textContent='Y'+yearOf(m);
  seaEls.forEach((el,k)=>{el.classList.toggle('now',k===s);el.classList.toggle('past',k<s);el.querySelector('.fill').style.width=(k<s?100:k===s?Math.max(5,sm/LEN*100):0)+'%'});
  document.documentElement.style.setProperty('--accent',SEASONS[s].c);
@@ -312,21 +346,21 @@ function renderBasket(){const box=$('basket'),n=state.basket.length;box.replaceC
   box.append(b)}}
 // Selection + hint paint without rebuilding tiles.
 function paintSel(){const room=!state.done&&state.basket.length<SLOTS;if(!room||!state.grid[sel])sel=-1;
- const jam=room&&!canMove(),big=biggest(),hint=room&&sel<0&&(jam||(!state.picked&&state.grid[big]>=32))?big:-1;
- layer.querySelectorAll('.tile').forEach(el=>{const i=+el.dataset.index;el.classList.toggle('sel',i===sel);el.classList.toggle('hint',i===hint)});
- const next=$('basket').querySelector('.next');if(next){const autumn=seasonOf(state.moves)===2;next.classList.toggle('pulse',hint>=0);
+ const jam=room&&!canMove(),big=biggest();hintIdx=room&&sel<0&&(jam||(!state.picked&&state.grid[big]>=32))?big:-1;
+ layer.querySelectorAll('.tile').forEach(el=>{const i=+el.dataset.index;el.classList.toggle('sel',i===sel);el.classList.toggle('hint',i===hintIdx)});
+ const next=$('basket').querySelector('.next');if(next){const autumn=seasonOf(state.moves)===2;next.classList.toggle('pulse',hintIdx>=0);
   if(sel>=0){const v=state.grid[sel];next.innerHTML=`<img alt="" src="${sprite(tierOf(v))}"><span>+${fmt(v*(autumn?2:1))}</span>`}else next.innerHTML=autumn?'<em>×2</em>':''}
- if(jam&&sel<0)$('live').textContent='No moves left. Pick a bloom for the basket.'}
-function render(spawned=-1,merged=[],sunny=[],iced=-1){measure();layer.replaceChildren();
+ if(jam&&sel<0)$('live').textContent='No moves left. Pick a bloom for the basket.';isoKick(0)}
+function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
- const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b)bm.style.cssText=b.t==='row'?`left:-3px;top:${b.n*step-3}px;width:calc(100% + 6px);height:${cell+6}px`:`top:-3px;left:${b.n*step-3}px;height:calc(100% + 6px);width:${cell+6}px`;
+ const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b){bm.className='beam '+b.t;bm.style.setProperty('--n',b.n)}
  $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;$('new').disabled=busy||state.done;
  $('sound').textContent=state.mute?'Muted':'Sound';$('sound').setAttribute('aria-pressed',String(!state.mute));
  $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
 function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
  const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovUndo').hidden=!state.undo;
  if(was){$('live').textContent=`Basket full. Harvest ${t}.`;$('plant').focus()}}
-function burst(i,v,sun){if(reduce.matches)return;const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2,n=sun?14:7;for(let k=0;k<n;k++){const a=k/n*Math.PI*2+Math.random()*.6,d=cell*((sun?.6:.42)+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-2.5}px;top:${cy-2.5}px;--c:${sun&&k%2?'#F2C94C':k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
+function burst(i,v,sun){if(reduce.matches)return;measure();const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2,n=sun?14:7,z=Math.max(3,Math.min(5,cell/14));for(let k=0;k<n;k++){const a=k/n*Math.PI*2+Math.random()*.6,d=cell*((sun?.6:.42)+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-z/2}px;top:${cy-z/2}px;width:${z}px;height:${z}px;--c:${sun&&k%2?'#F2C94C':k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
 function flashPlus(n){const s=document.createElement('div');s.className='plus';s.textContent='+'+fmt(n);$('score').parentNode.append(s);setTimeout(()=>s.remove(),800)}
 function toast(html,ms=2400){const el=$('toast');el.innerHTML=html;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,ms)}
 function discover(v){const t=tierOf(v);toast(`<div class="swatch" style="background:${t.bg}"><img alt="" src="${sprite(t)}"></div><div><small>NEW BLOOM · ${v}</small><b>${t.name}</b></div>`);sound('chime')}
@@ -346,14 +380,15 @@ function sound(kind,tier=2){if(state.mute)return;const n=Math.log2(tier)-1;
  if(kind==='season')MOTIF[tier].forEach((k,i)=>tone(note(5+k),i*.14,.7,.024,'sine'));
  if(kind==='frost'){tone(1760,0,.12,.014,'sine');tone(2349,.07,.18,.01,'sine')}
  if(kind==='select')tone(392,0,.06,.014,'sine');
+ if(kind==='swap')tone(523,0,.07,.012,'sine');
  if(kind==='pick'){tone(note(n+2),0,.25);tone(note(n+4),.08,.3,.024,'sine');tone(note(n+7),.16,.45,.02,'sine')}
  if(kind==='plant')[0,2,4,5,7,9].forEach((k,i)=>tone(note(5+k),i*.11,.8,.026,'sine'))}
 const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 
 function move(dir){if(busy||state.done)return false;sel=-1;const nx=plan(state.grid,dir,state.frozen,state.beam);if(!nx.changed){paintSel();return false}unlockAudio();
- state.undo=snap();state.grid=nx.grid;
+ const old=state.grid,walls=state.frozen.slice();state.undo=snap();state.grid=nx.grid;
  nx.merged.forEach(i=>nbrs(i).forEach(j=>{const k=state.frozen.indexOf(j);if(k>=0)state.frozen.splice(k,1)}));
- const sp=spawn(state.grid),fresh=[...new Set(nx.merged.map(i=>nx.grid[i]))].filter(v=>!state.found.includes(v));state.found.push(...fresh);
+ const sp=spawn(state.grid),news=[...new Set(nx.merged.map(i=>nx.grid[i]))].filter(v=>!state.found.includes(v));state.found.push(...news);
  // Time passes: one move closer to the next season.
  const was=seasonOf(state.moves);state.moves++;const s=seasonOf(state.moves),sm=state.moves%LEN,turned=s!==was;let iced=-1;
  if(turned){if(s===0)state.frozen=[];if(s!==1)state.beam=null}
@@ -361,14 +396,15 @@ function move(dir){if(busy||state.done)return false;sel=-1;const nx=plan(state.g
  if(s===3&&sm%6===0&&state.frozen.length<3)iced=freeze();
  save();busy=true;$('undo').disabled=$('new').disabled=true;
  nx.motions.forEach(({from,to})=>{const el=layer.querySelector(`[data-index="${from}"]`);if(el)pos(el,to)});
+ isoMove(old,nx,walls,sp);
  const top=Math.max(2,...nx.merged.map(i=>nx.grid[i]));sound(nx.sunny.length?'sun':nx.merged.length?'merge':'slide',top);if(nx.merged.length)buzz(8);
  const finish=()=>{busy=false;render(sp,nx.merged,nx.sunny,iced);nx.merged.forEach(i=>burst(i,nx.grid[i],nx.sunny.includes(i)));
-  if(iced>=0)sound('frost');if(turned)announce(s);else if(fresh.length)discover(Math.max(...fresh))};
+  if(iced>=0)sound('frost');if(turned)announce(s);else if(news.length)discover(Math.max(...news))};
  if(reduce.matches)finish();else setTimeout(finish,115);return true}
 // Pick a bloom off the board into the basket. Only picked blooms score; autumn doubles them.
 function harvest(i){if(busy||state.done||!state.grid[i]||state.basket.length>=SLOTS)return;unlockAudio();
  const v=state.grid[i],pts=v*(seasonOf(state.moves)===2?2:1),el=layer.querySelector(`[data-index="${i}"]`),r0=el&&el.getBoundingClientRect();
- state.undo=snap();state.basket.push({v,pts});state.grid[i]=0;state.frozen=state.frozen.filter(j=>j!==i);state.picked=true;sel=-1;
+ state.undo=snap();state.basket.push({v,pts});state.grid[i]=0;state.frozen=state.frozen.filter(j=>j!==i);state.picked=true;sel=-1;mv=null;
  if(state.grid.every(x=>!x)){spawn(state.grid);spawn(state.grid)}
  if(state.basket.length>=SLOTS)state.done=true;save();
  const fly=el&&!reduce.matches?el.cloneNode(true):null;render();sound('pick',v);buzz(12);flashPlus(pts);
@@ -377,64 +413,95 @@ function harvest(i){if(busy||state.done||!state.grid[i]||state.basket.length>=SL
   requestAnimationFrame(()=>requestAnimationFrame(()=>fly.style.transform=`translate(${r1.left-r0.left}px,${r1.top-r0.top}px) scale(${r1.width/r0.width})`));
   setTimeout(()=>{fly.remove();const s2=$('basket').children[state.basket.length-1];if(s2){s2.classList.remove('incoming');s2.classList.add('landed')}},350)}
  if(!state.done)$('live').textContent=`Picked ${tierOf(v).name} for ${pts}. ${SLOTS-state.basket.length} basket slots left.`}
+// A tap chooses a bloom; a second tap on it (or on the basket) picks it. Shared by the board and the garden.
+function tapCell(i){if(busy||state.done)return;if(i<0||!state.grid[i]||state.basket.length>=SLOTS){sel=-1;paintSel()}else if(sel===i)harvest(i);else{sel=i;unlockAudio();sound('select');paintSel()}}
 function slotTap(){if(sel>=0)harvest(sel);else{sel=biggest();if(!state.grid[sel])sel=-1;sound('select');paintSel()}}
 // The basket goes into the garden: fill empty plots first, then outgrow the smallest plant.
 const ORDER=(()=>{const a=[...Array(PLOTS).keys()];let r=7;for(let i=PLOTS-1;i>0;i--){r=(r*1103515245+12345)&0x7fffffff;const j=r%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a})();
 function commit(){const placed=[],t=total();state.basket.forEach(it=>{let k=ORDER.find(p=>!state.garden[p]);
   if(k===undefined){const min=ORDER.reduce((a,p)=>state.garden[p].pts<state.garden[a].pts?p:a,ORDER[0]);if(it.pts>state.garden[min].pts)k=min}
   if(k!==undefined){state.garden[k]={v:it.v,pts:it.pts};placed.push(k)}});state.best=Math.max(state.best,t);return placed}
-function startRun(){state={...state,grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false};sel=-1;spawn(state.grid);spawn(state.grid);save();render()}
-function newGame(){if(busy)return;if(state.basket.length)commit();startRun();board.focus({preventScroll:true})}
-function plant(){if(busy||!state.done)return;unlockAudio();const placed=commit();startRun();sound('plant');openGarden(placed)}
-function undo(){if(busy||!state.undo)return;Object.assign(state,state.undo,{undo:null});sel=-1;save();render();board.focus({preventScroll:true})}
+function startRun(){state={...state,grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false};sel=-1;mv=null;spawn(state.grid);spawn(state.grid);save();render()}
+function newGame(){if(busy)return;const placed=state.basket.length?commit():[];startRun();isoPlant(placed);board.focus({preventScroll:true})}
+function plant(){if(busy||!state.done)return;unlockAudio();const placed=commit();startRun();sound('plant');setFocus('garden');isoPlant(placed);$('iso').focus({preventScroll:true})}
+function undo(){if(busy||!state.undo)return;Object.assign(state,state.undo,{undo:null});sel=-1;mv=null;save();render()}
 
-// Garden: an isometric plot that keeps every harvest. Pixel-stepped 2:1 diamonds on a 200×146 canvas.
-const G=6,TW=32,TH=16,DEPTH=9,PW=200,PH=146,TOP=34;
-const plotXY=p=>{const gx=p%G,gy=Math.floor(p/G);return[PW/2+(gx-gy)*TW/2,TOP+(gx+gy)*TH/2+TH/2]};
+// Which pane is large. Touching a compact pane only brings it forward; the gesture itself is not played.
+function applyFocus(){const g=state.focus==='garden';$('paneBoard').classList.toggle('on',!g);$('paneGarden').classList.toggle('on',g)}
+function setFocus(f){if(state.focus===f)return;state.focus=f;applyFocus();unlockAudio();sound('swap');save()}
+$('paneBoard').addEventListener('pointerdown',()=>setFocus('board'));
+$('paneGarden').addEventListener('pointerdown',()=>setFocus('garden'));
+
+// Live isometric garden. An 8×8 island on a 264×180 canvas: the middle 4×4 bed is this year's board, mirrored move for move;
+// the 48 plots around it keep every harvest. Pixel-stepped 2:1 diamonds, plants at 2× their tile sprite.
+const G=8,B0=2,TW=32,TH=16,DEPTH=9,PW=264,PH=180,TOP=36;
+const iso=$('iso'),ix=iso.getContext('2d'),gnd=document.createElement('canvas');gnd.width=PW;gnd.height=PH;
+const cellXY=(gx,gy)=>[PW/2+(gx-gy)*TW/2,TOP+(gx+gy)*TH/2+TH/2],bedXY=i=>cellXY(B0+i%4,B0+Math.floor(i/4));
+const inBed=(gx,gy)=>gx>=B0&&gx<B0+4&&gy>=B0&&gy<B0+4;
+const RING=[];for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++)if(!inBed(gx,gy))RING.push([gx,gy]);
+// Grass per season: two checker tones and a tuft color.
+const GRASS=[['#3B5C48','#365441','#4F7A62'],['#47683F','#41603A','#6A9152'],['#5C5838','#545033','#8A7240'],['#4E5969','#475262','#DCE6EE']];
+let gndKey='',mv=null,grow=null,isoUntil=0,isoRaf=0;
 function diamond(x,cx,cy,l,r){for(let k=0;k<TH;k++){const h=(k<TH/2?k+1:TH-k)*2;x.fillStyle=l;x.fillRect(cx-h,cy-TH/2+k,h,1);x.fillStyle=r;x.fillRect(cx,cy-TH/2+k,h,1)}}
-function drawPlant(x,t,cx,cy,dy,a){const art=ART[t.art];let last=0;art.forEach((row,r)=>{if([...row].some(ch=>ch!=='.'&&ch!=='d'))last=r});
- const float=t.art==='moonrise',y0=Math.round(cy+(float?-6:3)-(last+1)*2+dy);x.globalAlpha=a*.3;x.fillStyle='#000';x.fillRect(cx-7,cy+1,14,3);x.globalAlpha=a;
- art.forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.'||ch==='d')return;x.fillStyle=inkOf(t,ch);x.fillRect(cx-12+col*2,y0+r*2,2,2)}));x.globalAlpha=1}
-let plotAnim=0;
-function drawGarden(newIdx=[]){const x=$('plot').getContext('2d'),t0=performance.now();cancelAnimationFrame(plotAnim);
- const frame=now=>{x.clearRect(0,0,PW,PH);
-  for(let p=0;p<PLOTS;p++){const gx=p%G,gy=Math.floor(p/G);if(gx!==G-1&&gy!==G-1)continue;const[cx,cy]=plotXY(p);for(let d=DEPTH;d>0;d--)diamond(x,cx,cy+d,d>DEPTH-2?'#2C2030':'#3D2C32',d>DEPTH-2?'#35273A':'#4B363A')}
-  for(let p=0;p<PLOTS;p++){const gx=p%G,gy=Math.floor(p/G),[cx,cy]=plotXY(p),it=state.garden[p],alt=(gx+gy)%2;
-   diamond(x,cx,cy,alt?'#3B5C48':'#365441',alt?'#3B5C48':'#365441');
-   if(it){x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7)}
-   else{x.fillStyle='#47705A';x.fillRect(cx-6+(p*7)%9,cy-1+(p*3)%3,1,2);x.fillRect(cx+2-(p*5)%7,cy+1-(p%2),1,2)}}
-  let moving=false;
-  for(let p=0;p<PLOTS;p++){const it=state.garden[p];if(!it)continue;const[cx,cy]=plotXY(p),n=newIdx.indexOf(p);let dy=0,a=1;
-   if(n>=0&&!reduce.matches){const k=(now-t0-300-n*170)/380;if(k<0){moving=true;continue}if(k<1){moving=true;a=Math.min(1,k*3);dy=-Math.round(Math.sin(k*Math.PI)*8+(1-k)*6)}}
-   drawPlant(x,tierOf(it.v),cx,cy,dy,a)}
-  if(moving)plotAnim=requestAnimationFrame(frame)};frame(t0)}
-function openGarden(newIdx=[],toAlmanac){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>a+b.pts,0);
- $('gCount').textContent=`${n.length} OF ${PLOTS} PLOTS · ${fmt(sum)}`;$('plot').setAttribute('aria-label',`Your garden: ${n.length} plants worth ${sum}`);
+function drawGround(){const s=seasonOf(state.moves),key=s+'|'+state.garden.map(g=>g?1:0).join('');if(key===gndKey)return;gndKey=key;const x=gnd.getContext('2d'),[ga,gb,gt]=GRASS[s];x.clearRect(0,0,PW,PH);
+ for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++){if(gx!==G-1&&gy!==G-1)continue;const[cx,cy]=cellXY(gx,gy);for(let d=DEPTH;d>0;d--)diamond(x,cx,cy+d,d>DEPTH-2?'#2C2030':'#3D2C32',d>DEPTH-2?'#35273A':'#4B363A')}
+ for(let gy=0;gy<G;gy++)for(let gx=0;gx<G;gx++){const[cx,cy]=cellXY(gx,gy),alt=(gx+gy)%2,p=gy*G+gx;
+  if(inBed(gx,gy)){const c=alt?'#5A453D':'#503D36';diamond(x,cx,cy,c,c);x.fillStyle='#3F302B';x.fillRect(cx-4,cy,8,1)}
+  else{const c=alt?ga:gb;diamond(x,cx,cy,c,c);x.fillStyle=gt;x.fillRect(cx-6+(p*7)%9,cy-1+(p*3)%3,1,2);x.fillRect(cx+2-(p*5)%7,cy+1-(p%2),1,2)}}
+ state.garden.forEach((it,k)=>{if(!it)return;const[cx,cy]=cellXY(...RING[k]);x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7)})}
+const plantCache={};
+function plantCv(t,ice){const k=t.v+(ice?'i':'');if(plantCache[k])return plantCache[k];const c=document.createElement('canvas');c.width=c.height=24;const x=c.getContext('2d');let last=0;
+ ART[t.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.'||ch==='d')return;last=r;const ink=inkOf(t,ch);x.fillStyle=ice?mix(ink,'#D6EEFA',.6):ink;x.fillRect(col*2,r*2,2,2)}));
+ return plantCache[k]={c,last,float:t.art==='moonrise'}}
+function drawPlant(x,v,cx,cy,dy,a,ice){const p=plantCv(tierOf(v),ice);cx=Math.round(cx);cy=Math.round(cy);x.globalAlpha=a*.3;x.fillStyle='#000';x.fillRect(cx-7,cy+1,14,3);x.globalAlpha=a;x.drawImage(p.c,cx-12,cy+(p.float?-6:3)-(p.last+1)*2+dy);x.globalAlpha=1}
+function isoDraw(now){drawGround();const x=ix,acc=SEASONS[seasonOf(state.moves)].c;x.clearRect(0,0,PW,PH);x.drawImage(gnd,0,0);
+ if(state.beam)for(let i=0;i<16;i++)if(inBeam(i,state.beam)){const[cx,cy]=bedXY(i);x.globalAlpha=.34;diamond(x,cx,cy,'#F2C94C','#F2C94C');x.globalAlpha=1}
+ const mark=sel>=0?sel:hintIdx;if(mark>=0&&state.grid[mark]){const[cx,cy]=bedXY(mark);x.globalAlpha=sel>=0?.8:.4+.25*Math.sin(now/240);diamond(x,cx,cy,acc,acc);x.globalAlpha=1}
+ const list=[];
+ state.garden.forEach((it,k)=>{if(!it)return;const[cx,cy]=cellXY(...RING[k]);let dy=0,a=1;const n=grow?grow.idx.indexOf(k):-1;
+  if(n>=0){const q=(now-grow.t0-250-n*150)/380;if(q<0)return;if(q<1){a=Math.min(1,q*3);dy=-Math.round(Math.sin(q*Math.PI)*8+(1-q)*6)}}list.push([cy,cx,it.v,dy,a,false])});
+ const q=mv?(now-mv.t0)/mv.dur:2;
+ if(mv&&q<1){const e=q*q*(3-2*q);mv.list.forEach(m=>{const a=bedXY(m.from),b=bedXY(m.to);list.push([a[1]+(b[1]-a[1])*e,a[0]+(b[0]-a[0])*e,mv.old[m.from],0,1,m.ice])})}
+ else state.grid.forEach((v,i)=>{if(!v)return;const[cx,cy]=bedXY(i);let dy=0,a=1;
+  if(mv){const k=(now-mv.t0-mv.dur)/260;if(k<1){if(mv.merged.includes(i))dy=-Math.round(Math.sin(k*Math.PI)*(mv.sunny.includes(i)?10:5));else if(i===mv.sp)a=Math.min(1,.1+k*1.8)}}
+  list.push([cy,cx,v,dy,a,state.frozen.includes(i)])});
+ list.sort((a,b)=>a[0]-b[0]).forEach(p=>drawPlant(x,p[2],p[1],p[0],p[3],p[4],p[5]))}
+function isoLoop(now){isoRaf=0;isoDraw(now);if(now<isoUntil||(hintIdx>=0&&sel<0&&!reduce.matches&&$('scrim').hidden))isoRaf=requestAnimationFrame(isoLoop)}
+function isoKick(ms){isoUntil=Math.max(isoUntil,performance.now()+ms);if(!isoRaf)isoRaf=requestAnimationFrame(isoLoop)}
+function isoMove(old,nx,walls,sp){if(reduce.matches){mv=null;return}mv={old,list:[...nx.motions.map(m=>({...m,ice:false})),...walls.map(i=>({from:i,to:i,ice:true}))],merged:nx.merged,sunny:nx.sunny,sp,t0:performance.now(),dur:120};isoKick(420)}
+function isoPlant(idx){if(!idx.length||reduce.matches){grow=null;isoKick(0);return}grow={idx,t0:performance.now()};isoKick(700+idx.length*150)}
+// The garden plays too. Its grid is turned 45°, so swipes run along the diagonals: up-right is the board's up, down-right its right.
+let gp=null;iso.addEventListener('pointerdown',e=>{if(!e.isPrimary||state.focus!=='garden')return;gp={x:e.clientX,y:e.clientY,id:e.pointerId};try{iso.setPointerCapture(e.pointerId)}catch(_){}});
+iso.addEventListener('pointerup',e=>{if(!gp||gp.id!==e.pointerId)return;const dx=e.clientX-gp.x,dy=e.clientY-gp.y,d=Math.hypot(dx,dy);gp=null;
+ if(d>=22)return void move(dx>0?(dy<0?'up':'right'):(dy>0?'down':'left'));if(d>8)return;
+ const r=iso.getBoundingClientRect(),lx=(e.clientX-r.left)/r.width*PW,ly=(e.clientY-r.top)/r.height*PH+11,u=(lx-PW/2)/(TW/2),w=(ly-TOP)/(TH/2),gx=Math.floor((u+w)/2),gy=Math.floor((w-u)/2);
+ tapCell(inBed(gx,gy)?(gy-B0)*4+gx-B0:-1)});
+iso.addEventListener('pointercancel',()=>gp=null);
+
+function openAlmanac(){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>a+b.pts,0);
+ $('gCount').textContent=`${n.length} OF ${PLOTS} PLANTED · ${fmt(sum)}`;
  $('almanac').innerHTML=SEASONS.map(s=>`<div class="alm"><img alt="" src="${icon(s)}"><div><b>${s.name.toUpperCase()}</b><span>${s.rule}</span></div></div>`).join('');
  const box=$('journal');box.replaceChildren();let got=0;
  TIERS.forEach(t=>{const has=state.found.includes(t.v)||state.found.some(v=>v>4096&&t.v===4096);if(has)got++;const e=document.createElement('div');e.className='entry'+(has?'':' locked');
   e.innerHTML=`<div class="pic" style="${has?'--bg:'+t.bg:''}"><img alt="" src="${sprite(t,!has)}"></div><b>${has?t.name:t.v}</b>`;box.append(e)});
- $('jCount').textContent=`${got} OF ${TIERS.length} BLOOMS`;$('scrim').hidden=false;drawGarden(newIdx);
- const sh=document.querySelector('.sheet');sh.scrollTop=0;if(toAlmanac)$('almanac').scrollIntoView({block:'center'});$('gClose').focus({preventScroll:true})}
-function closeGarden(){$('scrim').hidden=true;cancelAnimationFrame(plotAnim);board.focus({preventScroll:true})}
+ $('jCount').textContent=`${got} OF ${TIERS.length} BLOOMS`;$('scrim').hidden=false;document.querySelector('.sheet').scrollTop=0;$('gClose').focus({preventScroll:true})}
+function closeAlmanac(){$('scrim').hidden=true;board.focus({preventScroll:true});isoKick(0)}
 
 $('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
 $('sound').onclick=()=>{state.mute=!state.mute;unlockAudio();save();render()};
-$('gardenBtn').onclick=()=>openGarden();$('seasons').onclick=()=>openGarden([],true);$('gClose').onclick=closeGarden;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGarden()});
+$('almanacBtn').onclick=openAlmanac;$('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
 // With a bloom chosen, arrows walk the choice between blooms instead of sliding the board.
 function walk(dir){const c=sel%4,r=Math.floor(sel/4);let best=-1,bd=99;state.grid.forEach((v,i)=>{if(!v||i===sel)return;const dc=i%4-c,dr=Math.floor(i/4)-r,along=dir==='left'?-dc:dir==='right'?dc:dir==='up'?-dr:dr,across=dir==='left'||dir==='right'?Math.abs(dr):Math.abs(dc);if(along<=0)return;const d=along+across*2;if(d<bd){bd=d;best=i}});if(best>=0){sel=best;sound('select');paintSel()}}
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('scrim').hidden){if(e.key==='Escape')closeGarden();return}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
  const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
+ if(k==='g'){setFocus(state.focus==='garden'?'board':'garden');return}
  if(sel>=0){if(keys[k]){e.preventDefault();walk(keys[k])}else if((k==='Enter'||k===' ')&&!onBtn){e.preventDefault();harvest(sel)}else if(k==='Escape'||k==='h'){sel=-1;paintSel()}return}
  if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo();else if((k==='h'||k==='Enter')&&!onBtn&&!state.done){e.preventDefault();slotTap()}});
-let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
+let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary||state.focus!=='board')return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
 board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,d=Math.max(Math.abs(dx),Math.abs(dy));ptr=null;
- if(d>=22)return void move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
- if(d>8||busy||state.done)return;
- // A tap chooses a bloom; a second tap on it (or on the basket) picks it.
- const r=board.getBoundingClientRect(),i=Math.min(3,Math.max(0,Math.floor((e.clientY-r.top)/step)))*4+Math.min(3,Math.max(0,Math.floor((e.clientX-r.left)/step)));
- if(!state.grid[i]||state.basket.length>=SLOTS){sel=-1;paintSel()}else if(sel===i)harvest(i);else{sel=i;unlockAudio();sound('select');paintSel()}});
+ if(d>=22)return void move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));if(d>8)return;
+ measure();const r=board.getBoundingClientRect();tapCell(Math.min(3,Math.max(0,Math.floor((e.clientY-r.top)/step)))*4+Math.min(3,Math.max(0,Math.floor((e.clientX-r.left)/step))))});
 board.addEventListener('pointercancel',()=>ptr=null);
 for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';document.querySelector('.cells').append(c)}
 
@@ -452,8 +519,8 @@ for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';d
   x.globalAlpha=1;if(!still)requestAnimationFrame(draw)}
  size();addEventListener('resize',size);requestAnimationFrame(draw)})();
 
-new ResizeObserver(()=>{if(!busy)render()}).observe(board);
 if(load())render();else startRun();
+applyFocus();
 </script>
 </body>
 </html>
