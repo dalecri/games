@@ -157,8 +157,8 @@ button[aria-pressed="false"]{color:var(--muted)}
   .seasons{grid-template-columns:auto repeat(4,auto);justify-content:space-between;gap:6px;padding:0 10px;min-height:36px}
   .sea .track{display:none}.sea.now .track{display:block;flex:none;width:30px}
   .help{width:36px;min-height:36px}
-  /* Garden on the left, then the basket, then the board on the right under the scores. */
-  .gpane{order:1}.basket{order:2}.bpane{order:3}
+  /* Garden on the left, then the board, with the basket down the right edge under the scores. */
+  .gpane{order:1}.bpane{order:2}.basket{order:3}
   /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
   .stage{flex-direction:row;gap:16px;container-type:size}
   .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
@@ -246,7 +246,7 @@ button[aria-pressed="false"]{color:var(--muted)}
 #isoBigA{font-size:calc(100cqw/24.6);width:max-content;margin:0 auto;padding:14px 0 22px;cursor:default}#isoBigA [data-cat]{cursor:pointer}
 .ascii .aa,.ascii .ga{display:block}.ascii .ag{display:inline-block}
 .ascii .face img,.ascii .slot img,.ascii .mt img,.ascii .pic img,.ascii .swatch img,.ascii .sea img,.ascii .alm img,.ascii #iso,.ascii #isoBig,.ascii .badge{display:none}
-.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:10px;margin-bottom:22%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
+.ascii .face .aa{--as:calc((100cqw - 3*var(--gap))/4*.176);align-self:end;margin:0 0 8%}.ascii .slot .aa{--as:9px;margin-bottom:20%}.ascii .mt .aa{--as:8px;margin-top:6%}.ascii .mt b{display:none}.ascii .d-top .mt .aa{--as:4.5px;margin:0}.ascii .pic .aa{--as:11px}.ascii .swatch .aa{--as:8px}
 /* The drawings sway from the soil and their bright spots twinkle. Frost holds a bloom still. */
 .ascii .aa{transform-origin:50% 100%;animation:sway 4s ease-in-out var(--ph,0ms) infinite}
 .ascii .aa .tw{animation:tw 1.6s steps(1) var(--ph,0ms) infinite}
