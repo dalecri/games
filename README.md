@@ -22,7 +22,7 @@ Seventeen tiny browser games in one repo. Every game is a single self-contained 
 | Tether | [tether-game/](tether-game/) | A one-thumb tether arcade game |
 | Drop | [drop-game/](drop-game/) | Shift gravity and dodge the crusher |
 
-| Cozy 2048 | [cozy-2048/](cozy-2048/) | A cozy retro 2048 with ASCII block-digit tiles. |
+| 2048 Bloom | [cozy-2048/](cozy-2048/) | A pixel-garden 2048 with seasons: sunbeams, frost, five picks a year, and an isometric garden that keeps every harvest. |
 
 | Retro Rubic | [rubics-cube/](rubics-cube/) | A playable Rubik's cube in the browser. |
 | TIDE-AGE | [tide-age/](tide-age/) | A DOS-glyph roguelike in a drowned fen: ten classes, five-day expeditions and daily challenges, and the Drowned Warden who hunts by night. v2 adds a live tide, lantern lighting and FM bell audio. |

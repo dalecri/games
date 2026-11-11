@@ -10,11 +10,11 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
 <style>
 @font-face{font-family:'Alpha Lyrae';font-style:normal;font-weight:500;font-display:swap;src:url('https://heycristobal.com/my-style-guide/assets/fonts/AlphaLyrae-Medium.woff2') format('woff2')}
-/* Layout: one centered column, board as the hero; Quiet Pixel night ground, pastel tiles are the only loud color */
+/* Quiet Pixel v3 night ground. The one accent follows the season: dawn (spring), sun (summer), lamp (autumn), moon (winter). */
 :root{
   color-scheme:dark;
   --void:#1E1826;--surface:#2A2233;--surface-2:#251F2D;--line:#3D3448;
-  --text:#EDE7F2;--muted:#9B8FA8;--moon:#B9A9D9;--ring:rgba(185,169,217,.16);
+  --text:#EDE7F2;--muted:#9B8FA8;--accent:#7FB8D9;
   --display:'Alpha Lyrae','Space Mono',ui-monospace,monospace;
   --ui:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --ease:cubic-bezier(.4,0,.2,1);
@@ -22,131 +22,193 @@
 }
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{height:100%}
-body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,#b9a9d914,transparent 70%),var(--void);color:var(--text);font-family:var(--ui);
-  -webkit-user-select:none;user-select:none;overflow-x:hidden;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px}
-#fireflies{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
-main{position:relative;z-index:1;width:min(100%,440px);margin:0 auto;display:flex;flex-direction:column;gap:18px}
+body{margin:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%),var(--void);color:var(--text);font-family:var(--ui);
+  -webkit-user-select:none;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px}
+#weather{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+main{position:relative;z-index:1;width:min(100%,440px,max(280px,calc(100dvh - 318px)));margin:0 auto;display:flex;flex-direction:column;gap:14px}
 
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .badge{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
 .badge img{width:30px;height:30px;image-rendering:pixelated}
-h1{font-family:var(--display);font-weight:500;font-size:clamp(28px,7.5vw,38px);letter-spacing:.04em;margin:0;line-height:1;text-wrap:balance}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(24px,7vw,34px);letter-spacing:.04em;margin:0;line-height:1;text-wrap:balance}
 .scores{display:flex;gap:8px}
-.chip{min-width:84px;padding:7px 14px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;text-align:center;position:relative}
+.chip{min-width:80px;padding:7px 12px 8px;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;text-align:center;position:relative}
 .chip span{display:block;color:var(--muted);font-size:10px;letter-spacing:.18em}
 .chip strong{display:block;font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
-.plus{position:absolute;right:10px;top:-6px;font-size:12px;font-weight:700;color:var(--moon);pointer-events:none;animation:rise .7s var(--ease) forwards}
+.plus{position:absolute;right:10px;top:-6px;font-size:12px;font-weight:700;color:var(--accent);pointer-events:none;animation:rise .8s var(--ease) forwards}
 @keyframes rise{to{opacity:0;transform:translateY(-22px)}}
+
+/* The year: four seasons, the current one filling as moves pass */
+.seasons{display:grid;grid-template-columns:auto repeat(4,1fr);align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);letter-spacing:0}
+.seasons:hover{border-color:var(--line)}
+.yr{font:700 11px var(--ui);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
+.sea{display:flex;align-items:center;gap:7px;min-width:0;opacity:.38;transition:opacity 300ms var(--ease)}
+.sea img{width:18px;height:18px;image-rendering:pixelated;flex:none}
+.sea.now{opacity:1}.sea.past{opacity:.6}
+.track{flex:1;height:4px;background:var(--line);display:block;overflow:hidden}
+.fill{display:block;height:100%;width:0;background:var(--c);transition:width 200ms var(--ease)}
 
 .panel{position:relative;padding:12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 48px #0005}
 .board{position:relative;aspect-ratio:1;max-width:100%;touch-action:none;outline:none}
-.board:focus-visible{outline:2px solid var(--moon);outline-offset:6px;border-radius:10px}
+.board:focus-visible{outline:2px solid var(--accent);outline-offset:6px;border-radius:10px}
 .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);height:100%}
-.cell{border-radius:11px;background:var(--surface-2);box-shadow:inset 0 2px 0 #0002;position:relative}
+.cell{border-radius:11px;background:color-mix(in srgb,var(--accent) 5%,var(--surface-2));box-shadow:inset 0 2px 0 #0002;position:relative;transition:background 600ms var(--ease)}
 .cell:after{content:'';position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;background:var(--line)}
 #tiles,#petals{position:absolute;inset:0;pointer-events:none}
 .tile{position:absolute;top:0;left:0;width:calc((100% - 3*var(--gap))/4);height:calc((100% - 3*var(--gap))/4);transition:transform 110ms var(--ease);will-change:transform;z-index:1}
-.face{position:relative;height:100%;border-radius:11px;background:var(--bg);box-shadow:0 3px 0 var(--edge),0 6px 14px #0003;display:grid;place-items:center;overflow:hidden}
+.face{position:relative;height:100%;border-radius:11px;background:var(--bg);box-shadow:0 3px 0 var(--edge),0 6px 14px #0003;display:grid;place-items:center;overflow:hidden;transition:transform 140ms var(--ease)}
 .face img{width:66%;height:66%;margin-top:9%;image-rendering:pixelated;image-rendering:crisp-edges}
 .num{position:absolute;left:8%;top:6%;font-weight:700;color:var(--ink);font-size:calc(var(--cell,90px)*var(--ns,.15));line-height:1;font-variant-numeric:tabular-nums}
 .spawn .face{animation:spawn 180ms var(--ease)}
 .merge .face{animation:merge 200ms var(--ease)}
+.sunny .face{animation:sunny 420ms var(--ease)}
 .night .face{animation:glow 3.2s ease-in-out infinite}
-.night.merge .face{animation:merge 200ms var(--ease),glow 3.2s ease-in-out infinite}
 @keyframes spawn{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:scale(1)}}
 @keyframes merge{50%{transform:scale(1.12)}}
+@keyframes sunny{35%{transform:scale(1.24);filter:brightness(1.35)}70%{transform:scale(.97)}}
 @keyframes glow{50%{box-shadow:0 3px 0 var(--edge),0 0 26px #b9a9d980}}
+/* Chosen for the basket, or suggested */
+.tile.sel{z-index:3}
+.sel .face{transform:translateY(-6px);box-shadow:0 0 0 3px var(--accent),0 12px 20px #0007;animation:none}
+.hint .face{animation:ring 1.5s var(--ease) infinite}
+@keyframes ring{0%{box-shadow:0 3px 0 var(--edge),0 0 0 0 var(--accent)}70%,100%{box-shadow:0 3px 0 var(--edge),0 0 0 9px transparent}}
+/* Winter frost pins a bloom in place */
+.frozen .face img{filter:saturate(.35) brightness(1.08)}
+.ice{position:absolute;inset:0;border-radius:11px;border:2px solid #D6EEFA;background:linear-gradient(135deg,#e6f5fdb0 0 16%,#bfe2f560 16% 21%,#e6f5fd45 21% 54%,#bfe2f570 54% 59%,#e6f5fd60 59%)}
+.newice .ice{animation:frost 420ms var(--ease)}
+@keyframes frost{from{opacity:0;transform:scale(1.25)}}
+/* Summer sunbeam: merges landing here grow twice */
+.beam{position:absolute;z-index:2;pointer-events:none;border-radius:13px;background:linear-gradient(120deg,#f2c94c3d,#f2c94c1a 50%,#f2c94c3d);box-shadow:0 0 0 2px #f2c94ca6,0 0 22px #f2c94c40;animation:shimmer 2.4s ease-in-out infinite;transition:top 260ms var(--ease),left 260ms var(--ease),width 260ms var(--ease),height 260ms var(--ease)}
+@keyframes shimmer{50%{opacity:.62}}
 .petal{position:absolute;width:5px;height:5px;background:var(--c);animation:burst 520ms var(--ease) forwards}
 @keyframes burst{to{transform:translate(var(--dx),var(--dy)) rotate(90deg);opacity:0}}
+.fly{position:fixed!important;z-index:40;transform-origin:0 0;transition:transform 340ms var(--ease)!important;pointer-events:none}
 
-.overlay{position:absolute;inset:0;z-index:5;border-radius:19px;background:#251f2ded;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:sheetIn 280ms var(--ease)}
-.overlay img{width:72px;height:72px;image-rendering:pixelated}
-.overlay h2{font:500 clamp(24px,7vw,34px)/1.1 var(--display);margin:0;letter-spacing:.03em;text-align:center}
+.overlay{position:absolute;inset:0;z-index:5;border-radius:19px;background:#251f2ded;backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;animation:sheetIn 280ms var(--ease)}
+.ov-label{font-size:11px;letter-spacing:.2em;color:var(--accent)}
+.ov-total{font:500 clamp(48px,17vw,76px)/1 var(--display);letter-spacing:.02em;font-variant-numeric:tabular-nums;margin-bottom:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
-button{font:700 11px var(--ui);letter-spacing:.06em;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 16px;min-height:44px;cursor:pointer;transition:transform 120ms var(--ease),border-color 200ms var(--ease),opacity 200ms}
-button:hover{border-color:var(--moon)}
+/* The basket: five picks a year, and only what is picked counts */
+.basket{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.slot{aspect-ratio:1;min-height:0;padding:0;border-radius:12px;border:1px dashed var(--line);background:transparent;position:relative;display:grid;place-items:center;overflow:hidden;color:var(--muted)}
+.slot:disabled{opacity:1}
+.slot.next{border:1px solid var(--accent);background:var(--surface-2);cursor:pointer}
+.slot.next.pulse{animation:slotring 1.5s var(--ease) infinite}
+@keyframes slotring{0%{box-shadow:0 0 0 0 var(--accent)}70%,100%{box-shadow:0 0 0 8px transparent}}
+.slot.full{border:0;background:var(--bg);box-shadow:0 3px 0 var(--edge)}
+.slot img{width:60%;image-rendering:pixelated;margin-bottom:14%}
+.slot.next img{opacity:.5}
+.slot span{position:absolute;left:0;right:0;bottom:7%;text-align:center;font:700 10px var(--ui);color:var(--ink,var(--accent));font-variant-numeric:tabular-nums;letter-spacing:0}
+.slot em{font:700 11px var(--ui);font-style:normal;color:var(--accent);letter-spacing:.04em}
+.slot.incoming>*{visibility:hidden}
+.slot.landed{animation:merge 220ms var(--ease)}
+
+button{font:700 11px var(--ui);letter-spacing:.06em;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 16px;min-height:44px;cursor:pointer;transition:transform 120ms var(--ease),border-color 200ms var(--ease),opacity 200ms,background 400ms var(--ease)}
+button:hover{border-color:var(--accent)}
 button:active{transform:scale(.96)}
-button:focus-visible{outline:2px solid var(--moon);outline-offset:3px}
-button.primary{background:var(--moon);color:#1E1826;border-color:var(--moon)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+button.primary{background:var(--accent);color:#1E1826;border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
-.controls{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:8px}
-@media(max-width:380px){.controls{grid-template-columns:1fr 1fr}}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:440px){.badge{display:none}h1{font-size:clamp(20px,6vw,26px)}.chip{min-width:70px;padding-inline:10px}header{flex-wrap:nowrap}.controls button{padding:0 6px}}
 
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--moon);box-shadow:0 12px 32px #0006}
-.toast .swatch{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--accent);box-shadow:0 12px 32px #0006;animation:toastIn 280ms var(--ease);white-space:nowrap}
+.toast .swatch{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--surface-2)}
 .toast .swatch img{width:32px;height:32px;image-rendering:pixelated}
-.toast small{display:block;font-size:10px;letter-spacing:.18em;color:var(--moon)}
+.toast small{display:block;font-size:10px;letter-spacing:.18em;color:var(--accent)}
 .toast b{display:inline-block;font:500 20px/1.2 var(--display);letter-spacing:.03em;animation:pulse 650ms var(--ease)}
-@keyframes pulse{40%{transform:scale(1.16);text-shadow:0 0 14px #b9a9d999}}
+@keyframes pulse{40%{transform:scale(1.16)}}
 @keyframes sheetIn{from{opacity:0;transform:translateY(16px)}}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,16px)}to{transform:translate(-50%,0)}}
-.toast{animation:toastIn 280ms var(--ease)}
 
 .scrim{position:fixed;inset:0;z-index:30;background:#120e18b3;display:flex;align-items:flex-end;justify-content:center;animation:fade 280ms var(--ease)}
 @keyframes fade{from{opacity:0}}
-.sheet{width:min(100%,520px);max-height:86vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));animation:sheetIn 280ms var(--ease)}
+.sheet{width:min(100%,520px);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));animation:sheetIn 280ms var(--ease)}
 @media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;border-bottom:1px solid var(--line)}}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .sheet h2{font:500 26px/1 var(--display);margin:0;letter-spacing:.03em}
-.count{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:6px}
+.count{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:6px;font-variant-numeric:tabular-nums}
 .close{width:44px;padding:0;font-size:16px}
-.journal{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(min-width:460px){.journal{grid-template-columns:repeat(4,1fr)}}
-.entry{border-radius:14px;background:var(--surface-2);border:1px solid var(--line);padding:8px 8px 10px;display:flex;flex-direction:column;gap:8px;min-width:0}
-.entry .pic{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;background:var(--bg,transparent)}
+.plot{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;margin:4px 0 14px}
+.almanac{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.alm{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
+.alm img{width:27px;height:27px;image-rendering:pixelated;flex:none}
+.alm b{display:block;font-size:11px;letter-spacing:.1em}
+.alm span{display:block;font-size:10px;color:var(--muted);line-height:1.35;margin-top:2px}
+.journal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+@media(min-width:460px){.journal{grid-template-columns:repeat(6,1fr)}}
+.entry{border-radius:12px;background:var(--surface-2);border:1px solid var(--line);padding:6px 6px 8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.entry .pic{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;background:var(--bg,var(--void))}
 .entry .pic img{width:62%;image-rendering:pixelated}
-.entry.locked .pic{background:var(--void)}
-.entry b{font-size:11px;line-height:1.25;overflow-wrap:anywhere}
-.entry span{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.entry b{font-size:10px;line-height:1.25;overflow-wrap:anywhere}
 .entry.locked b{color:var(--muted)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}}
 </style>
 </head>
 <body>
-<canvas id="fireflies" aria-hidden="true"></canvas>
+<canvas id="weather" aria-hidden="true"></canvas>
 <main>
   <header>
     <div class="brand"><div class="badge"><img id="badge" alt="" width="30" height="30"></div><h1>2048 Bloom</h1></div>
     <div class="scores">
-      <div class="chip"><span>SCORE</span><strong id="score">0</strong></div>
+      <div class="chip"><span>HARVEST</span><strong id="score">0</strong></div>
       <div class="chip"><span>BEST</span><strong id="best">0</strong></div>
     </div>
   </header>
+  <button id="seasons" class="seasons"><span class="yr" id="yr">Y1</span></button>
   <section class="panel" aria-label="Game board">
-    <div id="board" class="board" tabindex="0" role="group" aria-label="2048 Bloom board. Arrow keys, WASD or swipe to move. U to undo.">
+    <div id="board" class="board" tabindex="0" role="group" aria-label="Garden board. Arrow keys, WASD or swipe to move. H to choose a bloom for the basket, U to undo.">
       <div class="cells" aria-hidden="true"></div>
       <div id="tiles"></div>
+      <div id="beam" class="beam" hidden aria-hidden="true"></div>
       <div id="petals" aria-hidden="true"></div>
     </div>
-    <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="message">
-      <img id="ovImg" alt="">
-      <h2 id="message"></h2>
-      <div class="row"><button id="keep" class="primary">Keep growing</button><button id="ovUndo">Undo</button><button id="restart">New garden</button></div>
+    <div id="overlay" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="ovLabel">
+      <div class="ov-label" id="ovLabel"></div>
+      <div class="ov-total" id="ovTotal"></div>
+      <div class="row"><button id="plant" class="primary">Plant</button><button id="ovUndo">Undo</button></div>
     </div>
   </section>
+  <div id="basket" class="basket" role="group" aria-label="Basket"></div>
   <div class="controls">
-    <button id="new" class="primary">New garden</button>
+    <button id="new">New</button>
     <button id="undo" disabled>Undo</button>
-    <button id="journalBtn">Journal</button>
+    <button id="gardenBtn">Garden</button>
     <button id="sound" aria-pressed="true">Sound</button>
   </div>
 </main>
 <div id="toast" class="toast" hidden role="status"></div>
 <div id="scrim" class="scrim" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="jTitle">
-    <div class="sheet-head"><div><h2 id="jTitle">Garden journal</h2><div class="count" id="jCount"></div></div><button class="close" id="jClose" aria-label="Close journal">✕</button></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gTitle">
+    <div class="sheet-head"><div><h2 id="gTitle">Garden</h2><div class="count" id="gCount"></div></div><button class="close" id="gClose" aria-label="Close garden">✕</button></div>
+    <canvas id="plot" class="plot" width="200" height="146" role="img" aria-label="Your garden"></canvas>
+    <div class="almanac" id="almanac"></div>
+    <div class="count" id="jCount"></div>
     <div class="journal" id="journal"></div>
   </div>
 </div>
 <div id="live" class="sr" aria-live="polite"></div>
 <script>
 'use strict';
-const KEY='bloom2048.v1';
+const KEY='bloom2048.v2',LEN=20,SLOTS=5,PLOTS=36;
+// A year is four seasons of LEN moves. Each season bends one rule.
+const SEASONS=[
+ {name:'Spring',c:'#7FB8D9',art:'drop',rule:'Frost thaws'},
+ {name:'Summer',c:'#F2C94C',art:'sun', rule:'Sunlit merges grow twice'},
+ {name:'Autumn',c:'#E8873A',art:'leaf',rule:'Picks count double'},
+ {name:'Winter',c:'#B9A9D9',art:'snow',rule:'Frost pins blooms'}
+];
+const ICON={
+ drop:['....x....','....x....','...xxx...','...xxx...','..xxxxx..','.xxxxxxx.','.xXxxxxx.','.xxxxxxx.','..xxxxx..'],
+ sun: ['....x....','.x.....x.','...xxx...','..xxxxx..','x.xxxxx.x','..xxxxx..','...xxx...','.x.....x.','....x....'],
+ leaf:['.........','.....xx..','...xxxxx.','..xxxXxx.','..xxXxxx.','.xxXxxx..','.xXxxx...','.Xxx.....','X........'],
+ snow:['....x....','.x..x..x.','..x.x.x..','...xxx...','xxxxxxxxx','...xxx...','..x.x.x..','.x..x..x.','....x....']
+};
 // Global sprite colors; p/P (petal + shade) and d (soil) come from each tier.
 const INK={g:'#4E8F62',l:'#86C78A',w:'#FFFFFF',y:'#F2C94C',Y:'#D99A2B',b:'#8A6455',o:'#E39A7C',O:'#C2735A',c:'#F5EBDD',m:'#FFF1BF','*':'#FFF1BF'};
 const SOIL=['.dddddddddd.','..dddddddd..'];
@@ -183,100 +245,215 @@ const tierOf=v=>TIERS.find(t=>t.v===v)||TIERS[TIERS.length-1];
 const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const mix=(a,b,k)=>'#'+hex(a).map((x,i)=>Math.round(x+(hex(b)[i]-x)*k).toString(16).padStart(2,'0')).join('');
 TIERS.forEach(t=>{t.soil=t.night?mix(t.bg,'#000000',.3):mix(t.bg,'#2B2238',.2);t.edge=t.night?mix(t.bg,'#000000',.35):mix(t.bg,'#2B2238',.28)});
+const inkOf=(t,ch,locked)=>locked?'#3D3448':ch==='p'?t.p:ch==='P'?t.P:ch==='d'?t.soil:INK[ch];
 const spriteCache={};
 function sprite(t,locked){const k=t.v+(locked?'L':'');if(spriteCache[k])return spriteCache[k];const c=document.createElement('canvas');c.width=c.height=12;const x=c.getContext('2d');
- ART[t.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=locked?'#3D3448':ch==='p'?t.p:ch==='P'?t.P:ch==='d'?t.soil:INK[ch];x.fillRect(col,r,1,1)}));
+ ART[t.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=inkOf(t,ch,locked);x.fillRect(col,r,1,1)}));
  return spriteCache[k]=c.toDataURL()}
+function icon(s){if(s.url)return s.url;const c=document.createElement('canvas');c.width=c.height=9;const x=c.getContext('2d'),dark=mix(s.c,'#1E1826',.35);
+ ICON[s.art].forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.')return;x.fillStyle=ch==='X'?dark:s.c;x.fillRect(col,r,1,1)}));return s.url=c.toDataURL()}
 const petalColor=t=>t.p||(t.art==='daisy'?'#FFFFFF':'#86C78A');
+const fmt=n=>n.toLocaleString('en-US');
 
 const $=id=>document.getElementById(id),board=$('board'),layer=$('tiles'),petals=$('petals'),reduce=matchMedia('(prefers-reduced-motion: reduce)');
-let state={grid:Array(16).fill(0),score:0,best:0,mute:false,won:false,winPending:false,undo:null,found:[2,4]},busy=false,ctx,toastTimer;
-// Move planner: traversal order plus consuming pairs prevents double merges.
-function plan(grid,dir){const out=Array(16).fill(0),motions=[],merged=[];let gain=0;
- for(let line=0;line<4;line++){const idx=Array.from({length:4},(_,n)=>dir==='left'?line*4+n:dir==='right'?line*4+3-n:dir==='up'?n*4+line:(3-n)*4+line);const occ=idx.filter(i=>grid[i]);let dest=0;
-  for(let p=0;p<occ.length;p++){const from=occ[p],to=idx[dest++];let v=grid[from];motions.push({from,to});if(p+1<occ.length&&grid[occ[p+1]]===v){motions.push({from:occ[++p],to});v*=2;gain+=v;merged.push(to)}out[to]=v}}
- return{grid:out,gain,motions,merged,changed:out.some((v,i)=>v!==grid[i])}}
-const isOver=g=>g.every(Boolean)&&g.every((v,i)=>(i%4===3||v!==g[i+1])&&(i>=12||v!==g[i+4]));
+let state={grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false,best:0,mute:false,found:[2,4],garden:Array(PLOTS).fill(null),picked:false},busy=false,sel=-1,ctx,toastTimer;
+const seasonOf=m=>Math.floor(m/LEN)%4,yearOf=m=>Math.floor(m/(LEN*4))+1;
+const inBeam=(i,b)=>!!b&&(b.t==='row'?Math.floor(i/4)===b.n:i%4===b.n);
+const nbrs=i=>[i%4>0?i-1:-1,i%4<3?i+1:-1,i-4,i+4].filter(j=>j>=0&&j<16);
+// Move planner. Frozen tiles are walls: each run of free cells slides and merges on its own.
+// A merge that lands in the sunbeam grows two stages instead of one.
+function plan(grid,dir,frozen,beam){const out=Array(16).fill(0),motions=[],merged=[],sunny=[];
+ for(let line=0;line<4;line++){const idx=Array.from({length:4},(_,n)=>dir==='left'?line*4+n:dir==='right'?line*4+3-n:dir==='up'?n*4+line:(3-n)*4+line);let slot=0,last=-1,locked=false;
+  for(let p=0;p<4;p++){const i=idx[p],v=grid[i];if(!v)continue;
+   if(frozen.includes(i)){out[i]=v;slot=p+1;last=-1;continue}
+   if(last>=0&&!locked&&out[idx[last]]===v){const to=idx[last],sun=inBeam(to,beam);out[to]=v*(sun?4:2);motions.push({from:i,to});merged.push(to);if(sun)sunny.push(to);locked=true}
+   else{const to=idx[slot];out[to]=v;motions.push({from:i,to});last=slot++;locked=false}}}
+ return{grid:out,motions,merged,sunny,changed:out.some((v,i)=>v!==grid[i])}}
+const canMove=()=>['left','right','up','down'].some(d=>plan(state.grid,d,state.frozen,null).changed);
 function spawn(g){const e=g.map((v,i)=>v?-1:i).filter(i=>i>=0);if(!e.length)return -1;const i=e[Math.floor(Math.random()*e.length)];g[i]=Math.random()<.9?2:4;return i}
-const validGrid=g=>Array.isArray(g)&&g.length===16&&g.every(v=>Number.isSafeInteger(v)&&v>=0&&(v===0||(v>=2&&Number.isInteger(Math.log2(v)))));
+function rollBeam(){let b;do{b={t:Math.random()<.5?'row':'col',n:Math.floor(Math.random()*4)}}while(state.beam&&b.t===state.beam.t&&b.n===state.beam.n);state.beam=b}
+function freeze(){const c=state.grid.map((v,i)=>v&&!state.frozen.includes(i)?i:-1).filter(i=>i>=0);if(!c.length)return -1;const i=c[Math.floor(Math.random()*c.length)];state.frozen.push(i);return i}
+const total=()=>state.basket.reduce((a,b)=>a+b.pts,0);
+const snap=()=>({grid:state.grid.slice(),frozen:state.frozen.slice(),basket:state.basket.map(b=>({...b})),moves:state.moves,beam:state.beam&&{...state.beam},done:state.done});
+
+const pow2=v=>Number.isSafeInteger(v)&&v>=2&&Number.isInteger(Math.log2(v));
+const validGrid=g=>Array.isArray(g)&&g.length===16&&g.every(v=>v===0||pow2(v));
+const validItem=b=>b&&pow2(b.v)&&Number.isSafeInteger(b.pts)&&b.pts>=b.v;
+function clean(s){if(!s||!validGrid(s.grid))return null;
+ return{grid:s.grid,frozen:(Array.isArray(s.frozen)?s.frozen:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<16&&s.grid[i]),
+  basket:(Array.isArray(s.basket)?s.basket:[]).filter(validItem).slice(0,SLOTS),moves:Number.isSafeInteger(s.moves)&&s.moves>=0?s.moves:0,
+  beam:s.beam&&(s.beam.t==='row'||s.beam.t==='col')&&[0,1,2,3].includes(s.beam.n)?{t:s.beam.t,n:s.beam.n}:null,done:!!s.done}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
-function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&validGrid(s.grid)&&Number.isFinite(s.score)&&s.score>=0){state={...state,...s,mute:!!s.mute,found:Array.isArray(s.found)?s.found.filter(Number.isSafeInteger):[2,4]};if(state.undo&&(!validGrid(state.undo.grid)||!Number.isFinite(state.undo.score)))state.undo=null;ok=true}}catch(e){}
- // Carry over best scores from the earlier versions of this game.
- try{const old=[+localStorage.getItem('2048_best')||0];const a=JSON.parse(localStorage.getItem('cozy2048ascii.v1')||'null');if(a&&Number.isFinite(a.best))old.push(a.best);state.best=Math.max(state.best||0,...old)}catch(e){}
+function load(){let ok=false;try{const s=JSON.parse(localStorage.getItem(KEY)),run=clean(s);if(run){run.done=run.basket.length>=SLOTS;const u=clean(s.undo);
+   state={...state,...run,undo:u,best:Number.isFinite(s.best)&&s.best>0?s.best:0,mute:!!s.mute,picked:!!s.picked,
+    found:Array.isArray(s.found)?s.found.filter(pow2):[2,4],
+    garden:Array.from({length:PLOTS},(_,i)=>Array.isArray(s.garden)&&validItem(s.garden[i])?{v:s.garden[i].v,pts:s.garden[i].pts}:null)};ok=true}}catch(e){}
+ // Blooms discovered in the earlier version stay discovered.
+ if(!ok)try{const o=JSON.parse(localStorage.getItem('bloom2048.v1')||'null');if(o&&Array.isArray(o.found))state.found=[...new Set([2,4,...o.found.filter(pow2)])];if(o)state.mute=!!o.mute}catch(e){}
  return ok}
 
 let cell=90,step=100;
 function measure(){const w=board.clientWidth,g=parseFloat(getComputedStyle(board).getPropertyValue('--gap'))||10;cell=(w-3*g)/4;step=cell+g;board.style.setProperty('--cell',cell+'px')}
 const pos=(el,i)=>el.style.transform=`translate(${(i%4)*step}px,${Math.floor(i/4)*step}px)`;
-function tile(v,i,kind){const t=tierOf(v),el=document.createElement('div');el.className='tile '+kind+(t.night?' night':'');el.dataset.index=i;el.setAttribute('role','img');el.setAttribute('aria-label',`${t.name}, ${v}, row ${Math.floor(i/4)+1} column ${i%4+1}`);
+function tile(v,i,kind){const t=tierOf(v),ice=state.frozen.includes(i),el=document.createElement('div');el.className='tile '+kind+(t.night?' night':'')+(ice?' frozen':'');el.dataset.index=i;el.setAttribute('role','img');el.setAttribute('aria-label',`${t.name}, ${v}${ice?', frozen':''}, row ${Math.floor(i/4)+1} column ${i%4+1}`);
  el.style.cssText+=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge};--ns:${String(v).length>=4?.12:String(v).length===3?.135:.15}`;
- el.innerHTML=`<div class="face"><img alt="" src="${sprite(t)}"><span class="num">${v}</span></div>`;pos(el,i);return el}
-function bestTier(){return Math.max(...state.found)}
-function render(spawned=-1,merged=[]){measure();layer.replaceChildren();state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,merged.includes(i)?'merge':i===spawned?'spawn':''))});
- $('score').textContent=state.score;$('best').textContent=state.best;$('undo').disabled=!state.undo||busy;$('new').disabled=busy;
+ el.innerHTML=`<div class="face"><img alt="" src="${sprite(t)}"><span class="num">${v}</span>${ice?'<i class="ice"></i>':''}</div>`;pos(el,i);return el}
+const biggest=()=>state.grid.reduce((a,v,i)=>v>(state.grid[a]||0)?i:a,0);
+
+const seaEls=SEASONS.map((s,k)=>{const el=document.createElement('span');el.className='sea';el.style.setProperty('--c',s.c);el.innerHTML=`<img alt="" src="${icon(s)}"><i class="track"><i class="fill"></i></i>`;$('seasons').append(el);return el});
+function renderSeasons(){const m=state.moves,s=seasonOf(m),sm=m%LEN;$('yr').textContent='Y'+yearOf(m);
+ seaEls.forEach((el,k)=>{el.classList.toggle('now',k===s);el.classList.toggle('past',k<s);el.querySelector('.fill').style.width=(k<s?100:k===s?Math.max(5,sm/LEN*100):0)+'%'});
+ document.documentElement.style.setProperty('--accent',SEASONS[s].c);
+ $('seasons').setAttribute('aria-label',`Year ${yearOf(m)}, ${SEASONS[s].name}: ${SEASONS[s].rule}. ${LEN-sm} moves until ${SEASONS[(s+1)%4].name}. Open almanac.`)}
+function renderBasket(){const box=$('basket'),n=state.basket.length;box.replaceChildren();
+ for(let k=0;k<SLOTS;k++){const it=state.basket[k],b=document.createElement(it?'div':'button');
+  if(it){const t=tierOf(it.v);b.className='slot full';b.style.cssText=`--bg:${t.bg};--ink:${t.ink};--edge:${t.edge}`;b.innerHTML=`<img alt="" src="${sprite(t)}"><span>${fmt(it.pts)}</span>`;b.setAttribute('role','img');b.setAttribute('aria-label',`${t.name}, ${it.pts} points`)}
+  else{b.type='button';b.className='slot'+(k===n?' next':'');b.disabled=k!==n||state.done;b.setAttribute('aria-label',k===n?'Pick a bloom for the basket':'Empty basket slot');if(k===n)b.onclick=slotTap}
+  box.append(b)}}
+// Selection + hint paint without rebuilding tiles.
+function paintSel(){const room=!state.done&&state.basket.length<SLOTS;if(!room||!state.grid[sel])sel=-1;
+ const jam=room&&!canMove(),big=biggest(),hint=room&&sel<0&&(jam||(!state.picked&&state.grid[big]>=32))?big:-1;
+ layer.querySelectorAll('.tile').forEach(el=>{const i=+el.dataset.index;el.classList.toggle('sel',i===sel);el.classList.toggle('hint',i===hint)});
+ const next=$('basket').querySelector('.next');if(next){const autumn=seasonOf(state.moves)===2;next.classList.toggle('pulse',hint>=0);
+  if(sel>=0){const v=state.grid[sel];next.innerHTML=`<img alt="" src="${sprite(tierOf(v))}"><span>+${fmt(v*(autumn?2:1))}</span>`}else next.innerHTML=autumn?'<em>×2</em>':''}
+ if(jam&&sel<0)$('live').textContent='No moves left. Pick a bloom for the basket.'}
+function render(spawned=-1,merged=[],sunny=[],iced=-1){measure();layer.replaceChildren();
+ state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
+ const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b)bm.style.cssText=b.t==='row'?`left:-3px;top:${b.n*step-3}px;width:calc(100% + 6px);height:${cell+6}px`:`top:-3px;left:${b.n*step-3}px;height:calc(100% + 6px);width:${cell+6}px`;
+ $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;$('new').disabled=busy||state.done;
  $('sound').textContent=state.mute?'Muted':'Sound';$('sound').setAttribute('aria-pressed',String(!state.mute));
- $('badge').src=sprite(tierOf(bestTier()));showOverlay()}
-function showOverlay(){const win=state.winPending,over=isOver(state.grid),show=win||over,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;
- $('message').textContent=win?'You grew a moon tree.':'The garden is full.';$('ovImg').src=sprite(tierOf(win?2048:Math.max(...state.grid)));
- $('keep').hidden=!win;$('ovUndo').hidden=win||!state.undo;
- $('live').textContent=show?(win?'You reached 2048.':'Game over.'):`Score ${state.score}`;if(show&&was)(win?$('keep'):$('restart')).focus()}
-function burst(i,v){if(reduce.matches)return;const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2;for(let k=0;k<7;k++){const a=k/7*Math.PI*2+Math.random()*.6,d=cell*(.42+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-2.5}px;top:${cy-2.5}px;--c:${k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
-function flashPlus(n){const s=document.createElement('div');s.className='plus';s.textContent='+'+n;$('score').parentNode.append(s);setTimeout(()=>s.remove(),700)}
-function discover(v){const t=tierOf(v),el=$('toast');el.innerHTML=`<div class="swatch" style="background:${t.bg}"><img alt="" src="${sprite(t)}"></div><div><small>NEW BLOOM · ${v}</small><b>${t.name}</b></div>`;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,2400);sound('chime')}
+ $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
+function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
+ const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovUndo').hidden=!state.undo;
+ if(was){$('live').textContent=`Basket full. Harvest ${t}.`;$('plant').focus()}}
+function burst(i,v,sun){if(reduce.matches)return;const t=tierOf(v),cx=(i%4)*step+cell/2,cy=Math.floor(i/4)*step+cell/2,n=sun?14:7;for(let k=0;k<n;k++){const a=k/n*Math.PI*2+Math.random()*.6,d=cell*((sun?.6:.42)+Math.random()*.25),p=document.createElement('i');p.className='petal';p.style.cssText=`left:${cx-2.5}px;top:${cy-2.5}px;--c:${sun&&k%2?'#F2C94C':k%3?petalColor(t):t.ink};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;petals.append(p);setTimeout(()=>p.remove(),560)}}
+function flashPlus(n){const s=document.createElement('div');s.className='plus';s.textContent='+'+fmt(n);$('score').parentNode.append(s);setTimeout(()=>s.remove(),800)}
+function toast(html,ms=2400){const el=$('toast');el.innerHTML=html;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,ms)}
+function discover(v){const t=tierOf(v);toast(`<div class="swatch" style="background:${t.bg}"><img alt="" src="${sprite(t)}"></div><div><small>NEW BLOOM · ${v}</small><b>${t.name}</b></div>`);sound('chime')}
+function announce(s){const S=SEASONS[s];toast(`<div class="swatch"><img alt="" src="${icon(S)}"></div><div><small>YEAR ${yearOf(state.moves)}</small><b>${S.name}</b></div>`,2000);$('live').textContent=`${S.name}. ${S.rule}.`;sound('season',s)}
 
 // Soft pentatonic plucks that climb with each tier.
 const SCALE=[0,2,4,7,9];
 function unlockAudio(){if(state.mute)return;try{ctx||=new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume().catch(()=>{})}catch(e){}}
 function tone(f,at,dur,vol=.035,type='triangle'){if(!ctx||state.mute)return;const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime+at;o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur+.02)}
-const note=n=>261.63*Math.pow(2,(SCALE[n%5]+12*Math.floor(n/5))/12);
+const note=n=>261.63*Math.pow(2,(SCALE[((n%5)+5)%5]+12*Math.floor(n/5))/12);
+const MOTIF=[[0,2,4],[2,4,7],[4,2,0],[7,4,2]];
 function sound(kind,tier=2){if(state.mute)return;const n=Math.log2(tier)-1;
  if(kind==='slide')tone(196,0,.05,.012,'sine');
  if(kind==='merge'){tone(note(n),0,.22);tone(note(n+2),.05,.26,.02,'sine')}
+ if(kind==='sun')[0,2,4].forEach((k,i)=>tone(note(n+k+5),i*.05,.3,.02,'sine'));
  if(kind==='chime')[0,2,4,5].forEach((k,i)=>tone(note(5+k),.12+i*.08,.5,.022,'sine'));
- if(kind==='win')[0,2,4,5,7,9].forEach((k,i)=>tone(note(5+k),i*.11,.8,.026,'sine'));
- if(kind==='over')tone(130,0,.4,.04,'sine')}
+ if(kind==='season')MOTIF[tier].forEach((k,i)=>tone(note(5+k),i*.14,.7,.024,'sine'));
+ if(kind==='frost'){tone(1760,0,.12,.014,'sine');tone(2349,.07,.18,.01,'sine')}
+ if(kind==='select')tone(392,0,.06,.014,'sine');
+ if(kind==='pick'){tone(note(n+2),0,.25);tone(note(n+4),.08,.3,.024,'sine');tone(note(n+7),.16,.45,.02,'sine')}
+ if(kind==='plant')[0,2,4,5,7,9].forEach((k,i)=>tone(note(5+k),i*.11,.8,.026,'sine'))}
 const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 
-function move(dir){if(busy||state.winPending||isOver(state.grid))return false;const nx=plan(state.grid,dir);if(!nx.changed)return false;unlockAudio();
- state.undo={grid:state.grid.slice(),score:state.score};state.grid=nx.grid;state.score+=nx.gain;state.best=Math.max(state.best,state.score);
+function move(dir){if(busy||state.done)return false;sel=-1;const nx=plan(state.grid,dir,state.frozen,state.beam);if(!nx.changed){paintSel();return false}unlockAudio();
+ state.undo=snap();state.grid=nx.grid;
+ nx.merged.forEach(i=>nbrs(i).forEach(j=>{const k=state.frozen.indexOf(j);if(k>=0)state.frozen.splice(k,1)}));
  const sp=spawn(state.grid),fresh=[...new Set(nx.merged.map(i=>nx.grid[i]))].filter(v=>!state.found.includes(v));state.found.push(...fresh);
- const newWin=!state.won&&state.grid.includes(2048);if(newWin){state.won=true;state.winPending=true}save();
- busy=true;$('undo').disabled=$('new').disabled=true;
+ // Time passes: one move closer to the next season.
+ const was=seasonOf(state.moves);state.moves++;const s=seasonOf(state.moves),sm=state.moves%LEN,turned=s!==was;let iced=-1;
+ if(turned){if(s===0)state.frozen=[];if(s!==1)state.beam=null}
+ if(s===1&&sm%5===0)rollBeam();
+ if(s===3&&sm%6===0&&state.frozen.length<3)iced=freeze();
+ save();busy=true;$('undo').disabled=$('new').disabled=true;
  nx.motions.forEach(({from,to})=>{const el=layer.querySelector(`[data-index="${from}"]`);if(el)pos(el,to)});
- const top=Math.max(2,...nx.merged.map(i=>nx.grid[i]));sound(nx.gain?'merge':'slide',top);if(nx.gain){flashPlus(nx.gain);buzz(8)}
- const finish=()=>{busy=false;render(sp,nx.merged);nx.merged.forEach(i=>burst(i,nx.grid[i]));
-  if(newWin)sound('win');else if(fresh.length)discover(Math.max(...fresh));else if(isOver(state.grid))sound('over')};
+ const top=Math.max(2,...nx.merged.map(i=>nx.grid[i]));sound(nx.sunny.length?'sun':nx.merged.length?'merge':'slide',top);if(nx.merged.length)buzz(8);
+ const finish=()=>{busy=false;render(sp,nx.merged,nx.sunny,iced);nx.merged.forEach(i=>burst(i,nx.grid[i],nx.sunny.includes(i)));
+  if(iced>=0)sound('frost');if(turned)announce(s);else if(fresh.length)discover(Math.max(...fresh))};
  if(reduce.matches)finish();else setTimeout(finish,115);return true}
-function newGame(){if(busy)return;state={...state,grid:Array(16).fill(0),score:0,won:false,winPending:false,undo:null};spawn(state.grid);spawn(state.grid);save();render();board.focus({preventScroll:true})}
-function undo(){if(busy||!state.undo)return;state.grid=state.undo.grid;state.score=state.undo.score;state.undo=null;state.winPending=false;save();render();board.focus({preventScroll:true})}
+// Pick a bloom off the board into the basket. Only picked blooms score; autumn doubles them.
+function harvest(i){if(busy||state.done||!state.grid[i]||state.basket.length>=SLOTS)return;unlockAudio();
+ const v=state.grid[i],pts=v*(seasonOf(state.moves)===2?2:1),el=layer.querySelector(`[data-index="${i}"]`),r0=el&&el.getBoundingClientRect();
+ state.undo=snap();state.basket.push({v,pts});state.grid[i]=0;state.frozen=state.frozen.filter(j=>j!==i);state.picked=true;sel=-1;
+ if(state.grid.every(x=>!x)){spawn(state.grid);spawn(state.grid)}
+ if(state.basket.length>=SLOTS)state.done=true;save();
+ const fly=el&&!reduce.matches?el.cloneNode(true):null;render();sound('pick',v);buzz(12);flashPlus(pts);
+ const slot=$('basket').children[state.basket.length-1];
+ if(fly&&slot){const r1=slot.getBoundingClientRect();fly.className='tile fly';fly.style.cssText+=`;left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px;transform:none`;document.body.append(fly);slot.classList.add('incoming');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>fly.style.transform=`translate(${r1.left-r0.left}px,${r1.top-r0.top}px) scale(${r1.width/r0.width})`));
+  setTimeout(()=>{fly.remove();const s2=$('basket').children[state.basket.length-1];if(s2){s2.classList.remove('incoming');s2.classList.add('landed')}},350)}
+ if(!state.done)$('live').textContent=`Picked ${tierOf(v).name} for ${pts}. ${SLOTS-state.basket.length} basket slots left.`}
+function slotTap(){if(sel>=0)harvest(sel);else{sel=biggest();if(!state.grid[sel])sel=-1;sound('select');paintSel()}}
+// The basket goes into the garden: fill empty plots first, then outgrow the smallest plant.
+const ORDER=(()=>{const a=[...Array(PLOTS).keys()];let r=7;for(let i=PLOTS-1;i>0;i--){r=(r*1103515245+12345)&0x7fffffff;const j=r%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a})();
+function commit(){const placed=[],t=total();state.basket.forEach(it=>{let k=ORDER.find(p=>!state.garden[p]);
+  if(k===undefined){const min=ORDER.reduce((a,p)=>state.garden[p].pts<state.garden[a].pts?p:a,ORDER[0]);if(it.pts>state.garden[min].pts)k=min}
+  if(k!==undefined){state.garden[k]={v:it.v,pts:it.pts};placed.push(k)}});state.best=Math.max(state.best,t);return placed}
+function startRun(){state={...state,grid:Array(16).fill(0),frozen:[],basket:[],moves:0,beam:null,undo:null,done:false};sel=-1;spawn(state.grid);spawn(state.grid);save();render()}
+function newGame(){if(busy)return;if(state.basket.length)commit();startRun();board.focus({preventScroll:true})}
+function plant(){if(busy||!state.done)return;unlockAudio();const placed=commit();startRun();sound('plant');openGarden(placed)}
+function undo(){if(busy||!state.undo)return;Object.assign(state,state.undo,{undo:null});sel=-1;save();render();board.focus({preventScroll:true})}
 
-function openJournal(){const box=$('journal');box.replaceChildren();let n=0;
- TIERS.forEach(t=>{const got=state.found.includes(t.v)||state.found.some(v=>v>4096&&t.v===4096);if(got)n++;const e=document.createElement('div');e.className='entry'+(got?'':' locked');
-  e.innerHTML=`<div class="pic" style="${got?'--bg:'+t.bg:''}"><img alt="" src="${sprite(t,!got)}"></div><div><b>${got?t.name:'Not yet grown'}</b><br><span>${t.v}</span></div>`;box.append(e)});
- $('jCount').textContent=`${n} OF ${TIERS.length} GROWN`;$('scrim').hidden=false;$('jClose').focus()}
-function closeJournal(){$('scrim').hidden=true;$('journalBtn').focus()}
+// Garden: an isometric plot that keeps every harvest. Pixel-stepped 2:1 diamonds on a 200×146 canvas.
+const G=6,TW=32,TH=16,DEPTH=9,PW=200,PH=146,TOP=34;
+const plotXY=p=>{const gx=p%G,gy=Math.floor(p/G);return[PW/2+(gx-gy)*TW/2,TOP+(gx+gy)*TH/2+TH/2]};
+function diamond(x,cx,cy,l,r){for(let k=0;k<TH;k++){const h=(k<TH/2?k+1:TH-k)*2;x.fillStyle=l;x.fillRect(cx-h,cy-TH/2+k,h,1);x.fillStyle=r;x.fillRect(cx,cy-TH/2+k,h,1)}}
+function drawPlant(x,t,cx,cy,dy,a){const art=ART[t.art];let last=0;art.forEach((row,r)=>{if([...row].some(ch=>ch!=='.'&&ch!=='d'))last=r});
+ const float=t.art==='moonrise',y0=Math.round(cy+(float?-6:3)-(last+1)*2+dy);x.globalAlpha=a*.3;x.fillStyle='#000';x.fillRect(cx-7,cy+1,14,3);x.globalAlpha=a;
+ art.forEach((row,r)=>[...row].forEach((ch,col)=>{if(ch==='.'||ch==='d')return;x.fillStyle=inkOf(t,ch);x.fillRect(cx-12+col*2,y0+r*2,2,2)}));x.globalAlpha=1}
+let plotAnim=0;
+function drawGarden(newIdx=[]){const x=$('plot').getContext('2d'),t0=performance.now();cancelAnimationFrame(plotAnim);
+ const frame=now=>{x.clearRect(0,0,PW,PH);
+  for(let p=0;p<PLOTS;p++){const gx=p%G,gy=Math.floor(p/G);if(gx!==G-1&&gy!==G-1)continue;const[cx,cy]=plotXY(p);for(let d=DEPTH;d>0;d--)diamond(x,cx,cy+d,d>DEPTH-2?'#2C2030':'#3D2C32',d>DEPTH-2?'#35273A':'#4B363A')}
+  for(let p=0;p<PLOTS;p++){const gx=p%G,gy=Math.floor(p/G),[cx,cy]=plotXY(p),it=state.garden[p],alt=(gx+gy)%2;
+   diamond(x,cx,cy,alt?'#3B5C48':'#365441',alt?'#3B5C48':'#365441');
+   if(it){x.fillStyle='#4E3B33';x.fillRect(cx-8,cy-2,16,5);x.fillRect(cx-5,cy-3,10,7)}
+   else{x.fillStyle='#47705A';x.fillRect(cx-6+(p*7)%9,cy-1+(p*3)%3,1,2);x.fillRect(cx+2-(p*5)%7,cy+1-(p%2),1,2)}}
+  let moving=false;
+  for(let p=0;p<PLOTS;p++){const it=state.garden[p];if(!it)continue;const[cx,cy]=plotXY(p),n=newIdx.indexOf(p);let dy=0,a=1;
+   if(n>=0&&!reduce.matches){const k=(now-t0-300-n*170)/380;if(k<0){moving=true;continue}if(k<1){moving=true;a=Math.min(1,k*3);dy=-Math.round(Math.sin(k*Math.PI)*8+(1-k)*6)}}
+   drawPlant(x,tierOf(it.v),cx,cy,dy,a)}
+  if(moving)plotAnim=requestAnimationFrame(frame)};frame(t0)}
+function openGarden(newIdx=[],toAlmanac){const n=state.garden.filter(Boolean),sum=n.reduce((a,b)=>a+b.pts,0);
+ $('gCount').textContent=`${n.length} OF ${PLOTS} PLOTS · ${fmt(sum)}`;$('plot').setAttribute('aria-label',`Your garden: ${n.length} plants worth ${sum}`);
+ $('almanac').innerHTML=SEASONS.map(s=>`<div class="alm"><img alt="" src="${icon(s)}"><div><b>${s.name.toUpperCase()}</b><span>${s.rule}</span></div></div>`).join('');
+ const box=$('journal');box.replaceChildren();let got=0;
+ TIERS.forEach(t=>{const has=state.found.includes(t.v)||state.found.some(v=>v>4096&&t.v===4096);if(has)got++;const e=document.createElement('div');e.className='entry'+(has?'':' locked');
+  e.innerHTML=`<div class="pic" style="${has?'--bg:'+t.bg:''}"><img alt="" src="${sprite(t,!has)}"></div><b>${has?t.name:t.v}</b>`;box.append(e)});
+ $('jCount').textContent=`${got} OF ${TIERS.length} BLOOMS`;$('scrim').hidden=false;drawGarden(newIdx);
+ const sh=document.querySelector('.sheet');sh.scrollTop=0;if(toAlmanac)$('almanac').scrollIntoView({block:'center'});$('gClose').focus({preventScroll:true})}
+function closeGarden(){$('scrim').hidden=true;cancelAnimationFrame(plotAnim);board.focus({preventScroll:true})}
 
-$('new').onclick=newGame;$('restart').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;
-$('keep').onclick=()=>{state.winPending=false;save();render();board.focus({preventScroll:true})};
+$('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
 $('sound').onclick=()=>{state.mute=!state.mute;unlockAudio();save();render()};
-$('journalBtn').onclick=openJournal;$('jClose').onclick=closeJournal;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeJournal()});
+$('gardenBtn').onclick=()=>openGarden();$('seasons').onclick=()=>openGarden([],true);$('gClose').onclick=closeGarden;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeGarden()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('scrim').hidden){if(e.key==='Escape')closeJournal();return}
- const k=e.key.length===1?e.key.toLowerCase():e.key;if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u'){undo()}});
+// With a bloom chosen, arrows walk the choice between blooms instead of sliding the board.
+function walk(dir){const c=sel%4,r=Math.floor(sel/4);let best=-1,bd=99;state.grid.forEach((v,i)=>{if(!v||i===sel)return;const dc=i%4-c,dr=Math.floor(i/4)-r,along=dir==='left'?-dc:dir==='right'?dc:dir==='up'?-dr:dr,across=dir==='left'||dir==='right'?Math.abs(dr):Math.abs(dc);if(along<=0)return;const d=along+across*2;if(d<bd){bd=d;best=i}});if(best>=0){sel=best;sound('select');paintSel()}}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('scrim').hidden){if(e.key==='Escape')closeGarden();return}
+ const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
+ if(sel>=0){if(keys[k]){e.preventDefault();walk(keys[k])}else if((k==='Enter'||k===' ')&&!onBtn){e.preventDefault();harvest(sel)}else if(k==='Escape'||k==='h'){sel=-1;paintSel()}return}
+ if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo();else if((k==='h'||k==='Enter')&&!onBtn&&!state.done){e.preventDefault();slotTap()}});
 let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
-board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y;ptr=null;if(Math.max(Math.abs(dx),Math.abs(dy))>=22)move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'))});
+board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,d=Math.max(Math.abs(dx),Math.abs(dy));ptr=null;
+ if(d>=22)return void move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
+ if(d>8||busy||state.done)return;
+ // A tap chooses a bloom; a second tap on it (or on the basket) picks it.
+ const r=board.getBoundingClientRect(),i=Math.min(3,Math.max(0,Math.floor((e.clientY-r.top)/step)))*4+Math.min(3,Math.max(0,Math.floor((e.clientX-r.left)/step)));
+ if(!state.grid[i]||state.basket.length>=SLOTS){sel=-1;paintSel()}else if(sel===i)harvest(i);else{sel=i;unlockAudio();sound('select');paintSel()}});
 board.addEventListener('pointercancel',()=>ptr=null);
 for(let i=0;i<16;i++){const c=document.createElement('div');c.className='cell';document.querySelector('.cells').append(c)}
 
-// Fireflies: a few slow lilac pixels drifting behind everything.
-(function(){const cv=$('fireflies'),x=cv.getContext('2d');let W,H,flies=[];const dpr=Math.min(2,devicePixelRatio||1);
- function size(){W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);flies=Array.from({length:Math.round(Math.min(26,W*H/26000))},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*6.28,v:.15+Math.random()*.25,z:Math.random()<.3?3:2}))}
- function draw(t){x.clearRect(0,0,W,H);flies.forEach(f=>{if(!reduce.matches){f.y-=f.v*.35;f.x+=Math.sin(t/2400+f.s)*.18;if(f.y<-4){f.y=H+4;f.x=Math.random()*W}}
-  x.globalAlpha=.12+.22*(.5+.5*Math.sin(t/900+f.s*3));x.fillStyle=f.z===3?'#F2C94C':'#B9A9D9';x.fillRect(Math.round(f.x),Math.round(f.y),f.z,f.z)});if(!reduce.matches)requestAnimationFrame(draw)}
+// Weather: rain in spring, sun motes in summer, drifting leaves in autumn, snow in winter.
+(function(){const cv=$('weather'),x=cv.getContext('2d');let W,H,ps=[];const dpr=Math.min(2,devicePixelRatio||1);
+ function size(){W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);ps=Array.from({length:Math.round(Math.min(34,W*H/22000))},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*6.28,v:.6+Math.random()*.8,z:Math.random()<.3?3:2}))}
+ function draw(t){x.clearRect(0,0,W,H);const s=seasonOf(state.moves),still=reduce.matches;ps.forEach(f=>{
+   if(!still){if(s===0){f.y+=f.v*3;f.x-=f.v*.6}else if(s===1){f.y-=f.v*.14;f.x+=Math.sin(t/2400+f.s)*.18}else if(s===2){f.y+=f.v*.5;f.x+=.3+Math.sin(t/900+f.s)*.6}else{f.y+=f.v*.3;f.x+=Math.sin(t/1600+f.s)*.3}
+    if(f.y<-10){f.y=H+4;f.x=Math.random()*W}if(f.y>H+10){f.y=-6;f.x=Math.random()*W}if(f.x<-10)f.x=W+4;if(f.x>W+10)f.x=-6}
+   const tw=.5+.5*Math.sin(t/900+f.s*3),px=Math.round(f.x),py=Math.round(f.y);
+   if(s===0){x.globalAlpha=.2;x.fillStyle='#7FB8D9';x.fillRect(px,py,2,f.z*3)}
+   else if(s===1){x.globalAlpha=.12+.24*tw;x.fillStyle=f.z===3?'#F2C94C':'#F6E3A1';x.fillRect(px,py,f.z,f.z)}
+   else if(s===2){x.globalAlpha=.34;x.fillStyle=f.z===3?'#E8873A':'#C9583F';x.fillRect(px,py,f.z+1,f.z)}
+   else{x.globalAlpha=.24+.2*tw;x.fillStyle='#EDE7F2';x.fillRect(px,py,f.z,f.z)}});
+  x.globalAlpha=1;if(!still)requestAnimationFrame(draw)}
  size();addEventListener('resize',size);requestAnimationFrame(draw)})();
 
 new ResizeObserver(()=>{if(!busy)render()}).observe(board);
-if(load())render();else newGame();
+if(load())render();else startRun();
 </script>
 </body>
 </html>
