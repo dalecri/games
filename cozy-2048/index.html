@@ -141,7 +141,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 button.primary{background:var(--accent);color:var(--void);border-color:var(--accent)}
 button:disabled{opacity:.35;cursor:default;transform:none}
 button[aria-pressed="false"]{color:var(--muted)}
-.controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:min(100%,440px);margin:0 auto}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:min(100%,264px);margin:0 auto}
 .controls button{padding:0 6px;display:grid;place-items:center}
 .controls svg{width:18px;height:18px;display:block}
 .help{flex:none;width:44px;padding:0;border-radius:12px;font-size:14px;background:var(--surface-2)}
@@ -299,8 +299,6 @@ button[aria-pressed="false"]{color:var(--muted)}
   <div class="controls">
     <button id="new" aria-label="New run" title="New run"></button>
     <button id="undo" aria-label="Undo" title="Undo" disabled></button>
-    <button id="almanacBtn" aria-label="Almanac" title="Almanac"></button>
-    <button id="sound" aria-label="Sound" title="Sound" aria-pressed="true"></button>
     <button id="theme" aria-label="ASCII theme" title="ASCII theme"></button>
   </div>
 </main>
@@ -327,7 +325,7 @@ button[aria-pressed="false"]{color:var(--muted)}
     <section class="how"><div class="demo d-top" id="dTop" aria-hidden="true"></div><div><h3>Play until you are stuck</h3><p>The run ends when no move is left. Your harvest is the five highest blooms on the board, added up. The basket shows them as you go.</p></div></section>
     <section class="how wide"><div><h3>Watch the seasons</h3><p>The season turns every 20 moves and bends one rule.</p><div class="almanac" id="hSeasons"></div></div></section>
     <section class="how"><div class="demo d-plant" aria-hidden="true"><canvas id="dPlant" width="74" height="46"></canvas></div><div><h3>Watch the garden grow</h3><p>The island starts each run bare. Every bloom you make takes root there, and visitors turn up as you climb higher. Tap it for a closer look.</p></div></section>
-    <p class="keys"><span><kbd>← ↑ ↓ →</kbd>move</span><span><kbd>U</kbd>undo</span><span><kbd>?</kbd>this guide</span></p>
+    <p class="keys"><span><kbd>← ↑ ↓ →</kbd>move</span><span><kbd>U</kbd>undo</span><span><kbd>T</kbd>theme</span><span><kbd>M</kbd>mute</span><span><kbd>?</kbd>this guide</span></p>
     <button class="primary go" id="hGo">Play</button>
   </div>
 </div>
@@ -396,9 +394,6 @@ function icon(s){if(s.url)return s.url;const c=document.createElement('canvas');
 const GLYPH={
  fresh:['...xxx.x.','..x...xx.','.x...xxx.','.x.......','.x.....x.','.x.....x.','..x...x..','...xxx...','.........'],
  back: ['.........','..x......','.xx......','xxxxxx...','.xx...x..','..x....x.','.......x.','......x..','..xxxx...'],
- book: ['.........','xxxx.xxxx','x...x...x','x...x...x','x...x...x','x...x...x','xxxx.xxxx','...xxx...','.........'],
- sound:['....x....','...xx..x.','xxxxx...x','xxxxx.x.x','xxxxx.x.x','xxxxx...x','...xx..x.','....x....','.........'],
- mute: ['....x....','...xx....','xxxxx.x.x','xxxxx..x.','xxxxx.x.x','xxxxx....','...xx....','....x....','.........'],
  letter:['.........','..xxxxx..','.xx...xx.','.xx...xx.','.xxxxxxx.','.xx...xx.','.xx...xx.','.xx...xx.','.........'],
  flower:['...xxx...','...xxx...','xxx.x.xxx','xx.xxx.xx','xxx.x.xxx','...xxx...','...xxx...','....x....','....x....']};
 const glyph=k=>`<svg viewBox="0 0 9 9" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">${GLYPH[k].map((row,r)=>[...row].map((ch,c)=>ch==='x'?`<rect x="${c}" y="${r}" width="1" height="1"/>`:'').join('')).join('')}</svg>`;
@@ -498,7 +493,7 @@ function render(spawned=-1,merged=[],sunny=[],iced=-1){layer.replaceChildren();
  state.grid.forEach((v,i)=>{if(v)layer.append(tile(v,i,(sunny.includes(i)?'sunny':merged.includes(i)?'merge':i===spawned?'spawn':'')+(i===iced?' newice':'')))});
  const bm=$('beam'),b=state.beam;bm.hidden=!b;if(b){bm.className='beam '+b.t;bm.style.setProperty('--n',b.n)}
  $('score').textContent=fmt(total());$('best').textContent=fmt(state.best);$('undo').disabled=!state.undo||busy;$('new').disabled=busy||state.done;
- applyTheme();$('sound').innerHTML=glyph(state.mute?'mute':'sound');$('sound').title=state.mute?'Sound off':'Sound on';$('sound').setAttribute('aria-pressed',String(!state.mute));
+ applyTheme();
  $('badge').src=sprite(tierOf(Math.max(...state.found)));renderSeasons();renderBasket();showOverlay();paintSel()}
 function showOverlay(){const show=state.done,was=$('overlay').hidden;$('overlay').hidden=!show;board.inert=show;if(!show)return;
  const t=total();$('ovLabel').textContent=t>state.best?'BEST HARVEST':`YEAR ${yearOf(state.moves)} HARVEST`;$('ovTotal').textContent=fmt(t);$('ovSub').hidden=!state.bonus;$('ovSub').textContent=`${fmt(t-state.bonus)} + ${fmt(state.bonus)} AUTUMN`;$('ovUndo').hidden=!state.undo;
@@ -683,18 +678,19 @@ function openHelp(){if(!$('dMerge').firstChild){
 function closeHelp(){$('help').hidden=true;if(!state.guide){state.guide=true;save()}board.focus({preventScroll:true});isoKick(0)}
 $('helpBtn').onclick=openHelp;$('hClose').onclick=$('hGo').onclick=closeHelp;$('help').addEventListener('click',e=>{if(e.target===e.currentTarget)closeHelp()});
 
-$('new').innerHTML=glyph('fresh');$('undo').innerHTML=glyph('back');$('almanacBtn').innerHTML=glyph('book');
+$('new').innerHTML=glyph('fresh');$('undo').innerHTML=glyph('back');
 $('new').onclick=newGame;$('undo').onclick=undo;$('ovUndo').onclick=undo;$('plant').onclick=plant;
-$('sound').onclick=()=>{state.mute=!state.mute;unlockAudio();save();render()};
+// Sound has no button; M mutes and unmutes from a keyboard.
+function toggleMute(){state.mute=!state.mute;unlockAudio();save();$('live').textContent=state.mute?'Sound off.':'Sound on.';if(!state.mute)sound('select')}
 // Theme toggle: pixel sprites or ASCII symbols. The button shows the look it switches to.
 function applyTheme(){const a=state.ascii,b=$('theme');document.documentElement.classList.toggle('ascii',a);b.innerHTML=glyph(a?'flower':'letter');b.title=a?'Pixel theme':'ASCII theme';b.setAttribute('aria-label',b.title)}
 function toggleTheme(){state.ascii=!state.ascii;save();render();agLast=agBig='';isoKick(0)}
 $('theme').onclick=toggleTheme;
-$('almanacBtn').onclick=openAlmanac;$('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
+$('seasons').onclick=openAlmanac;$('gClose').onclick=closeAlmanac;$('scrim').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAlmanac()});
 const keys={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'up',w:'up',ArrowDown:'down',s:'down'};
 document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;if(!$('gview').hidden){if(e.key==='Escape')closeGarden();else if(e.key.toLowerCase()==='c')petCat();return}if(!$('help').hidden){if(e.key==='Escape')closeHelp();return}if(!$('scrim').hidden){if(e.key==='Escape')closeAlmanac();return}
  const k=e.key.length===1?e.key.toLowerCase():e.key,onBtn=e.target.closest&&e.target.closest('button');
- if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}if(k==='t'){toggleTheme();return}
+ if(k==='?'){sel=-1;paintSel();openHelp();return}if(k==='c'){petCat();return}if(k==='t'){toggleTheme();return}if(k==='m'){toggleMute();return}
  if(keys[k]){e.preventDefault();move(keys[k])}else if(k==='u')undo()});
 let ptr=null;board.addEventListener('pointerdown',e=>{if(!e.isPrimary)return;ptr={x:e.clientX,y:e.clientY,id:e.pointerId};try{board.setPointerCapture(e.pointerId)}catch(_){}});
 board.addEventListener('pointerup',e=>{if(!ptr||ptr.id!==e.pointerId)return;const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,d=Math.max(Math.abs(dx),Math.abs(dy));ptr=null;
