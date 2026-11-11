@@ -147,20 +147,25 @@ button[aria-pressed="false"]{color:var(--muted)}
 
 /* Landscape: PC, and tablets or phones on their side. Top bar, then controls, board, basket and garden left to right. */
 @media(min-width:700px) and (min-aspect-ratio:1/1){
-  /* One top bar: title, then the year, with the scores pinned top right. Below it, a slim rail of controls and the stage. */
-  main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:60px;
-    grid-template:"head head seasons" minmax(var(--top),auto) "controls stage stage" minmax(0,1fr) / 44px auto minmax(0,1fr)}
-  header,.year{align-self:center}.year{width:min(380px,100% - 250px)}
+  /* Title top left. Scores pinned top right with a compact year strip under them, above the garden. Below, a slim rail of controls and the stage. */
+  main{width:min(100%,1280px);min-height:340px;column-gap:20px;--top:60px;--side:216px;
+    grid-template:"head head" minmax(var(--top),auto) "controls stage" minmax(0,1fr) / 44px minmax(0,1fr)}
+  header{align-self:center}
+  /* Compact year: four season icons, and only the current one carries its progress track. */
+  .year{position:absolute;top:calc(var(--top) + 4px);right:0;z-index:2;width:var(--side)}
+  .seasons{grid-template-columns:auto repeat(4,auto);justify-content:space-between;gap:6px;padding:0 10px;min-height:36px}
+  .sea .track{display:none}.sea.now .track{display:block;flex:none;width:30px}
+  .help{width:36px;min-height:36px}.gpane{padding-top:40px}
   .controls{grid-template-columns:44px;grid-auto-rows:44px;width:44px;margin:0;align-content:center}.controls button{padding:0}
   /* The board stays square: as tall as the stage allows, but never so wide that the garden is squeezed out. */
   .stage{flex-direction:row;gap:16px;container-type:size}
   .bpane{flex:none;align-self:center;width:min(100cqh,64cqw - 96px);aspect-ratio:1}.gpane{flex-grow:1}
   .basket{grid-template-columns:64px;grid-template-rows:repeat(5,minmax(0,64px));align-content:center}
-  .scores{position:absolute;top:0;right:0;z-index:2}.chip{min-width:104px}
+  .scores{position:absolute;top:0;right:0;z-index:2}.chip{min-width:104px;flex:1}.scores{width:var(--side)}
   .badge{display:grid}h1{font-size:30px}
 }
 @media(min-width:700px) and (min-aspect-ratio:1/1) and (max-height:480px){
-  main{row-gap:8px;--top:46px}.badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:80px}.year{width:min(300px,100% - 190px)}.controls{grid-auto-rows:36px}
+  main{row-gap:8px;--top:46px;--side:200px}.badge{display:none}h1{font-size:20px}.chip{padding-block:3px 4px}.chip strong{font-size:16px}.chip{min-width:0}.seasons{gap:4px;padding:0 8px}.sea{gap:4px}.sea.now .track{width:14px}.controls{grid-auto-rows:36px}
   .seasons,button{min-height:36px}.basket{grid-template-columns:44px;grid-template-rows:repeat(5,minmax(0,44px))}.bpane{width:min(100cqh,72cqw - 76px);padding:6px}.slot.full span,.slot.next span{font-size:9px}
 }
 
